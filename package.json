@@ -1,0 +1,26 @@
+{
+  "name": "connect-apple-testing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "appium": "appium",
+    "test:ios": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonytran40/Connect-Apple-Testing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tonytran40/Connect-Apple-Testing/issues"
+  },
+  "homepage": "https://github.com/tonytran40/Connect-Apple-Testing#readme",
+  "devDependencies": {
+    "@wdio/cli": "^9.20.0",
+    "webdriverio": "^9.20.0"
+  }
+}
