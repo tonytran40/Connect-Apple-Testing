@@ -22,5 +22,8 @@
   "devDependencies": {
     "@wdio/cli": "^9.20.0",
     "webdriverio": "^9.20.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
   }
 }
