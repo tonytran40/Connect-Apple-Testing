@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { createDriver } = require('./Login_Flow/Open_App');
+const { createDriver } = require('../Login_Flow/Open_App');
 
 async function run() {
   let driver;
