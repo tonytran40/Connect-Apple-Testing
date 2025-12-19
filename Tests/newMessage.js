@@ -64,7 +64,6 @@ async function tapSearchResultByText(driver, text, timeout = 20000) {
  * 🔥 MESSAGE COMPOSER TYPING (robust)
  */
 async function typeComposerMessage(driver, message, timeout = 20000) {
-  // 1️⃣ Future-proof path (if you later add accessibilityIdentifier)
   const byId = await driver.$('~messageComposerTextView');
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
