@@ -107,7 +107,7 @@ async function run() {
   let driver;
 
   const recipient = process.env.RECIPIENT || 'greg.blake';
-  const message = process.env.MESSAGE || 'Hello this is tony';
+  const message = process.env.MESSAGE || 'Hello this is tony. How are you doing';
 
   try {
     driver = await createDriver();
@@ -166,6 +166,7 @@ async function run() {
   } finally {
     // leave session open while developing
     // if (driver) await driver.deleteSession();
+    await driver.deleteSession();
   }
 }
 
