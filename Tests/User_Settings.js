@@ -6,17 +6,18 @@ const fs = require('fs');
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 
+const DEBUG_DUMP_SOURCE = true; // flip to false when stable
+
 /* -------------------- helpers -------------------- */
 
-function ensureScreenshotsDir() {
+function ensureArtifactsDir() {
   const dir = path.resolve(__dirname, '../screenshots');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
 async function screenshot(driver, name) {
-  const dir = ensureScreenshotsDir();
-  const file = path.join(dir, name);
+  const file = path.join(ensureArtifactsDir(), name);
   await driver.saveScreenshot(file);
   console.log(`📸 Screenshot: ${file}`);
 }
@@ -26,14 +27,45 @@ async function step(driver, label, shotName) {
   if (shotName) await screenshot(driver, shotName);
 }
 
+async function dumpSource(driver, filename = 'page_source.xml') {
+  if (!DEBUG_DUMP_SOURCE) return;
+
+  const file = path.join(ensureArtifactsDir(), filename);
+  const xml = await driver.getPageSource();
+  fs.writeFileSync(file, xml, 'utf8');
+  console.log(`🧾 Page source saved: ${file}`);
+}
+
+function containsAnyTextPredicate(text) {
+  const safe = text.replace(/"/g, '\\"');
+  return (
+    `(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton" OR type == "XCUIElementTypeOther" OR type == "XCUIElementTypeCell") ` +
+    `AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}" OR value CONTAINS "${safe}")`
+  );
+}
+
+async function scrollToText(driver, text, maxScrolls = 6) {
+  const predicate = containsAnyTextPredicate(text);
+
+  for (let i = 0; i < maxScrolls; i++) {
+    const el = await driver.$(`-ios predicate string:${predicate}`);
+    if (await el.isExisting().catch(() => false)) return;
+
+    try {
+      await driver.execute('mobile: scroll', { direction: 'down' });
+    } catch {}
+    await driver.pause(400);
+  }
+
+  throw new Error(`❌ Could not find "${text}" after ${maxScrolls} scrolls`);
+}
+
 /**
- * Tap a Settings row by its visible text (works when there is no accessibilityIdentifier).
- * This clicks the text itself if possible, otherwise clicks its parent button/cell.
+ * Tap by visible text (existing logic)
  */
 async function tapByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
 
-  // 1) Try static text directly
   const textEl = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
   );
@@ -44,7 +76,6 @@ async function tapByText(driver, text, timeout = 20000) {
     return;
   }
 
-  // 2) Try tapping its parent Button
   const parentButton = await driver.$(
     `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeButton[1]`
   );
@@ -55,7 +86,6 @@ async function tapByText(driver, text, timeout = 20000) {
     return;
   }
 
-  // 3) Try tapping its parent Cell
   const parentCell = await driver.$(
     `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeCell[1]`
   );
@@ -65,60 +95,35 @@ async function tapByText(driver, text, timeout = 20000) {
 }
 
 /**
- * PBRadio / SwiftUI row tap (NO coordinate math):
- * - Finds the StaticText label (e.g. "Cozy")
- * - Taps the nearest XCUIElementTypeOther row container (most common in SwiftUI)
- * - If that fails, taps a Button ancestor
- * - Final fallback: uses a native tap on the label elementId (sometimes works better than .click)
+ * Loose radio tap (find anything with title in label/name/value)
  */
-async function tapPBRadioOption(driver, title, timeout = 20000) {
-  const safe = title.replace(/"/g, '\\"');
+async function tapRadioLoose(driver, title, timeout = 20000) {
+  const predicate = containsAnyTextPredicate(title);
+  const el = await driver.$(`-ios predicate string:${predicate}`);
 
-  // 1) Find the label
-  const label = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
-  );
-  await label.waitForDisplayed({ timeout });
+  await el.waitForDisplayed({ timeout });
+  await el.click();
+  console.log(`✅ Tapped radio option (loose): ${title}`);
+}
 
-  // 2) Prefer tapping the SwiftUI row container (usually XCUIElementTypeOther)
-  const rowOther = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${title}" or @label="${title}"]/ancestor::XCUIElementTypeOther[1]`
-  );
+/**
+ *  Option B helper:
+ * Open a collapsible settings section, toggle a list of items, then close the section.
+ * (Uses your existing tapByText + tapRadioLoose. No logic change to how tapping works.)
+ */
+async function toggleSectionItems(driver, sectionTitle, itemLabels, timeout = 10000) {
+  // open section
+  await tapByText(driver, sectionTitle, timeout);
 
-  if (await rowOther.isExisting().catch(() => false)) {
-    try {
-      // Try normal click first
-      await rowOther.click();
-      console.log(`✅ Clicked radio row container (Other): ${title}`);
-      return;
-    } catch {
-      // If click doesn't trigger SwiftUI gesture, do a native tap on the element
-      await driver.execute('mobile: tap', { elementId: rowOther.elementId });
-      console.log(`✅ Native-tapped radio row container (Other): ${title}`);
-      return;
-    }
+  // toggle each item
+  for (const label of itemLabels) {
+    await tapRadioLoose(driver, label, timeout);
+    // small pause can help SwiftUI settle (optional; remove if you want)
+    // await driver.pause(150);
   }
 
-  // 3) Fallback: try a Button ancestor
-  const rowButton = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${title}" or @label="${title}"]/ancestor::XCUIElementTypeButton[1]`
-  );
-
-  if (await rowButton.isExisting().catch(() => false)) {
-    try {
-      await rowButton.click();
-      console.log(`✅ Clicked radio row container (Button): ${title}`);
-      return;
-    } catch {
-      await driver.execute('mobile: tap', { elementId: rowButton.elementId });
-      console.log(`✅ Native-tapped radio row container (Button): ${title}`);
-      return;
-    }
-  }
-
-  // 4) Last resort: native tap the label itself
-  await driver.execute('mobile: tap', { elementId: label.elementId });
-  console.log(`✅ Native-tapped radio label: ${title}`);
+  // close section
+  await tapByText(driver, sectionTitle, timeout);
 }
 
 /* -------------------- test -------------------- */
@@ -129,8 +134,9 @@ async function run() {
   try {
     driver = await createDriver();
     const backButton = await driver.$('~backButton');
+    const closeButton = await driver.$('~closeButton');
 
-    // 1) Ensure login (handles “already logged in” too)
+    // 1) Login
     await ensureLoggedIn(driver);
     await driver.pause(1200);
     await step(driver, 'Logged in / app ready', '00_ready.png');
@@ -150,33 +156,60 @@ async function run() {
     await driver.pause(1200);
     await backButton.click();
 
-    // 4) Conversation Sorting
-    await tapByText(driver, 'Conversation Sorting', 25000);
-    await driver.pause(1200)
-    await tapByText(driver, 'Conversation Sorting', 25000); //close
-
-    // 5) Conversation Layout
+    // 4) Conversation Layout
     await tapByText(driver, 'Conversation Layout', 25000);
     await driver.pause(800);
-    await tapByText(driver, 'Conversation Layout', 25000); //close
+    await step(driver, 'Conversation Layout View', '02_Conversation Layout View.png');
+
+    // Diagnostics + action
+    await dumpSource(driver, '02_layout_expanded_source.xml');
+    await scrollToText(driver, 'Cozy', 6);
+    await tapRadioLoose(driver, 'Cozy', 25000);
+    await driver.pause(800);
+    await closeButton.click();
+    await step(driver, 'After Cozy tap', '03_after_tap_cozy.png');
+
+    // 4.5) Go back to classic
+    await userSettings.click();
+    await tapByText(driver, 'Conversation Layout', 25000);
+    await tapRadioLoose(driver, 'Classic', 25000);
+
+    // await closeButton.click();
+    await step(driver, 'After Classic tap', '04_after_tap_classic.png');
+    await driver.pause(800);
+
+    // 5) Conversation sorting (No data to really test this)
+    await userSettings.click();
+    await tapByText(driver, 'Conversation Sorting', 10000);
+    //will add more when we get data
+    await tapRadioLoose(driver, 'Recent Activity', 10000);
+    await tapRadioLoose(driver, 'Alphabetically', 10000);
+    await tapRadioLoose(driver, 'Self-Managed', 10000);
+    //close it
+    await tapByText(driver, 'Conversation Sorting', 10000);
 
     // 6) Help & Diagnostics
-    await tapByText(driver, 'Help & Diagnostics', 25000);
-    await driver.pause(800);
-    await tapByText(driver, 'Help & Diagnostics', 25000); //close
+    await tapByText(driver, 'Help & Diagnostics',1000);
+    await tapByText(driver, 'Help & Diagnostics',1000);
 
-    // 7) Message Features
-    await tapByText(driver, 'Message Features', 25000);
-    await driver.pause(800);
-    await tapByText(driver, 'Message Features', 25000); //close
+    // 7) Message Features (cleaned up with Option B)
+    const messageFeatureToggles = [
+      'Attachments',
+      'Reactions',
+      'Avatars',
+      'Rich Text',
+      'Link Previews',
+      'Filter Members UI',
+      'Show Room ID',
+      'Show Last Message Date',
+      'Enable Analytics Debug',
+    ];
 
-    // ✅ Instead of tapByText("Cozy"), use the SwiftUI/PBRadio row tap
-    //await tapPBRadioOption(driver, 'Cozy', 25000);
+    // Toggle ON
+    await toggleSectionItems(driver, 'Message Features', messageFeatureToggles, 10000);
 
-    //await driver.pause(800);
-    //await step(driver, 'Selected Cozy', '02_selected_cozy.png');
-
-    //console.log('✅ Corporate Directory + Conversation Layout done');
+    // Toggle OFF (same helper again — since toggles flip)
+    await toggleSectionItems(driver, 'Message Features', messageFeatureToggles, 10000);
 
   } catch (err) {
     console.error('❌ Test failed:', err);
@@ -184,13 +217,6 @@ async function run() {
       try { await screenshot(driver, 'ERROR.png'); } catch {}
     }
     throw err;
-
-  } finally {
-    // Keep open while you’re building the test
-    // if (driver) {
-    //   await driver.terminateApp('com.powerhrg.connect.v3.debug');
-    //   await driver.deleteSession();
-    // }
   }
 }
 
