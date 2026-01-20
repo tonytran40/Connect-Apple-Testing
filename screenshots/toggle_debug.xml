@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AppiumAUT>
+  <XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Connect v3" label="Connect v3" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="98668" bundleId="com.powerhrg.connect.v3.debug">
+    <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" name="MainAppView" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                  <XCUIElementTypeNavigationBar type="XCUIElementTypeNavigationBar" name="_TtGC7SwiftUI32NavigationStackHosting" enabled="true" visible="true" accessible="false" x="0" y="56" width="402" height="45" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="settingsButton" label="" enabled="true" visible="true" accessible="false" x="16" y="64" width="26" height="30" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="64" width="26" height="30" index="0" traits="">
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="settingsButton" label="" enabled="true" visible="true" accessible="true" x="16" y="64" width="26" height="30" index="0" traits="Button"/>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="122" y="56" width="158" height="45" index="1" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="122" y="56" width="158" height="45" index="0" traits="">
+                        <XCUIElementTypeImage type="XCUIElementTypeImage" name="connect_title" label="connect_title" enabled="true" visible="true" accessible="true" x="151" y="64" width="100" height="29" index="0" traits="Image"/>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="newConversationButton" label="" enabled="true" visible="true" accessible="false" x="358" y="64" width="28" height="30" index="2" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="358" y="64" width="28" height="30" index="0" traits="">
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="newConversationButton" label="" enabled="true" visible="true" accessible="true" x="358" y="64" width="28" height="30" index="0" traits="Button"/>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeNavigationBar>
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                          <XCUIElementTypeCollectionView type="XCUIElementTypeCollectionView" name="bookmarksScrollView" enabled="true" visible="true" accessible="false" x="0" y="104" width="402" height="770" index="0" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="-1435" width="402" height="3359" index="0" traits=""/>
+                            <XCUIElementTypeCell type="XCUIElementTypeCell" enabled="true" visible="true" accessible="false" x="0" y="104" width="402" height="36" index="1" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="104" width="402" height="36" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="104" width="402" height="36" index="0" traits=""/>
+                              </XCUIElementTypeOther>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="104" width="402" height="36" index="1" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="104" width="402" height="36" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="104" width="402" height="36" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Rooms section header" label=", Rooms" enabled="true" visible="true" accessible="true" x="20" y="104" width="346" height="36" index="0" traits="Button">
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="" name="" label="" enabled="true" visible="true" accessible="false" x="20" y="115" width="11" height="14" index="0" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Rooms" name="Rooms" label="Rooms" enabled="true" visible="true" accessible="false" x="38" y="115" width="48" height="14" index="1" traits="StaticText"/>
+                                    </XCUIElementTypeButton>
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="" label="" enabled="true" visible="true" accessible="true" x="365" y="106" width="29" height="31" index="1" traits="Button">
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="365" y="106" width="29" height="31" index="0" traits="Button">
+                                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="" name="" label="" enabled="true" visible="false" accessible="false" x="373" y="114" width="13" height="16" index="0" traits="StaticText"/>
+                                      </XCUIElementTypeButton>
+                                    </XCUIElementTypeButton>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeCell>
+                            <XCUIElementTypeCell type="XCUIElementTypeCell" enabled="true" visible="true" accessible="false" x="0" y="139" width="402" height="43" index="2" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="139" width="402" height="43" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="139" width="402" height="43" index="0" traits=""/>
+                              </XCUIElementTypeOther>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="139" width="402" height="43" index="1" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="139" width="402" height="43" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="139" width="402" height="43" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name=", E2E Test Room, 1/20/2026, 2:03 PM" label=", E2E Test Room, 1/20/2026, 2:03 PM" enabled="true" visible="true" accessible="true" x="0" y="139" width="402" height="43" index="0" traits="Button">
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="  " name="  " label="  " enabled="true" visible="true" accessible="false" x="31" y="153" width="8" height="15" index="0" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="" name="" label="" enabled="true" visible="true" accessible="false" x="29" y="152" width="13" height="16" index="1" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="E2E Test Room" name="E2E Test Room" label="E2E Test Room" enabled="true" visible="true" accessible="false" x="70" y="152" width="105" height="17" index="2" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="1/20/2026, 2:03 PM" name="1/20/2026, 2:03 PM" label="1/20/2026, 2:03 PM" enabled="true" visible="true" accessible="false" x="299" y="142" width="99" height="12" index="3" traits="StaticText"/>
+                                    </XCUIElementTypeButton>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeCell>
+                            <XCUIElementTypeCell type="XCUIElementTypeCell" enabled="true" visible="true" accessible="false" x="0" y="181" width="402" height="43" index="3" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="181" width="402" height="43" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="181" width="402" height="43" index="0" traits=""/>
+                              </XCUIElementTypeOther>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="181" width="402" height="43" index="1" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="181" width="402" height="43" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="181" width="402" height="43" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name=", E2E Test Room, 1/20/2026, 12:54 PM" label=", E2E Test Room, 1/20/2026, 12:54 PM" enabled="true" visible="true" accessible="true" x="0" y="181" width="402" height="43" index="0" traits="Button">
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="  " name="  " label="  " enabled="true" visible="true" accessible="false" x="31" y="195" width="8" height="15" index="0" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="" name="" label="" enabled="true" visible="true" accessible="false" x="28" y="194" width="14" height="16" index="1" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="E2E Test Room" name="E2E Test Room" label="E2E Test Room" enabled="true" visible="true" accessible="false" x="70" y="194" width="105" height="17" index="2" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="1/20/2026, 12:54 PM" name="1/20/2026, 12:54 PM" label="1/20/2026, 12:54 PM" enabled="true" visible="true" accessible="false" x="294" y="184" width="104" height="12" index="3" traits="StaticText"/>
+                                    </XCUIElementTypeButton>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeCell>
+                            <XCUIElementTypeCell type="XCUIElementTypeCell" enabled="true" visible="true" accessible="false" x="0" y="223" width="402" height="43" index="4" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="223" width="402" height="43" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="223" width="402" height="43" index="0" traits=""/>
+                              </XCUIElementTypeOther>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="223" width="402" height="43" index="1" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="223" width="402" height="43" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="223" width="402" height="43" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name=", E2E Test Room, 1/20/2026, 1:25 PM" label=", E2E Test Room, 1/20/2026, 1:25 PM" enabled="true" visible="true" accessible="true" x="0" y="223" width="402" height="43" index="0" traits="Button">
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="  " name="  " label="  " enabled="true" visible="true" accessible="false" x="31" y="237" width="8" height="15" index="0" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="" name="" label="" enabled="true" visible="true" accessible="false" x="29" y="236" width="13" height="16" index="1" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="E2E Test Room" name="E2E Test Room" label="E2E Test Room" enabled="true" visible="true" accessible="false" x="70" y="236" width="105" height="17" index="2" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="1/20/2026, 1:25 PM" name="1/20/2026, 1:25 PM" label="1/20/2026, 1:25 PM" enabled="true" visible="true" accessible="false" x="301" y="226" width="97" height="12" index="3" traits="StaticText"/>
+                                    </XCUIElementTypeButton>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeCell>
+                            <XCUIElementTypeCell type="XCUIElementTypeCell" enabled="true" visible="true" accessible="false" x="0" y="265" width="402" height="36" index="5" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="265" width="402" height="36" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="265" width="402" height="36" index="0" traits=""/>
+                              </XCUIElementTypeOther>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="265" width="402" height="36" index="1" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="265" width="402" height="36" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="265" width="402" height="36" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="People section header" label=", People" enabled="true" visible="true" accessible="true" x="20" y="265" width="346" height="36" index="0" traits="Button">
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="" name="" label="" enabled="true" visible="true" accessible="false" x="20" y="276" width="11" height="14" index="0" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="People" name="People" label="People" enabled="true" visible="true" accessible="false" x="38" y="276" width="50" height="14" index="1" traits="StaticText"/>
+                                    </XCUIElementTypeButton>
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="peoplePlusButton" label="" enabled="true" visible="true" accessible="true" x="373" y="275" width="13" height="16" index="1" traits="Button"/>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeCell>
+                            <XCUIElementTypeCell type="XCUIElementTypeCell" enabled="true" visible="true" accessible="false" x="0" y="300" width="402" height="43" index="6" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="300" width="402" height="43" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="300" width="402" height="43" index="0" traits=""/>
+                              </XCUIElementTypeOther>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="300" width="402" height="43" index="1" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="300" width="402" height="43" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="300" width="402" height="43" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="G(, greg.blake (You), 11/5/2025, 11:56 AM" label="G(, greg.blake (You), 11/5/2025, 11:56 AM" enabled="true" visible="true" accessible="true" x="0" y="300" width="402" height="43" index="0" traits="Button">
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="G(" name="G(" label="G(" enabled="true" visible="true" accessible="false" x="28" y="314" width="14" height="15" index="0" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="greg.blake (You)" name="greg.blake (You)" label="greg.blake (You)" enabled="true" visible="true" accessible="false" x="70" y="313" width="113" height="17" index="1" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="11/5/2025, 11:56 AM" name="11/5/2025, 11:56 AM" label="11/5/2025, 11:56 AM" enabled="true" visible="true" accessible="false" x="298" y="303" width="100" height="12" index="2" traits="StaticText"/>
+                                    </XCUIElementTypeButton>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeCell>
+                            <XCUIElementTypeCell type="XCUIElementTypeCell" enabled="true" visible="true" accessible="false" x="0" y="342" width="402" height="43" index="7" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="342" width="402" height="43" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="342" width="402" height="43" index="0" traits=""/>
+                              </XCUIElementTypeOther>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="342" width="402" height="43" index="1" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="342" width="402" height="43" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="342" width="402" height="43" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="G(, greg.blake (You), 1/13/2026, 2:33 PM" label="G(, greg.blake (You), 1/13/2026, 2:33 PM" enabled="true" visible="true" accessible="true" x="0" y="342" width="402" height="43" index="0" traits="Button">
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="G(" name="G(" label="G(" enabled="true" visible="true" accessible="false" x="28" y="356" width="14" height="15" index="0" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="greg.blake (You)" name="greg.blake (You)" label="greg.blake (You)" enabled="true" visible="true" accessible="false" x="70" y="355" width="113" height="17" index="1" traits="StaticText"/>
+                                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="1/13/2026, 2:33 PM" name="1/13/2026, 2:33 PM" label="1/13/2026, 2:33 PM" enabled="true" visible="true" accessible="false" x="302" y="345" width="96" height="12" index="2" traits="StaticText"/>
+                                    </XCUIElementTypeButton>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeCell>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 1 page" label="Vertical scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="369" y="132" width="30" height="680" index="8" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="563" width="3" height="274" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 1 page" label="Vertical scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="369" y="132" width="30" height="680" index="9" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="563" width="3" height="274" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeCollectionView>
+                        </XCUIElementTypeOther>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeOther>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeWindow>
+    <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits=""/>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeWindow>
+  </XCUIElementTypeApplication>
+</AppiumAUT>

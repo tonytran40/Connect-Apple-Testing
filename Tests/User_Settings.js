@@ -107,9 +107,8 @@ async function tapRadioLoose(driver, title, timeout = 20000) {
 }
 
 /**
- *  Option B helper:
  * Open a collapsible settings section, toggle a list of items, then close the section.
- * (Uses your existing tapByText + tapRadioLoose. No logic change to how tapping works.)
+ * (Uses your existing tapByText + tapRadioLoose.
  */
 async function toggleSectionItems(driver, sectionTitle, itemLabels, timeout = 10000) {
   // open section
@@ -149,32 +148,32 @@ async function run() {
     await step(driver, 'Opened User Settings', '01_settings.png');
 
     // 3) Corporate Directory
-    await tapByText(driver, 'Corporate Directory', 25000);
+    await tapByText(driver, 'Corporate Directory', 10000);
     await driver.pause(1200);
-    await tapByText(driver, 'Departments', 25000);
-    await tapByText(driver, 'Territories', 25000);
+    await tapByText(driver, 'Departments', 10000);
+    await tapByText(driver, 'Territories', 10000);
     await driver.pause(1200);
     await backButton.click();
 
     // 4) Conversation Layout
-    await tapByText(driver, 'Conversation Layout', 25000);
+    await tapByText(driver, 'Conversation Layout', 10000);
     await driver.pause(800);
     await step(driver, 'Conversation Layout View', '02_Conversation Layout View.png');
 
     // Diagnostics + action
     await dumpSource(driver, '02_layout_expanded_source.xml');
     await scrollToText(driver, 'Cozy', 6);
-    await tapRadioLoose(driver, 'Cozy', 25000);
+    await tapRadioLoose(driver, 'Cozy', 10000);
     await driver.pause(800);
     await closeButton.click();
     await step(driver, 'After Cozy tap', '03_after_tap_cozy.png');
 
     // 4.5) Go back to classic
     await userSettings.click();
-    await tapByText(driver, 'Conversation Layout', 25000);
-    await tapRadioLoose(driver, 'Classic', 25000);
+    await tapByText(driver, 'Conversation Layout', 10000);
+    await tapRadioLoose(driver, 'Classic', 10000);
 
-    // await closeButton.click();
+    await closeButton.click();
     await step(driver, 'After Classic tap', '04_after_tap_classic.png');
     await driver.pause(800);
 
@@ -189,8 +188,8 @@ async function run() {
     await tapByText(driver, 'Conversation Sorting', 10000);
 
     // 6) Help & Diagnostics
-    await tapByText(driver, 'Help & Diagnostics',1000);
-    await tapByText(driver, 'Help & Diagnostics',1000);
+    await tapByText(driver, 'Help & Diagnostics',10000);
+    await tapByText(driver, 'Help & Diagnostics',10000);
 
     // 7) Message Features (cleaned up with Option B)
     const messageFeatureToggles = [
@@ -207,6 +206,7 @@ async function run() {
 
     // Toggle ON
     await toggleSectionItems(driver, 'Message Features', messageFeatureToggles, 10000);
+    await step(driver,'After toggling all off', '05_off_message_features');
 
     // Toggle OFF (same helper again — since toggles flip)
     await toggleSectionItems(driver, 'Message Features', messageFeatureToggles, 10000);
