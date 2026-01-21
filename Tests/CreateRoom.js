@@ -9,6 +9,45 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 /*-----------------Helpers----------------------------------------*/
 const ARTIFACTS_DIR = path.resolve(__dirname, '../screenshots');
 
+
+async function typeComposerMessage(driver, message, timeout = 20000) {
+  const byId = await driver.$('~messageComposerTextView');
+  if (await byId.isExisting().catch(() => false)) {
+    await byId.waitForDisplayed({ timeout });
+    await byId.click();
+    await byId.setValue(message);
+    console.log('✅ Typed message (by accessibility id)');
+    return;
+  }
+
+  // 2️⃣ Tap placeholder text
+  const placeholder = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
+     (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
+      label CONTAINS "Message" OR name CONTAINS "Message")`
+  );
+
+  if (await placeholder.isExisting().catch(() => false)) {
+    await placeholder.waitForDisplayed({ timeout });
+    await placeholder.click();
+    await driver.pause(300);
+  }
+
+  // 3️⃣ Type into first visible TextView
+  const textViews = await driver.$$('//XCUIElementTypeTextView');
+  for (const tv of textViews) {
+    if (await tv.isDisplayed().catch(() => false)) {
+      await tv.click();
+      await driver.pause(150);
+      await tv.setValue(message);
+      console.log('✅ Typed message in composer');
+      return;
+    }
+  }
+
+  throw new Error('❌ Could not find message composer TextView');
+}
+
 function ensureArtifactsDir() {
   if (!fs.existsSync(ARTIFACTS_DIR)) fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
   return ARTIFACTS_DIR;
@@ -26,14 +65,14 @@ async function dumpSource(driver, name) {
   fs.writeFileSync(file, xml, 'utf8');
   console.log(`🧾 Page source saved: ${file}`);
 }
+  
 
-
-function generateRoomName(prefix = 'Connect Testing Squad') {
-  const ts = new Date()
-    .toISOString()
-    .replace(/[-:.TZ]/g, '')
-    .slice(0, 14); // YYYYMMDDHHMMSS
-  return `${prefix} ${ts}`;
+/**
+ * ✅ Generate a unique room name each run (Option 1)
+ */
+function generateRoomName(prefix = 'Room') {
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `${prefix}-${rand}`;
 }
 
 async function tapByText(driver, text, timeout = 20000) {
@@ -96,10 +135,12 @@ async function run() {
 
   try {
     driver = await createDriver();
+    const backButton = await driver.$('~backButton');
 
     await ensureLoggedIn(driver);
     await driver.pause(1200);
 
+    /*------------------Creating Public room ------------------*/
     // Open Rooms menu
     await openRoomsPlusMenu(driver);
 
@@ -115,13 +156,13 @@ async function run() {
     await roomName.click();
 
     const newRoomName = generateRoomName();
-    console.log(`🆕 Room name for this run: ${newRoomName}`);
+    console.log(`🆕 Room name for this run is Public: ${newRoomName}`);
 
-    await roomName.setValue(newRoomName);
+    await roomName.setValue("Public " + newRoomName);
     console.log('✅ Entered room name');
 
     // Toggle Private room
-    await togglePrivateRoom(driver);
+    //await togglePrivateRoom(driver);
 
     // Create + skip
     await tapByText(driver, 'Create', 10000);
@@ -130,7 +171,41 @@ async function run() {
     await tapByText(driver, 'Skip for now', 10000);
     console.log('✅ Tapped Skip for now');
 
+    await typeComposerMessage(driver, 'Hello, this is a test message!');
+    const sendBtn = await driver.$('~sendMessageButton');
+    await sendBtn.waitForEnabled({ timeout: 10000 });
+    await sendBtn.click();
+    console.log('📨 Sent message');
+
     await driver.pause(1500);
+    await backButton.click();
+    console.log('✅ Returned to Rooms list');
+
+    /*------------------ Private room created ------------------*/
+
+        // Tap "Create a Room"
+    await openRoomsPlusMenu(driver);
+    await createRoomBtn.waitForDisplayed({ timeout: 1000 });
+    await createRoomBtn.click();
+
+    await roomName.waitForDisplayed({ timeout: 1000 });
+    await roomName.click();
+
+    await roomName.setValue("Private " + newRoomName);
+
+    console.log(`🆕 Room name for this run is Private : ${ newRoomName}`);
+
+    await togglePrivateRoom(driver);
+    await tapByText(driver, 'Create');
+    await tapByText(driver, 'Skip for now');
+    await typeComposerMessage(driver, 'Hello, this is a test message!');;
+    await sendBtn.waitForEnabled({ timeout: 10000 });
+    await sendBtn.click();
+    console.log('📨 Sent message');
+
+    await backButton.click();
+
+
 
   } catch (err) {
     console.error('❌ Test failed:', err);
