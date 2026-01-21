@@ -27,6 +27,15 @@ async function dumpSource(driver, name) {
   console.log(`🧾 Page source saved: ${file}`);
 }
 
+
+function generateRoomName(prefix = 'Connect Testing Squad') {
+  const ts = new Date()
+    .toISOString()
+    .replace(/[-:.TZ]/g, '')
+    .slice(0, 14); // YYYYMMDDHHMMSS
+  return `${prefix} ${ts}`;
+}
+
 async function tapByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
   const el = await driver.$(
@@ -100,11 +109,15 @@ async function run() {
     await createRoomBtn.click();
     console.log('✅ Opened Create a Room screen');
 
-    // Enter room name
+    // Enter room name (unique each run)
     const roomName = await driver.$('~roomNameText');
     await roomName.waitForDisplayed({ timeout: 20000 });
     await roomName.click();
-    await roomName.setValue('Connect Testing Squad');
+
+    const newRoomName = generateRoomName();
+    console.log(`🆕 Room name for this run: ${newRoomName}`);
+
+    await roomName.setValue(newRoomName);
     console.log('✅ Entered room name');
 
     // Toggle Private room
