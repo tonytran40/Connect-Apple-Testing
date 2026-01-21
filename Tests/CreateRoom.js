@@ -6,11 +6,12 @@ const fs = require('fs');
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 
-/*-----------------Helpers----------------------------------------*/
+/*-----------------Config----------------------------------------*/
 const ARTIFACTS_DIR = path.resolve(__dirname, '../screenshots');
+const DEFAULT_TIMEOUT = 20000;
 
-
-async function typeComposerMessage(driver, message, timeout = 20000) {
+/*-----------------Helpers----------------------------------------*/
+async function typeComposerMessage(driver, message, timeout = DEFAULT_TIMEOUT) {
   const byId = await driver.$('~messageComposerTextView');
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
@@ -65,22 +66,18 @@ async function dumpSource(driver, name) {
   fs.writeFileSync(file, xml, 'utf8');
   console.log(`🧾 Page source saved: ${file}`);
 }
-  
 
-/**
- * ✅ Generate a unique room name each run (Option 1)
- */
 function generateRoomName(prefix = 'Room') {
   const rand = Math.random().toString(36).slice(2, 10);
   return `${prefix}-${rand}`;
 }
 
-function generateRandomMessage( prefix = 'Message test ') {
-    const rand = Math.random().toString(36).slice(2, 10);
-    return `${prefix} - ${rand}`;
+function generateRandomMessage(prefix = 'Message test') {
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `${prefix} - ${rand}`;
 }
 
-async function tapByText(driver, text, timeout = 20000) {
+async function tapByText(driver, text, timeout = DEFAULT_TIMEOUT) {
   const safe = text.replace(/"/g, '\\"');
   const el = await driver.$(
     `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "${safe}" OR name == "${safe}")`
@@ -92,7 +89,7 @@ async function tapByText(driver, text, timeout = 20000) {
 /**
  * Rooms "+" button is the other button in the same header container
  */
-async function openRoomsPlusMenu(driver, timeout = 20000) {
+async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
   const roomsHeader = await driver.$('~Rooms section header');
   await roomsHeader.waitForDisplayed({ timeout });
 
@@ -110,7 +107,7 @@ async function openRoomsPlusMenu(driver, timeout = 20000) {
  * 1) labeled switch if present
  * 2) otherwise first visible switch
  */
-async function togglePrivateRoom(driver, timeout = 20000) {
+async function togglePrivateRoom(driver, timeout = DEFAULT_TIMEOUT) {
   const labeledSwitch = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeSwitch" AND (label == "Create private room" OR name == "Create private room")`
   );
@@ -134,83 +131,115 @@ async function togglePrivateRoom(driver, timeout = 20000) {
   throw new Error('❌ Could not locate Private room switch');
 }
 
+/**
+ * Wait until we're safely back on the Rooms list (reduces flake/slow run #2)
+ */
+async function waitForRoomsListReady(driver, timeout = DEFAULT_TIMEOUT) {
+  const roomsHeader = await driver.$('~Rooms section header');
+  await roomsHeader.waitForDisplayed({ timeout });
+  await driver.pause(400); // let SwiftUI settle
+}
+
 /*--------------------Tests------------------------------------------*/
 async function run() {
   let driver;
 
   try {
     driver = await createDriver();
-    const backButton = await driver.$('~backButton');
 
     await ensureLoggedIn(driver);
     await driver.pause(1200);
 
     /*------------------Creating Public room ------------------*/
-    // Open Rooms menu
     await openRoomsPlusMenu(driver);
 
-    // Tap "Create a Room"
-    const createRoomBtn = await driver.$('~createRoomButton');
-    await createRoomBtn.waitForDisplayed({ timeout: 20000 });
-    await createRoomBtn.click();
+    // Re-query each time (avoid stale element refs)
+    {
+      const createRoomBtn = await driver.$('~createRoomButton');
+      await createRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+      await createRoomBtn.click();
+    }
     console.log('✅ Opened Create a Room screen');
 
-    // Enter room name (unique each run)
-    const roomName = await driver.$('~roomNameText');
-    await roomName.waitForDisplayed({ timeout: 20000 });
-    await roomName.click();
+    {
+      const roomName = await driver.$('~roomNameText');
+      await roomName.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+      await roomName.click();
 
-    const newRoomName = generateRoomName();
-    console.log(`🆕 Room name for this run is Public: ${newRoomName}`);
+      const publicRoomName = `Public ${generateRoomName('Room')}`;
+      console.log(`🆕 Room name for this run is Public: ${publicRoomName}`);
 
-    await roomName.setValue("Public " + newRoomName);
-    console.log('✅ Entered room name');
+      await roomName.setValue(publicRoomName);
+      console.log('✅ Entered room name');
+    }
 
-    // Toggle Private room
-    //await togglePrivateRoom(driver);
-
-    // Create + skip
-    await tapByText(driver, 'Create', 10000);
+    await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
     console.log('✅ Tapped Create');
 
-    await tapByText(driver, 'Skip for now', 10000);
+    await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
     console.log('✅ Tapped Skip for now');
 
     await typeComposerMessage(driver, generateRandomMessage());
-    const sendBtn = await driver.$('~sendMessageButton');
-    await sendBtn.waitForEnabled({ timeout: 10000 });
-    await sendBtn.click();
-    console.log('📨 Sent message');
+    {
+      const sendBtn = await driver.$('~sendMessageButton');
+      await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+      await sendBtn.click();
+      console.log('📨 Sent message');
+    }
 
-    await driver.pause(1500);
-    await backButton.click();
+    await driver.pause(800);
+    {
+      const backButton = await driver.$('~backButton');
+      await backButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+      await backButton.click();
+    }
     console.log('✅ Returned to Rooms list');
 
-    /*------------------ Private room created ------------------*/
+    // ✅ Important: wait for list to be ready before run #2
+    await waitForRoomsListReady(driver);
 
-        // Tap "Create a Room"
+    /*------------------Creating Private room ------------------*/
     await openRoomsPlusMenu(driver);
-    await createRoomBtn.waitForDisplayed({ timeout: 1000 });
-    await createRoomBtn.click();
 
-    await roomName.waitForDisplayed({ timeout: 1000 });
-    await roomName.click();
+    {
+      const createRoomBtn = await driver.$('~createRoomButton');
+      await createRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+      await createRoomBtn.click();
+    }
+    console.log('✅ Opened Create a Room screen (Private)');
 
-    await roomName.setValue("Private " + newRoomName);
+    {
+      const roomName = await driver.$('~roomNameText');
+      await roomName.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+      await roomName.click();
 
-    console.log(`🆕 Room name for this run is Private : ${ newRoomName}`);
+      // ✅ Generate a NEW name for private room too
+      const privateRoomName = `Private ${generateRoomName('Room')}`;
+      console.log(`🆕 Room name for this run is Private: ${privateRoomName}`);
 
-    await togglePrivateRoom(driver);
-    await tapByText(driver, 'Create');
-    await tapByText(driver, 'Skip for now');
+      await roomName.setValue(privateRoomName);
+      console.log('✅ Entered room name (Private)');
+    }
+
+    await togglePrivateRoom(driver, DEFAULT_TIMEOUT);
+
+    await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
+    await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
+
     await typeComposerMessage(driver, generateRandomMessage());
-    await sendBtn.waitForEnabled({ timeout: 10000 });
-    await sendBtn.click();
-    console.log('📨 Sent message');
+    {
+      const sendBtn = await driver.$('~sendMessageButton');
+      await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+      await sendBtn.click();
+      console.log('📨 Sent message');
+    }
 
-    await backButton.click();
-
-
+    {
+      const backButton = await driver.$('~backButton');
+      await backButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+      await backButton.click();
+    }
+    console.log('✅ Returned to Rooms list (after Private)');
 
   } catch (err) {
     console.error('❌ Test failed:', err);
