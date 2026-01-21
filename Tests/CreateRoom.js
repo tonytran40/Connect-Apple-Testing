@@ -75,6 +75,11 @@ function generateRoomName(prefix = 'Room') {
   return `${prefix}-${rand}`;
 }
 
+function generateRandomMessage( prefix = 'Message test ') {
+    const rand = Math.random().toString(36).slice(2, 10);
+    return `${prefix} - ${rand}`;
+}
+
 async function tapByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
   const el = await driver.$(
@@ -171,7 +176,7 @@ async function run() {
     await tapByText(driver, 'Skip for now', 10000);
     console.log('✅ Tapped Skip for now');
 
-    await typeComposerMessage(driver, 'Hello, this is a test message!');
+    await typeComposerMessage(driver, generateRandomMessage());
     const sendBtn = await driver.$('~sendMessageButton');
     await sendBtn.waitForEnabled({ timeout: 10000 });
     await sendBtn.click();
@@ -198,7 +203,7 @@ async function run() {
     await togglePrivateRoom(driver);
     await tapByText(driver, 'Create');
     await tapByText(driver, 'Skip for now');
-    await typeComposerMessage(driver, 'Hello, this is a test message!');;
+    await typeComposerMessage(driver, generateRandomMessage());
     await sendBtn.waitForEnabled({ timeout: 10000 });
     await sendBtn.click();
     console.log('📨 Sent message');
