@@ -15,6 +15,37 @@ function ensureArtifactsDir() {
   return ARTIFACTS_DIR;
 }
 
+async function tapByText(driver, text, timeout = 20000) {
+  const safe = text.replace(/"/g, '\\"');
+
+  const textEl = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
+  );
+
+  if (await textEl.isExisting().catch(() => false)) {
+    await textEl.waitForDisplayed({ timeout });
+    await textEl.click();
+    return;
+  }
+
+  const parentButton = await driver.$(
+    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeButton[1]`
+  );
+
+  if (await parentButton.isExisting().catch(() => false)) {
+    await parentButton.waitForDisplayed({ timeout });
+    await parentButton.click();
+    return;
+  }
+
+  const parentCell = await driver.$(
+    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeCell[1]`
+  );
+
+  await parentCell.waitForDisplayed({ timeout });
+  await parentCell.click();
+}
+
 async function screenshot(driver, name) {
   const file = path.join(ensureArtifactsDir(), name);
   await driver.saveScreenshot(file);
@@ -29,7 +60,6 @@ function generateRandomMessage(prefix = 'Message test') {
 async function tapSearchResultByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
 
-  // 0) Button row (rooms often render as a tappable button)
   const buttonEl = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
   );
@@ -39,7 +69,6 @@ async function tapSearchResultByText(driver, text, timeout = 20000) {
     return;
   }
 
-  // 1) Static text
   const textEl = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
   );
@@ -49,7 +78,6 @@ async function tapSearchResultByText(driver, text, timeout = 20000) {
     return;
   }
 
-  // 2) Cell fallback
   const cellEl = await driver.$(
     `//XCUIElementTypeStaticText[contains(@name,"${text}") or contains(@label,"${text}")]/ancestor::XCUIElementTypeCell[1]`
   );
@@ -98,6 +126,42 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
   throw new Error('❌ Could not find message composer TextView');
 }
 
+async function findMessageBubbleByText(driver, messageText, timeout = 20000) {
+  const safe = messageText.replace(/"/g, '\\"');
+
+  const msgBtn = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
+  );
+
+  await msgBtn.waitForExist({ timeout });
+  await msgBtn.waitForDisplayed({ timeout });
+  return msgBtn;
+}
+
+async function longPressElement(driver, el, durationMs = 900) {
+  const elementId = el.elementId || el.ELEMENT;
+  if (!elementId) throw new Error('Could not resolve elementId for long press');
+
+  await driver.execute('mobile: touchAndHold', {
+    elementId,
+    duration: durationMs / 1000,
+  });
+}
+
+async function longPressByText(driver, text, timeout = 20000, durationMs = 900) {
+  const bubble = await findMessageBubbleByText(driver, text, timeout);
+  await longPressElement(driver, bubble, durationMs);
+}
+
+async function tapPinFromContextMenu(driver, timeout = 20000) {
+  const pinBtn = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "Pin" OR label CONTAINS "Pin")`
+  );
+  await pinBtn.waitForDisplayed({ timeout });
+  await pinBtn.click();
+}
+
+/*--------------------Test------------------------------------------*/
 async function run() {
   let driver;
   const roomName = process.env.PINNED_MESSAGES_ROOM_NAME || 'Message Room';
@@ -113,24 +177,45 @@ async function run() {
     await peoplePlus.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
     await peoplePlus.click();
 
-    //Search room
     const searchField = await driver.$('~searchUsersTextField');
     await searchField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
     await searchField.click();
     await searchField.setValue(roomName);
 
-    // give SwiftUI a beat to render results
     await driver.pause(1200);
 
-    //Select room
     await tapSearchResultByText(driver, roomName, DEFAULT_TIMEOUT);
 
-    //Type message in composer
-    await typeComposerMessage(driver, generateRandomMessage());
+    const sentText = generateRandomMessage();
+    await typeComposerMessage(driver, sentText);
 
     const sendBtn = await driver.$('~sendMessageButton');
     await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
     await sendBtn.click();
+    console.log('📨 Sent message');
+
+    await driver.pause(1200);
+
+    await longPressByText(driver, sentText, DEFAULT_TIMEOUT, 900);
+    console.log('✅ Long-pressed sent message');
+
+    await driver.pause(600);
+
+    await tapPinFromContextMenu(driver, DEFAULT_TIMEOUT);
+    console.log('✅ Tapped Pin');
+
+    const xml = await driver.getPageSource();
+    fs.writeFileSync(path.join(ensureArtifactsDir(), 'pin_debug.xml'), xml, 'utf8');
+
+    const pinButton = await driver.$('~pinnedMessagesButton');
+    await pinButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+    await driver.pause(DEFAULT_TIMEOUT);
+    await pinButton.click();
+
+    //close pin message
+    await pinButton.click();
+    await driver.pause(DEFAULT_TIMEOUT);
+    console.log('✅ Opened Pinned Messages');
 
   } catch (err) {
     console.error('❌ Test failed:', err);
