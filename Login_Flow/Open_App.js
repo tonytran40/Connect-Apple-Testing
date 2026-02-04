@@ -6,9 +6,12 @@ async function createDriver(){
         'appium:automationName': 'XCUITest',
         'appium:deviceName': 'iPhone 17 Pro',
         'appium:bundleId': 'com.powerhrg.connect.v3.debug',
+        'appium:waitForQuiescence': false,
+        'appium:waitForIdleTimeout': 0,
+        'appium:shouldUseCompactResponses': true,
         //'appium:app': '/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app',
         'appium:noReset': true,
-        'appium:showXcodeLog': true,
+        'appium:showXcodeLog': false,
         'appium:newCommandTimeout': 120
 
     };
