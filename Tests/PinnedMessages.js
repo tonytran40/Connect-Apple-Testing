@@ -7,7 +7,6 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const {saveScreenshot} = require('../utils/screenshots');
 
 const DEFAULT_TIMEOUT = 20000;
-const screenshot_folder = 'PinnedMessages';
 
 function ensureArtifactsDir() {
   if (!fs.existsSync(ARTIFACTS_DIR)) fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
@@ -45,11 +44,11 @@ async function tapByText(driver, text, timeout = 20000) {
   await parentCell.click();
 }
 
-async function screenshot(driver, name) {
-  const file = path.join(ensureArtifactsDir(), name);
-  await driver.saveScreenshot(file);
-  console.log(`📸 Screenshot: ${file}`);
-}
+// async function screenshot(driver, name) {
+//   const file = path.join(ensureArtifactsDir(), name);
+//   await driver.saveScreenshot(file);
+//   console.log(`📸 Screenshot: ${file}`);
+// }
 
 function generateRandomMessage(prefix = 'Message test') {
   const rand = Math.random().toString(36).slice(2, 10);

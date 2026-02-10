@@ -1,25 +1,9 @@
 require('dotenv').config();
 
-const path = require('path');
-const fs = require('fs');
-
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
-
-/* -------------------- helpers -------------------- */
-
-function ensureScreenshotsDir() {
-  const dir = path.resolve(__dirname, '../screenshots');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
-
-async function screenshot(driver, name) {
-  const dir = ensureScreenshotsDir();
-  const file = path.join(dir, name);
-  await driver.saveScreenshot(file);
-  console.log(`📸 Screenshot: ${file}`);
-}
+const { saveScreenshot } = require('../utils/screenshots');
+const TEST_NAME = 'newMessage';
 
 /**
  * Taps a search result by visible text.
@@ -115,7 +99,7 @@ async function run() {
     // Login if needed
     await ensureLoggedIn(driver);
     await driver.pause(1200);
-    await screenshot(driver, '01_logged_in.png');
+    await saveScreenshot(driver, TEST_NAME, '01_logged_in.png');
 
     //Tap People "+"
     const peoplePlus = await driver.$('~peoplePlusButton');
@@ -124,7 +108,7 @@ async function run() {
     console.log('✅ Opened Start Conversation');
 
     await driver.pause(1200);
-    await screenshot(driver, '02_start_conversation.png');
+    await saveScreenshot(driver, TEST_NAME, '02_start_conversation.png');
 
     //Search recipient
     const searchField = await driver.$('~searchUsersTextField');
@@ -134,19 +118,19 @@ async function run() {
     console.log(`✅ Typed recipient: ${recipient}`);
 
     await driver.pause(1500);
-    await screenshot(driver, '03_typed_recipient.png');
+    await saveScreenshot(driver, TEST_NAME, '03_typed_recipient.png');
 
     //Select recipient
     await tapSearchResultByText(driver, recipient);
     console.log('✅ Selected recipient');
 
     await driver.pause(1500);
-    await screenshot(driver, '04_selected_recipient.png');
+    await saveScreenshot(driver, TEST_NAME, '04_selected_recipient.png');
 
     // Type message in composer
     await typeComposerMessage(driver, message);
     await driver.pause(800);
-    await screenshot(driver, '05_message_typed.png');
+    await saveScreenshot(driver, TEST_NAME, '05_message_typed.png');
 
     console.log('🎉 New message flow completed successfully');
 
@@ -159,7 +143,7 @@ async function run() {
     console.error('❌ Test failed:', err);
     if (driver) {
       try {
-        await screenshot(driver, 'ERROR.png');
+        await saveScreenshot(driver, TEST_NAME, 'ERROR.png');
       } catch {}
     }
     throw err;
