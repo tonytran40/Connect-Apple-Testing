@@ -4,9 +4,10 @@ const path = require('path');
 const fs = require('fs');
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
+const {saveScreenshot} = require('../utils/screenshots');
 
-const ARTIFACTS_DIR = path.resolve(__dirname, '../screenshots');
 const DEFAULT_TIMEOUT = 20000;
+const screenshot_folder = 'PinnedMessages';
 
 function ensureArtifactsDir() {
   if (!fs.existsSync(ARTIFACTS_DIR)) fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
@@ -183,6 +184,7 @@ async function findPinnedRowByText(driver, text, timeout = 20000) {
 /*--------------------Test------------------------------------------*/
 async function run() {
   let driver;
+  const screenshot_folder = 'PinnedMessages';
   const roomName = process.env.PINNED_MESSAGES_ROOM_NAME || 'Message Room';
 
   console.log('🚀 Starting PinnedMessages test...');
@@ -228,6 +230,7 @@ async function run() {
     await driver.pause(800);
     await pinButton.click();
     await driver.pause(800);
+    await saveScreenshot(driver, screenshot_folder,'pinned_message.png');
 
     const pinnedRow = await findPinnedRowByText(driver, sentText, DEFAULT_TIMEOUT);
     await longPressElement(driver, pinnedRow, 900);
@@ -237,10 +240,12 @@ async function run() {
 
     await tapContextMenuItem(driver, 'Unpin', DEFAULT_TIMEOUT);
     console.log('✅ Tapped Unpin');
+  
 
     await driver.pause(800);
 
     await pinButton.click();
+    await saveScreenshot(driver, screenshot_folder, 'unpinned_message.png');
     await driver.pause(800);
     console.log('✅ Closed Pinned Messages');
 

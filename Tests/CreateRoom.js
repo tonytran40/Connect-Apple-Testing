@@ -5,10 +5,11 @@ const fs = require('fs');
 
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
+const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
 
 /*-----------------Config----------------------------------------*/
-const ARTIFACTS_DIR = path.resolve(__dirname, '../screenshots');
 const DEFAULT_TIMEOUT = 20000;
+const TEST_NAME = 'CreateRoom';
 
 /*-----------------Helpers----------------------------------------*/
 async function typeComposerMessage(driver, message, timeout = DEFAULT_TIMEOUT) {
@@ -49,19 +50,12 @@ async function typeComposerMessage(driver, message, timeout = DEFAULT_TIMEOUT) {
   throw new Error('❌ Could not find message composer TextView');
 }
 
-function ensureArtifactsDir() {
-  if (!fs.existsSync(ARTIFACTS_DIR)) fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
-  return ARTIFACTS_DIR;
-}
-
-async function screenshot(driver, name) {
-  const file = path.join(ensureArtifactsDir(), name);
-  await driver.saveScreenshot(file);
-  console.log(`📸 Screenshot: ${file}`);
+function artifactsPath(fileName) {
+  return path.join(ensureTestArtifactsDir(TEST_NAME), fileName);
 }
 
 async function dumpSource(driver, name) {
-  const file = path.join(ensureArtifactsDir(), name);
+  const file = artifactsPath(name);
   const xml = await driver.getPageSource();
   fs.writeFileSync(file, xml, 'utf8');
   console.log(`🧾 Page source saved: ${file}`);
@@ -160,6 +154,7 @@ async function run() {
       await createRoomBtn.click();
     }
     console.log('✅ Opened Create a Room screen');
+    await saveScreenshot(driver, TEST_NAME, 'public_create_room.png');
 
     {
       const roomName = await driver.$('~roomNameText');
@@ -172,6 +167,7 @@ async function run() {
       await roomName.setValue(publicRoomName);
       console.log('✅ Entered room name');
     }
+    await saveScreenshot(driver, TEST_NAME, 'public_room_name.png');
 
     await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
     console.log('✅ Tapped Create');
@@ -186,6 +182,7 @@ async function run() {
       await sendBtn.click();
       console.log('📨 Sent message');
     }
+    await saveScreenshot(driver, TEST_NAME, 'public_room_sent.png');
 
     await driver.pause(800);
     {
@@ -194,6 +191,7 @@ async function run() {
       await backButton.click();
     }
     console.log('✅ Returned to Rooms list');
+    await saveScreenshot(driver, TEST_NAME, 'rooms_list_after_public.png');
 
     // ✅ Important: wait for list to be ready before run #2
     await waitForRoomsListReady(driver);
@@ -207,6 +205,7 @@ async function run() {
       await createRoomBtn.click();
     }
     console.log('✅ Opened Create a Room screen (Private)');
+    await saveScreenshot(driver, TEST_NAME, 'private_create_room.png');
 
     {
       const roomName = await driver.$('~roomNameText');
@@ -222,6 +221,7 @@ async function run() {
     }
 
     await togglePrivateRoom(driver, DEFAULT_TIMEOUT);
+    await saveScreenshot(driver, TEST_NAME, 'private_room_toggle.png');
 
     await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
     await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
@@ -233,6 +233,7 @@ async function run() {
       await sendBtn.click();
       console.log('📨 Sent message');
     }
+    await saveScreenshot(driver, TEST_NAME, 'private_room_sent.png');
 
     {
       const backButton = await driver.$('~backButton');
@@ -246,7 +247,7 @@ async function run() {
 
     if (driver) {
       try {
-        await screenshot(driver, 'ERROR.png');
+        await saveScreenshot(driver, TEST_NAME, 'ERROR.png');
         await dumpSource(driver, 'ERROR_source.xml');
       } catch {}
     }
