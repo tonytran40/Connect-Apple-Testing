@@ -3,8 +3,8 @@ require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 
-const { createDriver } = require('../Login_Flow/Open_App');
-const { ensureLoggedIn } = require('../Login_Flow/Login_User');
+const { createDriver } = require('./Open_App');
+const { ensureLoggedIn } = require('./Login_User');
 
 /* ==================== CONFIG ==================== */
 
@@ -115,16 +115,6 @@ async function run() {
     await ensureLoggedIn(driver);
     await driver.pause(1200);
     await step(driver, 'Logged in / app ready', '00_ready.png');
-
-    /* ==================== YOUR TEST STARTS HERE ==================== */
-
-    // Example:
-    // const settingsBtn = await driver.$('~settingsButton');
-    // await settingsBtn.click();
-    // await tapByText(driver, 'Conversation Layout');
-    // await tapLoose(driver, 'Cozy');
-
-    /* ==================== YOUR TEST ENDS HERE ==================== */
 
     console.log('🎉 Test completed successfully');
 
