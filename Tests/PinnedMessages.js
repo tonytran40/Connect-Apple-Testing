@@ -1,16 +1,24 @@
 require('dotenv').config();
 
-const path = require('path');
-const fs = require('fs');
-const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
-const {saveScreenshot} = require('../utils/screenshots');
+const { saveScreenshot } = require('../utils/screenshots');
+const { runWithOptionalDriver } = require('../utils/testSession');
 
 const DEFAULT_TIMEOUT = 20000;
+const TEST_NAME = 'PinnedMessages';
 
-function ensureArtifactsDir() {
-  if (!fs.existsSync(ARTIFACTS_DIR)) fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
-  return ARTIFACTS_DIR;
+async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
+  const peoplePlus = await driver.$('~peoplePlusButton');
+  if (await peoplePlus.isDisplayed().catch(() => false)) {
+    await peoplePlus.click();
+    console.log('Opened Start Conversation via peoplePlusButton');
+    return;
+  }
+
+  const newConversationButton = await driver.$('~newConversationButton');
+  await newConversationButton.waitForDisplayed({ timeout });
+  await newConversationButton.click();
+  console.log('Opened Start Conversation via newConversationButton');
 }
 
 async function tapByText(driver, text, timeout = 20000) {
@@ -43,12 +51,6 @@ async function tapByText(driver, text, timeout = 20000) {
   await parentCell.waitForDisplayed({ timeout });
   await parentCell.click();
 }
-
-// async function screenshot(driver, name) {
-//   const file = path.join(ensureArtifactsDir(), name);
-//   await driver.saveScreenshot(file);
-//   console.log(`📸 Screenshot: ${file}`);
-// }
 
 function generateRandomMessage(prefix = 'Message test') {
   const rand = Math.random().toString(36).slice(2, 10);
@@ -94,7 +96,6 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
     await byId.setValue(message);
-    console.log('✅ Typed message (by accessibility id)');
     return;
   }
 
@@ -116,17 +117,15 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
       await tv.click();
       await driver.pause(150);
       await tv.setValue(message);
-      console.log('✅ Typed message in composer');
       return;
     }
   }
 
-  throw new Error('❌ Could not find message composer TextView');
+  throw new Error('Could not find message composer TextView');
 }
 
 async function findMessageBubbleByText(driver, messageText, timeout = 20000) {
   const safe = messageText.replace(/"/g, '\\"');
-
   const msgBtn = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
   );
@@ -170,7 +169,6 @@ async function tapContextMenuItem(driver, text, timeout = 20000) {
 
 async function findPinnedRowByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
-
   const rowBtn = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
   );
@@ -180,83 +178,66 @@ async function findPinnedRowByText(driver, text, timeout = 20000) {
   return rowBtn;
 }
 
-/*--------------------Test------------------------------------------*/
-async function run() {
-  let driver;
-  const screenshot_folder = 'PinnedMessages';
+async function runTest(driver) {
   const roomName = process.env.PINNED_MESSAGES_ROOM_NAME || 'Message Room';
 
-  console.log('🚀 Starting PinnedMessages test...');
+  await ensureLoggedIn(driver);
 
-  try {
-    driver = await createDriver();
+  await openNewConversation(driver, DEFAULT_TIMEOUT);
 
-    await ensureLoggedIn(driver);
+  const searchField = await driver.$('~searchUsersTextField');
+  await searchField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await searchField.click();
+  await searchField.setValue(roomName);
 
-    const peoplePlus = await driver.$('~peoplePlusButton');
-    await peoplePlus.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-    await peoplePlus.click();
+  await driver.pause(1200);
+  await tapSearchResultByText(driver, roomName, DEFAULT_TIMEOUT);
 
-    const searchField = await driver.$('~searchUsersTextField');
-    await searchField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-    await searchField.click();
-    await searchField.setValue(roomName);
+  const sentText = generateRandomMessage();
+  await typeComposerMessage(driver, sentText);
 
-    await driver.pause(1200);
+  const sendBtn = await driver.$('~sendMessageButton');
+  await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+  await sendBtn.click();
 
-    await tapSearchResultByText(driver, roomName, DEFAULT_TIMEOUT);
+  await driver.pause(1200);
+  await longPressByText(driver, sentText, DEFAULT_TIMEOUT, 900);
+  await driver.pause(600);
+  await tapPinFromContextMenu(driver, DEFAULT_TIMEOUT);
 
-    const sentText = generateRandomMessage();
-    await typeComposerMessage(driver, sentText);
+  const pinButton = await driver.$('~pinnedMessagesButton');
+  await pinButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await driver.pause(800);
+  await pinButton.click();
+  await driver.pause(800);
+  await saveScreenshot(driver, TEST_NAME, 'pinned_message.png');
 
-    const sendBtn = await driver.$('~sendMessageButton');
-    await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
-    await sendBtn.click();
-    console.log('📨 Sent message');
+  const pinnedRow = await findPinnedRowByText(driver, sentText, DEFAULT_TIMEOUT);
+  await longPressElement(driver, pinnedRow, 900);
+  await driver.pause(600);
+  await tapContextMenuItem(driver, 'Unpin', DEFAULT_TIMEOUT);
 
-    await driver.pause(1200);
-
-    await longPressByText(driver, sentText, DEFAULT_TIMEOUT, 900);
-    console.log('✅ Long-pressed sent message');
-
-    await driver.pause(600);
-
-    await tapPinFromContextMenu(driver, DEFAULT_TIMEOUT);
-    console.log('✅ Tapped Pin');
-
-    const pinButton = await driver.$('~pinnedMessagesButton');
-    await pinButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-    await driver.pause(800);
-    await pinButton.click();
-    await driver.pause(800);
-    await saveScreenshot(driver, screenshot_folder,'pinned_message.png');
-
-    const pinnedRow = await findPinnedRowByText(driver, sentText, DEFAULT_TIMEOUT);
-    await longPressElement(driver, pinnedRow, 900);
-    console.log('✅ Long-pressed pinned message (drawer)');
-
-    await driver.pause(600);
-
-    await tapContextMenuItem(driver, 'Unpin', DEFAULT_TIMEOUT);
-    console.log('✅ Tapped Unpin');
-  
-
-    await driver.pause(800);
-
-    await pinButton.click();
-    await saveScreenshot(driver, screenshot_folder, 'unpinned_message.png');
-    await driver.pause(800);
-    console.log('✅ Closed Pinned Messages');
-
-  } catch (err) {
-    console.error('❌ Test failed:', err);
-    if (driver) {
-      try { await screenshot(driver, 'ERROR.png'); } catch {}
-    }
-    throw err;
-  } finally {
-    if (driver) await driver.deleteSession();
-  }
+  await driver.pause(800);
+  await pinButton.click();
+  await saveScreenshot(driver, TEST_NAME, 'unpinned_message.png');
+  await driver.pause(800);
 }
 
-run().catch(() => process.exit(1));
+async function run(driver) {
+  return runWithOptionalDriver(async activeDriver => {
+    try {
+      await runTest(activeDriver);
+    } catch (err) {
+      try {
+        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
+      } catch {}
+      throw err;
+    }
+  }, driver);
+}
+
+module.exports = { run };
+
+if (require.main === module) {
+  run().catch(() => process.exit(1));
+}

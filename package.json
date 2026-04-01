@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "appium": "appium",
-    "test:ios": "node test.js"
+    "test:ios": "node test.js",
+    "test:suite": "node Tests/runAll.js"
   },
   "repository": {
     "type": "git",

@@ -1,7 +1,8 @@
 require('dotenv').config();
-const { createDriver } = require('../Login_Flow/Open_App');
+
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { runWithOptionalDriver } = require('../utils/testSession');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'markdowns';
@@ -43,7 +44,6 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
     await byId.setValue(message);
-    console.log('✅ Typed message (by accessibility id)');
     return;
   }
 
@@ -65,18 +65,17 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
       await tv.click();
       await driver.pause(150);
       await tv.setValue(message);
-      console.log('✅ Typed message in composer');
       return;
     }
   }
-  throw new Error('❌ Could not find message composer TextView');
+
+  throw new Error('Could not find message composer TextView');
 }
 
 async function sendMessage(driver, timeout = DEFAULT_TIMEOUT) {
   const sendBtn = await driver.$('~sendMessageButton');
   await sendBtn.waitForEnabled({ timeout });
   await sendBtn.click();
-  console.log('📨 Sent message');
 }
 
 async function focusComposer(driver, timeout = DEFAULT_TIMEOUT) {
@@ -111,12 +110,9 @@ async function focusComposer(driver, timeout = DEFAULT_TIMEOUT) {
 }
 
 async function tapEmojiKeyboard(driver, timeout = DEFAULT_TIMEOUT) {
-  // Ensure keyboard is visible
   const focused = await focusComposer(driver, timeout);
-  if (!focused) {
-    console.log('⚠️ Composer not found — skipping emoji keyboard switch');
-    return false;
-  }
+  if (!focused) return false;
+
   await driver.$('XCUIElementTypeKeyboard').waitForDisplayed({ timeout });
 
   const selectors = [
@@ -126,16 +122,14 @@ async function tapEmojiKeyboard(driver, timeout = DEFAULT_TIMEOUT) {
     `-ios predicate string:type == "XCUIElementTypeButton" AND (label CONTAINS "emoji" OR name CONTAINS "emoji")`,
   ];
 
-  for (const sel of selectors) {
-    const el = await driver.$(sel);
+  for (const selector of selectors) {
+    const el = await driver.$(selector);
     if (await el.isExisting().catch(() => false)) {
       await el.click();
-      console.log('✅ Switched to emoji keyboard');
       return true;
     }
   }
 
-  console.log('⚠️ Emoji/globe key not found — continuing without switching');
   return false;
 }
 
@@ -236,49 +230,52 @@ const MARKDOWN_EXAMPLES = [
       '👍 👍🏻 👍🏽 👍🏿\n' +
       '👩‍💻 🧑‍🚀 👨‍👩‍👧‍👦\n' +
       '🇺🇸 🇨🇦 🇯🇵\n' +
-      '✅ 🙌 🎉 🚀 💡 👀'+
-      'Emoji with text: Hello 👋, This is tony with some messages  with emojis! 🎉🚀'+
-      'I love coffee ☕ and coding 💻!'+
+      '✅ 🙌 🎉 🚀 💡 👀' +
+      'Emoji with text: Hello 👋, This is tony with some messages with emojis! 🎉🚀' +
+      'I love coffee ☕ and coding 💻!' +
       'Lets go on lunch 🥗 🍔 🌭 🌮',
   },
   {
-    id: '10_appointments', //TBD FOR NOW SINCE WE HAVE NO DATA
+    id: '10_appointments',
     text:
       'A#12345\n' +
       'WE HAVE NO DATA FOR THIS BUT WOULD BE GOOD TO TEST APPOINTMENT LINK RENDERING IN THE FUTURE',
   },
 ];
 
-async function run() {
-  let driver;
+async function runTest(driver) {
   const roomName = process.env.MARKDOWN_ROOM_NAME || 'Markdown room';
 
-  try {
-    driver = await createDriver();
-    await ensureLoggedIn(driver);
+  await ensureLoggedIn(driver);
+  await tapByText(driver, roomName, DEFAULT_TIMEOUT);
+  await saveScreenshot(driver, TEST_NAME, '01_room_opened.png');
 
-    await tapByText(driver, roomName, DEFAULT_TIMEOUT);
-    await saveScreenshot(driver, TEST_NAME, '01_room_opened.png');
-    console.log(`✅ Opened room: ${roomName}`);
-
-    for (const example of MARKDOWN_EXAMPLES) {
-      if (example.useEmojiKeyboard) {
-        await tapEmojiKeyboard(driver, DEFAULT_TIMEOUT);
-      }
-      await typeComposerMessage(driver, example.text, DEFAULT_TIMEOUT);
-      await sendMessage(driver, DEFAULT_TIMEOUT);
-      await driver.pause(600);
-      await saveScreenshot(driver, TEST_NAME, `${example.id}.png`);
+  for (const example of MARKDOWN_EXAMPLES) {
+    if (example.useEmojiKeyboard) {
+      await tapEmojiKeyboard(driver, DEFAULT_TIMEOUT);
     }
-  } catch (err) {
-    console.error('❌ Test failed:', err);
-    if (driver) {
-      try { await saveScreenshot(driver, TEST_NAME, 'ERROR.png'); } catch {}
-    }
-    throw err;
-  } finally {
-    if (driver) await driver.deleteSession();
+    await typeComposerMessage(driver, example.text, DEFAULT_TIMEOUT);
+    await sendMessage(driver, DEFAULT_TIMEOUT);
+    await driver.pause(600);
+    await saveScreenshot(driver, TEST_NAME, `${example.id}.png`);
   }
 }
 
-run().catch(() => process.exit(1));
+async function run(driver) {
+  return runWithOptionalDriver(async activeDriver => {
+    try {
+      await runTest(activeDriver);
+    } catch (err) {
+      try {
+        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
+      } catch {}
+      throw err;
+    }
+  }, driver);
+}
+
+module.exports = { run };
+
+if (require.main === module) {
+  run().catch(() => process.exit(1));
+}

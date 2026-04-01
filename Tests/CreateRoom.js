@@ -3,26 +3,23 @@ require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 
-const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
+const { runWithOptionalDriver, goBack } = require('../utils/testSession');
 
-/*-----------------Config----------------------------------------*/
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'CreateRoom';
 
-/*-----------------Helpers----------------------------------------*/
 async function typeComposerMessage(driver, message, timeout = DEFAULT_TIMEOUT) {
   const byId = await driver.$('~messageComposerTextView');
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
     await byId.setValue(message);
-    console.log('✅ Typed message (by accessibility id)');
+    console.log('Typed message by accessibility id');
     return;
   }
 
-  // 2️⃣ Tap placeholder text
   const placeholder = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
      (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
@@ -35,19 +32,18 @@ async function typeComposerMessage(driver, message, timeout = DEFAULT_TIMEOUT) {
     await driver.pause(300);
   }
 
-  // 3️⃣ Type into first visible TextView
   const textViews = await driver.$$('//XCUIElementTypeTextView');
   for (const tv of textViews) {
     if (await tv.isDisplayed().catch(() => false)) {
       await tv.click();
       await driver.pause(150);
       await tv.setValue(message);
-      console.log('✅ Typed message in composer');
+      console.log('Typed message in composer');
       return;
     }
   }
 
-  throw new Error('❌ Could not find message composer TextView');
+  throw new Error('Could not find message composer TextView');
 }
 
 function artifactsPath(fileName) {
@@ -58,7 +54,7 @@ async function dumpSource(driver, name) {
   const file = artifactsPath(name);
   const xml = await driver.getPageSource();
   fs.writeFileSync(file, xml, 'utf8');
-  console.log(`🧾 Page source saved: ${file}`);
+  console.log(`Page source saved: ${file}`);
 }
 
 function generateRoomName(prefix = 'Room') {
@@ -80,27 +76,20 @@ async function tapByText(driver, text, timeout = DEFAULT_TIMEOUT) {
   await el.click();
 }
 
-/**
- * Rooms "+" button is the other button in the same header container
- */
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
-  const roomsHeader = await driver.$('~Rooms section header');
+  const roomsHeader = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND label CONTAINS "Rooms"`
+  );
   await roomsHeader.waitForDisplayed({ timeout });
 
   const roomsPlus = await driver.$(
-    `//XCUIElementTypeButton[@name="Rooms section header"]/ancestor::XCUIElementTypeOther[1]/XCUIElementTypeButton[@name!="Rooms section header"][1]`
+    `//XCUIElementTypeButton[contains(@label,"Rooms")]/following-sibling::XCUIElementTypeButton[1]`
   );
-
   await roomsPlus.waitForDisplayed({ timeout });
   await roomsPlus.click();
-  console.log('✅ Clicked Rooms "+"');
+  console.log('Clicked Rooms plus');
 }
 
-/**
- * Private room toggle (keep it simple & reliable):
- * 1) labeled switch if present
- * 2) otherwise first visible switch
- */
 async function togglePrivateRoom(driver, timeout = DEFAULT_TIMEOUT) {
   const labeledSwitch = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeSwitch" AND (label == "Create private room" OR name == "Create private room")`
@@ -109,7 +98,7 @@ async function togglePrivateRoom(driver, timeout = DEFAULT_TIMEOUT) {
   if (await labeledSwitch.isExisting().catch(() => false)) {
     await labeledSwitch.waitForDisplayed({ timeout });
     await labeledSwitch.click();
-    console.log('✅ Toggled Private room (labeled switch)');
+    console.log('Toggled private room');
     return;
   }
 
@@ -117,145 +106,104 @@ async function togglePrivateRoom(driver, timeout = DEFAULT_TIMEOUT) {
   for (const sw of switches) {
     if (await sw.isDisplayed().catch(() => false)) {
       await sw.click();
-      console.log('✅ Toggled Private room (first visible switch)');
+      console.log('Toggled private room');
       return;
     }
   }
 
-  throw new Error('❌ Could not locate Private room switch');
+  throw new Error('Could not locate private room switch');
 }
 
-/**
- * Wait until we're safely back on the Rooms list (reduces flake/slow run #2)
- */
 async function waitForRoomsListReady(driver, timeout = DEFAULT_TIMEOUT) {
-  const roomsHeader = await driver.$('~Rooms section header');
+  const roomsHeader = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND label CONTAINS "Rooms"`
+  );
   await roomsHeader.waitForDisplayed({ timeout });
-  await driver.pause(400); // let SwiftUI settle
+  await driver.pause(400);
 }
 
-/*--------------------Tests------------------------------------------*/
-async function run() {
-  let driver;
+async function runTest(driver) {
+  await ensureLoggedIn(driver);
+  await driver.pause(1200);
 
-  try {
-    driver = await createDriver();
+  await openRoomsPlusMenu(driver);
 
-    await ensureLoggedIn(driver);
-    await driver.pause(1200);
+  const createRoomBtn = await driver.$('~createRoomButton');
+  await createRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await createRoomBtn.click();
+  console.log('Opened Create a Room screen');
+  await saveScreenshot(driver, TEST_NAME, 'public_create_room.png');
 
-    /*------------------Creating Public room ------------------*/
-    await openRoomsPlusMenu(driver);
+  const publicRoomField = await driver.$('~roomNameText');
+  await publicRoomField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await publicRoomField.click();
 
-    // Re-query each time (avoid stale element refs)
-    {
-      const createRoomBtn = await driver.$('~createRoomButton');
-      await createRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-      await createRoomBtn.click();
-    }
-    console.log('✅ Opened Create a Room screen');
-    await saveScreenshot(driver, TEST_NAME, 'public_create_room.png');
+  const publicRoomName = `Public ${generateRoomName('Room')}`;
+  console.log(`Public room name: ${publicRoomName}`);
+  await publicRoomField.setValue(publicRoomName);
+  await saveScreenshot(driver, TEST_NAME, 'public_room_name.png');
 
-    {
-      const roomName = await driver.$('~roomNameText');
-      await roomName.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-      await roomName.click();
+  await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
+  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
 
-      const publicRoomName = `Public ${generateRoomName('Room')}`;
-      console.log(`🆕 Room name for this run is Public: ${publicRoomName}`);
+  await typeComposerMessage(driver, generateRandomMessage());
+  const publicSendBtn = await driver.$('~sendMessageButton');
+  await publicSendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+  await publicSendBtn.click();
+  await saveScreenshot(driver, TEST_NAME, 'public_room_sent.png');
 
-      await roomName.setValue(publicRoomName);
-      console.log('✅ Entered room name');
-    }
-    await saveScreenshot(driver, TEST_NAME, 'public_room_name.png');
+  await driver.pause(800);
+  await goBack(driver);
+  await saveScreenshot(driver, TEST_NAME, 'rooms_list_after_public.png');
 
-    await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
-    console.log('✅ Tapped Create');
+  await waitForRoomsListReady(driver);
+  await openRoomsPlusMenu(driver);
 
-    await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
-    console.log('✅ Tapped Skip for now');
+  const privateCreateRoomBtn = await driver.$('~createRoomButton');
+  await privateCreateRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await privateCreateRoomBtn.click();
+  await saveScreenshot(driver, TEST_NAME, 'private_create_room.png');
 
-    await typeComposerMessage(driver, generateRandomMessage());
-    {
-      const sendBtn = await driver.$('~sendMessageButton');
-      await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
-      await sendBtn.click();
-      console.log('📨 Sent message');
-    }
-    await saveScreenshot(driver, TEST_NAME, 'public_room_sent.png');
+  const privateRoomField = await driver.$('~roomNameText');
+  await privateRoomField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await privateRoomField.click();
 
-    await driver.pause(800);
-    {
-      const backButton = await driver.$('~backButton');
-      await backButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-      await backButton.click();
-    }
-    console.log('✅ Returned to Rooms list');
-    await saveScreenshot(driver, TEST_NAME, 'rooms_list_after_public.png');
+  const privateRoomName = `Private ${generateRoomName('Room')}`;
+  console.log(`Private room name: ${privateRoomName}`);
+  await privateRoomField.setValue(privateRoomName);
 
-    // ✅ Important: wait for list to be ready before run #2
-    await waitForRoomsListReady(driver);
+  await togglePrivateRoom(driver, DEFAULT_TIMEOUT);
+  await saveScreenshot(driver, TEST_NAME, 'private_room_toggle.png');
 
-    /*------------------Creating Private room ------------------*/
-    await openRoomsPlusMenu(driver);
+  await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
+  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
 
-    {
-      const createRoomBtn = await driver.$('~createRoomButton');
-      await createRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-      await createRoomBtn.click();
-    }
-    console.log('✅ Opened Create a Room screen (Private)');
-    await saveScreenshot(driver, TEST_NAME, 'private_create_room.png');
+  await typeComposerMessage(driver, generateRandomMessage());
+  const privateSendBtn = await driver.$('~sendMessageButton');
+  await privateSendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+  await privateSendBtn.click();
+  await saveScreenshot(driver, TEST_NAME, 'private_room_sent.png');
 
-    {
-      const roomName = await driver.$('~roomNameText');
-      await roomName.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-      await roomName.click();
+  await goBack(driver);
+  console.log('Returned to Rooms list after private room');
+}
 
-      // ✅ Generate a NEW name for private room too
-      const privateRoomName = `Private ${generateRoomName('Room')}`;
-      console.log(`🆕 Room name for this run is Private: ${privateRoomName}`);
-
-      await roomName.setValue(privateRoomName);
-      console.log('✅ Entered room name (Private)');
-    }
-
-    await togglePrivateRoom(driver, DEFAULT_TIMEOUT);
-    await saveScreenshot(driver, TEST_NAME, 'private_room_toggle.png');
-
-    await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
-    await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
-
-    await typeComposerMessage(driver, generateRandomMessage());
-    {
-      const sendBtn = await driver.$('~sendMessageButton');
-      await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
-      await sendBtn.click();
-      console.log('📨 Sent message');
-    }
-    await saveScreenshot(driver, TEST_NAME, 'private_room_sent.png');
-
-    {
-      const backButton = await driver.$('~backButton');
-      await backButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-      await backButton.click();
-    }
-    console.log('✅ Returned to Rooms list (after Private)');
-
-  } catch (err) {
-    console.error('❌ Test failed:', err);
-
-    if (driver) {
+async function run(driver) {
+  return runWithOptionalDriver(async activeDriver => {
+    try {
+      await runTest(activeDriver);
+    } catch (err) {
       try {
-        await saveScreenshot(driver, TEST_NAME, 'ERROR.png');
-        await dumpSource(driver, 'ERROR_source.xml');
+        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
+        await dumpSource(activeDriver, 'ERROR_source.xml');
       } catch {}
+      throw err;
     }
-
-    throw err;
-  } finally {
-    if (driver) await driver.deleteSession();
-  }
+  }, driver);
 }
 
-run().catch(() => process.exit(1));
+module.exports = { run };
+
+if (require.main === module) {
+  run().catch(() => process.exit(1));
+}
