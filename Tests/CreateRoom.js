@@ -122,9 +122,13 @@ async function waitForRoomsListReady(driver, timeout = DEFAULT_TIMEOUT) {
   await driver.pause(400);
 }
 
-async function runTest(driver) {
-  await ensureLoggedIn(driver);
-  await driver.pause(1200);
+async function runTest(driver, options = {}) {
+  const { skipLogin = false } = options;
+
+  if (!skipLogin) {
+    await ensureLoggedIn(driver);
+    await driver.pause(1200);
+  }
 
   await openRoomsPlusMenu(driver);
 
@@ -188,10 +192,10 @@ async function runTest(driver) {
   console.log('Returned to Rooms list after private room');
 }
 
-async function run(driver) {
+async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver);
+      await runTest(activeDriver, options);
     } catch (err) {
       try {
         await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');

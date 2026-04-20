@@ -178,10 +178,13 @@ async function findPinnedRowByText(driver, text, timeout = 20000) {
   return rowBtn;
 }
 
-async function runTest(driver) {
+async function runTest(driver, options = {}) {
+  const { skipLogin = false } = options;
   const roomName = process.env.PINNED_MESSAGES_ROOM_NAME || 'Message Room';
 
-  await ensureLoggedIn(driver);
+  if (!skipLogin) {
+    await ensureLoggedIn(driver);
+  }
 
   await openNewConversation(driver, DEFAULT_TIMEOUT);
 
@@ -223,10 +226,10 @@ async function runTest(driver) {
   await driver.pause(800);
 }
 
-async function run(driver) {
+async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver);
+      await runTest(activeDriver, options);
     } catch (err) {
       try {
         await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');

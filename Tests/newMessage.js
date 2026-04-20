@@ -93,13 +93,16 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
   throw new Error('Could not find message composer TextView');
 }
 
-async function runTest(driver) {
+async function runTest(driver, options = {}) {
+  const { skipLogin = false } = options;
   const recipient = process.env.RECIPIENT || 'greg.blake';
   const message = process.env.MESSAGE || 'Hello this is tony. How are you doing';
 
-  await ensureLoggedIn(driver);
-  await driver.pause(1200);
-  await saveScreenshot(driver, TEST_NAME, '01_logged_in.png');
+  if (!skipLogin) {
+    await ensureLoggedIn(driver);
+    await driver.pause(1200);
+    await saveScreenshot(driver, TEST_NAME, '01_logged_in.png');
+  }
 
   const peoplePlus = await driver.$('~peoplePlusButton');
   if (await peoplePlus.isDisplayed().catch(() => false)) {
@@ -140,10 +143,10 @@ async function runTest(driver) {
   console.log('Sent message');
 }
 
-async function run(driver) {
+async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver);
+      await runTest(activeDriver, options);
     } catch (err) {
       try {
         await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');

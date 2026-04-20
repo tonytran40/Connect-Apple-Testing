@@ -243,10 +243,13 @@ const MARKDOWN_EXAMPLES = [
   },
 ];
 
-async function runTest(driver) {
+async function runTest(driver, options = {}) {
+  const { skipLogin = false } = options;
   const roomName = process.env.MARKDOWN_ROOM_NAME || 'Markdown room';
 
-  await ensureLoggedIn(driver);
+  if (!skipLogin) {
+    await ensureLoggedIn(driver);
+  }
   await tapByText(driver, roomName, DEFAULT_TIMEOUT);
   await saveScreenshot(driver, TEST_NAME, '01_room_opened.png');
 
@@ -261,10 +264,10 @@ async function runTest(driver) {
   }
 }
 
-async function run(driver) {
+async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver);
+      await runTest(activeDriver, options);
     } catch (err) {
       try {
         await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');

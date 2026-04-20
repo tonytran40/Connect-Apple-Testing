@@ -107,12 +107,15 @@ async function toggleSectionItems(driver, sectionTitle, itemLabels, timeout = 10
   await tapByText(driver, sectionTitle, timeout);
 }
 
-async function runTest(driver) {
+async function runTest(driver, options = {}) {
+  const { skipLogin = false } = options;
   const closeButton = await driver.$('~closeButton');
 
-  await ensureLoggedIn(driver);
-  await driver.pause(1200);
-  await step(driver, 'Logged in / app ready', '00_ready.png');
+  if (!skipLogin) {
+    await ensureLoggedIn(driver);
+    await driver.pause(1200);
+    await step(driver, 'Logged in / app ready', '00_ready.png');
+  }
 
   const userSettings = await driver.$('~settingsButton');
   await userSettings.waitForDisplayed({ timeout: 15000 });
@@ -172,10 +175,10 @@ async function runTest(driver) {
   await toggleSectionItems(driver, 'Message Features', messageFeatureToggles, 10000);
 }
 
-async function run(driver) {
+async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver);
+      await runTest(activeDriver, options);
     } catch (err) {
       try { await screenshot(activeDriver, 'ERROR.png'); } catch {}
       throw err;
