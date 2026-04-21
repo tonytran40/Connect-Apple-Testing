@@ -57,9 +57,28 @@ async function dumpSource(driver, name) {
   console.log(`Page source saved: ${file}`);
 }
 
-function generateRoomName(prefix = 'Room') {
+const LETTERS_AZ = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+const SORT_SYMBOL_KEYS = ['$', '#', '!', '%', '_'];
+
+/** Random sort bucket when you do not pass `sortKey`: symbols (often before letters) + full A–Z. */
+const DEFAULT_SORT_KEYS = [...SORT_SYMBOL_KEYS, ...LETTERS_AZ];
+
+function pickSortKey() {
+  return DEFAULT_SORT_KEYS[Math.floor(Math.random() * DEFAULT_SORT_KEYS.length)];
+}
+
+/**
+ * Full room name for lists/sort tests: "{key}-Public Room-{rand}" or "{key}-Private Room-{rand}".
+ * @param {'Public'|'Private'} kind
+ * @param {string} [sortKey] one leading character, e.g. "M", "Z", "$" (omit for random A–Z or symbol from DEFAULT_SORT_KEYS)
+ */
+function generateRoomName(kind, sortKey) {
   const rand = Math.random().toString(36).slice(2, 10);
-  return `${prefix}-${rand}`;
+  const key =
+    typeof sortKey === 'string' && sortKey.trim().length > 0
+      ? sortKey.trim().charAt(0)
+      : pickSortKey();
+  return `${key}-${kind} Room-${rand}`;
 }
 
 function generateRandomMessage(prefix = 'Message test') {
@@ -142,7 +161,7 @@ async function runTest(driver, options = {}) {
   await publicRoomField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await publicRoomField.click();
 
-  const publicRoomName = `Public ${generateRoomName('Room')}`;
+  const publicRoomName = generateRoomName('Public', 'A');
   console.log(`Public room name: ${publicRoomName}`);
   await publicRoomField.setValue(publicRoomName);
   await saveScreenshot(driver, TEST_NAME, 'public_room_name.png');
@@ -172,7 +191,7 @@ async function runTest(driver, options = {}) {
   await privateRoomField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await privateRoomField.click();
 
-  const privateRoomName = `Private ${generateRoomName('Room')}`;
+  const privateRoomName = generateRoomName('Private', 'B');
   console.log(`Private room name: ${privateRoomName}`);
   await privateRoomField.setValue(privateRoomName);
 
@@ -206,7 +225,7 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run };
+module.exports = { run, generateRoomName };
 
 if (require.main === module) {
   run().catch(() => process.exit(1));

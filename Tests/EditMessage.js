@@ -5,7 +5,7 @@ const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver } = require('../utils/testSession');
 
 const DEFAULT_TIMEOUT = 20000;
-const TEST_NAME = 'PinnedMessages';
+const TEST_NAME = 'EditMessage';
 
 /** Max time to wait for search results after typing (polls; avoids 3× long waitForDisplayed). */
 const SEARCH_RESULTS_BUDGET_MS = 2800;
@@ -229,37 +229,51 @@ async function longPressByText(driver, text, timeout = 20000, durationMs = 900) 
   await longPressElement(driver, bubble, durationMs);
 }
 
-async function tapPinFromContextMenu(driver, timeout = 20000) {
-  const pinBtn = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "Pin" OR label CONTAINS "Pin")`
+/** Same idea as tapPinFromContextMenu in PinnedMessages — predicate on button label (no accessibility id). */
+async function tapEditFromContextMenu(driver, timeout = DEFAULT_TIMEOUT) {
+  const editBtn = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "Edit" OR label CONTAINS "Edit")`
   );
-  await pinBtn.waitForDisplayed({ timeout });
-  await pinBtn.click();
+  await editBtn.waitForDisplayed({ timeout });
+  await editBtn.click();
 }
 
-async function tapContextMenuItem(driver, text, timeout = 20000) {
-  const safe = text.replace(/"/g, '\\"');
-  const btn = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
-  );
-  await btn.waitForDisplayed({ timeout });
-  await btn.click();
-}
+/** Replace composer contents while editing (composer may already show the original message). */
+async function replaceComposerText(driver, newText, timeout = DEFAULT_TIMEOUT) {
+  const byId = await driver.$('~messageComposerTextView');
+  if (await byId.isExisting().catch(() => false)) {
+    await byId.waitForDisplayed({ timeout });
+    await byId.click();
+    await driver.pause(200);
+    try {
+      await byId.clearValue();
+    } catch {}
+    await byId.setValue(newText);
+    return;
+  }
 
-async function findPinnedRowByText(driver, text, timeout = 20000) {
-  const safe = text.replace(/"/g, '\\"');
-  const rowBtn = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
-  );
+  const textViews = await driver.$$('//XCUIElementTypeTextView');
+  for (const tv of textViews) {
+    if (await tv.isDisplayed().catch(() => false)) {
+      await tv.click();
+      await driver.pause(150);
+      try {
+        await tv.clearValue();
+      } catch {}
+      await tv.setValue(newText);
+      return;
+    }
+  }
 
-  await rowBtn.waitForExist({ timeout });
-  await rowBtn.waitForDisplayed({ timeout });
-  return rowBtn;
+  throw new Error('Could not find composer TextView to replace text');
 }
 
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
-  const roomName = process.env.PINNED_MESSAGES_ROOM_NAME || 'Pinned Messages Test Room 1';
+  const roomName =
+    process.env.EDIT_MESSAGE_ROOM_NAME ||
+    process.env.PINNED_MESSAGES_ROOM_NAME ||
+    'Edited Message Test Room';
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
@@ -281,34 +295,44 @@ async function runTest(driver, options = {}) {
     await createRoomFromSheet(driver, roomName, DEFAULT_TIMEOUT);
   }
 
-  const sentText = generateRandomMessage();
-  await typeComposerMessage(driver, sentText);
+  const messages = [
+    generateRandomMessage('First'),
+    generateRandomMessage('Second'),
+    generateRandomMessage('Third'),
+  ];
 
-  const sendBtn = await driver.$('~sendMessageButton');
-  await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
-  await sendBtn.click();
+  for (let i = 0; i < messages.length; i++) {
+    await typeComposerMessage(driver, messages[i]);
+    const sendBtn = await driver.$('~sendMessageButton');
+    await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+    await sendBtn.click();
+    await driver.pause(450);
+    console.log(`Sent message ${i + 1}/${messages.length}`);
+  }
 
-  await driver.pause(1200);
-  await longPressByText(driver, sentText, DEFAULT_TIMEOUT, 900);
   await driver.pause(600);
-  await tapPinFromContextMenu(driver, DEFAULT_TIMEOUT);
 
-  const pinButton = await driver.$('~pinnedMessagesButton');
-  await pinButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-  await driver.pause(800);
-  await pinButton.click();
-  await driver.pause(800);
-  await saveScreenshot(driver, TEST_NAME, 'pinned_message.png');
+  // Oldest first so we exercise editing a prior line, not only the newest bubble.
+  for (let i = 0; i < messages.length; i++) {
+    const original = messages[i];
+    const editedBody = `${original} — edited-${i + 1}`;
 
-  const pinnedRow = await findPinnedRowByText(driver, sentText, DEFAULT_TIMEOUT);
-  await longPressElement(driver, pinnedRow, 900);
-  await driver.pause(600);
-  await tapContextMenuItem(driver, 'Unpin', DEFAULT_TIMEOUT);
+    await longPressByText(driver, original, DEFAULT_TIMEOUT, 900);
+    await driver.pause(400);
+    await tapEditFromContextMenu(driver, DEFAULT_TIMEOUT);
+    await driver.pause(400);
+    await replaceComposerText(driver, editedBody, DEFAULT_TIMEOUT);
 
-  await driver.pause(800);
-  await pinButton.click();
-  await saveScreenshot(driver, TEST_NAME, 'unpinned_message.png');
-  await driver.pause(800);
+    const saveOrSend = await driver.$('~sendMessageButton');
+    await saveOrSend.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+    await saveOrSend.click();
+
+    await driver.pause(600);
+    await findMessageBubbleByText(driver, editedBody, DEFAULT_TIMEOUT);
+    console.log(`Edited message ${i + 1}/${messages.length} (was: …${original.slice(-12)})`);
+  }
+
+  await saveScreenshot(driver, TEST_NAME, 'three_messages_edited.png');
 }
 
 async function run(driver, options = {}) {

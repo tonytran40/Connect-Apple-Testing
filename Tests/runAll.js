@@ -8,7 +8,11 @@ const { createReportWriter } = require('../utils/reportWriter');
 const tests = [
   { name: 'CreateRoom', area: 'Public and private room creation', run: require('./CreateRoom').run },
   { name: 'newMessage', area: 'New direct message flow', run: require('./newMessage').run },
-  { name: 'PinnedMessages', area: 'Pinned message behavior', run: require('./PinnedMessages').run },
+  {
+    name: 'PinnedMessageEditFlow',
+    area: 'Pin message, verify sheet, edit, verify pin, unpin, verify cleared',
+    run: require('./PinnedMessageEditFlow').run,
+  },
   { name: 'markdowns', area: 'Markdown and emoji rendering', run: require('./markdowns').run },
   // { name: 'User_Settings', run: require('./User_Settings').run },
   // { name: 'Login_Signout', run: require('./Login_Signout').run },
