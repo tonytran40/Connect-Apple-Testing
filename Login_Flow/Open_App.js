@@ -1,6 +1,6 @@
-const {remote} = require('webdriverio');
+const { remote } = require('webdriverio');
 
-async function createDriver(){
+async function createDriver() {
     const caps = {
         platformName: 'iOS',
         'appium:automationName': 'XCUITest',
@@ -21,7 +21,7 @@ async function createDriver(){
 
     await driver.activateApp('com.powerhrg.connect.v3.debug');
     await driver.pause(1500);
-    return driver;  
+    return driver;
 }
 
-module.exports ={createDriver};
+module.exports = { createDriver };

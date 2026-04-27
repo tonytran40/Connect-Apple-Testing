@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "appium": "appium",
     "test:ios": "node test.js",
-    "test:suite": "node Tests/runAll.js"
+    "test:suite": "node Tests/runAll.js",
+    "test:time": "node Tests/testTime.js"
   },
   "repository": {
     "type": "git",

@@ -6,6 +6,35 @@ const { runWithOptionalDriver } = require('../utils/testSession');
 
 const TEST_NAME = 'newMessage';
 
+/** Many rooms push `peoplePlus` / new-conversation off-screen; scroll the list down until one is visible. */
+async function scrollUntilConversationEntryVisible(driver, maxScrolls = 24) {
+  const peoplePlus = await driver.$('~peoplePlusButton');
+  const newConversationButton = await driver.$('~newConversationButton');
+
+  for (let i = 0; i < maxScrolls; i++) {
+    const plus = await peoplePlus.isDisplayed().catch(() => false);
+    const newConv = await newConversationButton.isDisplayed().catch(() => false);
+    if (plus || newConv) {
+      if (i > 0) {
+        console.log(`newMessage: ~peoplePlusButton / ~newConversationButton visible after ${i} scroll(s) down`);
+      }
+      return;
+    }
+    try {
+      await driver.execute('mobile: scroll', { direction: 'down' });
+    } catch {
+      try {
+        await driver.execute('mobile: swipe', { direction: 'down' });
+      } catch {}
+    }
+    await driver.pause(250);
+  }
+
+  throw new Error(
+    `Neither ~peoplePlusButton nor ~newConversationButton appeared after ${maxScrolls} downward scrolls`
+  );
+}
+
 async function tapSearchResultByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
 
@@ -100,11 +129,13 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await driver.pause(1200);
+    await driver.pause(800);
     await saveScreenshot(driver, TEST_NAME, '01_logged_in.png');
   }
 
-  const peoplePlus = await driver.$('~peoplePlusButton');
+  await scrollUntilConversationEntryVisible(driver);
+
+  const peoplePlus = await driver.$('~newConversationButton');
   if (await peoplePlus.isDisplayed().catch(() => false)) {
     await peoplePlus.click();
     console.log('Opened Start Conversation via peoplePlusButton');
@@ -115,7 +146,7 @@ async function runTest(driver, options = {}) {
     console.log('Opened Start Conversation via newConversationButton');
   }
 
-  await driver.pause(1200);
+  await driver.pause(700);
   await saveScreenshot(driver, TEST_NAME, '02_start_conversation.png');
 
   const searchField = await driver.$('~searchUsersTextField');
@@ -124,17 +155,17 @@ async function runTest(driver, options = {}) {
   await searchField.setValue(recipient);
   console.log(`Typed recipient: ${recipient}`);
 
-  await driver.pause(1500);
+  await driver.pause(900);
   await saveScreenshot(driver, TEST_NAME, '03_typed_recipient.png');
 
   await tapSearchResultByText(driver, recipient);
   console.log('Selected recipient');
 
-  await driver.pause(1500);
+  await driver.pause(700);
   await saveScreenshot(driver, TEST_NAME, '04_selected_recipient.png');
 
   await typeComposerMessage(driver, message);
-  await driver.pause(800);
+  await driver.pause(500);
   await saveScreenshot(driver, TEST_NAME, '05_message_typed.png');
 
   const sendBtn = await driver.$('~sendMessageButton');

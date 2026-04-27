@@ -141,6 +141,50 @@ async function waitForRoomsListReady(driver, timeout = DEFAULT_TIMEOUT) {
   await driver.pause(400);
 }
 
+/**
+ * From the main list (Rooms visible): open Rooms +, create a **private** room named `roomName`, then **Create**.
+ * By default: Skip for now → optional starter message → goBack to list.
+ * With `skipAddMembersSheet: true`: stops on **Add Members** (caller adds invitees + Save).
+ * Does not call `ensureRoomsSectionReady`.
+ */
+async function createPrivateRoom(driver, roomName, options = {}) {
+  const { sendStarterMessage = false, skipAddMembersSheet = false } = options;
+
+  await openRoomsPlusMenu(driver);
+
+  const createRoomBtn = await driver.$('~createRoomButton');
+  await createRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await createRoomBtn.click();
+
+  const roomField = await driver.$('~roomNameText');
+  await roomField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await roomField.click();
+  await roomField.setValue(roomName);
+
+  await togglePrivateRoom(driver, DEFAULT_TIMEOUT);
+
+  await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
+
+  if (skipAddMembersSheet) {
+    console.log(`createPrivateRoom: ${roomName} (Add Members sheet — add invitees then Save)`);
+    return;
+  }
+
+  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
+
+  if (sendStarterMessage) {
+    await typeComposerMessage(driver, generateRandomMessage());
+    const sendBtn = await driver.$('~sendMessageButton');
+    await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+    await sendBtn.click();
+    await driver.pause(400);
+  }
+
+  await goBack(driver);
+  await driver.pause(600);
+  console.log(`createPrivateRoom: ${roomName}`);
+}
+
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
 
@@ -225,7 +269,7 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run, generateRoomName };
+module.exports = { run, generateRoomName, createPrivateRoom };
 
 if (require.main === module) {
   run().catch(() => process.exit(1));

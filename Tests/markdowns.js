@@ -245,7 +245,7 @@ const MARKDOWN_EXAMPLES = [
 
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
-  const roomName = process.env.MARKDOWN_ROOM_NAME || 'Markdown room';
+  const roomName = process.env.MARKDOWN_ROOM_NAME || 'Message Room';
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
