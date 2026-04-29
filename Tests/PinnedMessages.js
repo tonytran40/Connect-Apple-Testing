@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver } = require('../utils/testSession');
+const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'PinnedMessages';
@@ -12,6 +12,7 @@ const SEARCH_RESULTS_BUDGET_MS = 2800;
 const SEARCH_AFTER_TYPE_MS = 500;
 
 async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
+  await scrollUntilConversationEntryVisible(driver);
   const peoplePlus = await driver.$('~peoplePlusButton');
   if (await peoplePlus.isDisplayed().catch(() => false)) {
     await peoplePlus.click();
@@ -327,5 +328,6 @@ async function run(driver, options = {}) {
 module.exports = { run };
 
 if (require.main === module) {
-  run().catch(() => process.exit(1));
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
 }

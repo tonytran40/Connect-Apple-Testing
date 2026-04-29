@@ -6,6 +6,37 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { resetToHome } = require('../utils/testSession');
 const { createReportWriter, formatDurationMs } = require('../utils/reportWriter');
 
+function skipResetBetweenFirstAndRest() {
+  const v = process.env.CONNECT_SKIP_RESET_BETWEEN_TESTS;
+  return v === '1' || v === 'true';
+}
+
+function buildSuiteOptionsLine() {
+  const parts = [];
+  if (skipResetBetweenFirstAndRest()) {
+    parts.push('CONNECT_SKIP_RESET_BETWEEN_TESTS (no reset before tests 2+)');
+  }
+  if (process.env.MARKDOWN_EXAMPLE_IDS) {
+    parts.push(`MARKDOWN_EXAMPLE_IDS=${process.env.MARKDOWN_EXAMPLE_IDS}`);
+  }
+  if (process.env.CONVERSATION_LAYOUTS) {
+    parts.push(`CONVERSATION_LAYOUTS=${process.env.CONVERSATION_LAYOUTS}`);
+  }
+  if (process.env.CONVERSATION_SORTS) {
+    parts.push(`CONVERSATION_SORTS=${process.env.CONVERSATION_SORTS}`);
+  }
+  if (process.env.CREATE_ROOM_MODE) {
+    parts.push(`CREATE_ROOM_MODE=${process.env.CREATE_ROOM_MODE}`);
+  }
+  if (process.env.CONNECT_SCREENSHOTS === '0' || process.env.CONNECT_SCREENSHOTS === 'false') {
+    parts.push('CONNECT_SCREENSHOTS=0');
+  }
+  if (process.env.SKIP_SCREENSHOTS === '1' || process.env.SKIP_SCREENSHOTS === 'true') {
+    parts.push('SKIP_SCREENSHOTS');
+  }
+  return parts.length ? parts.join(' · ') : 'default (unset env = full behavior)';
+}
+
 const tests = [
   { name: 'newMessage', area: 'New direct message flow', run: require('./newMessage').run },
   { name: 'CreateRoom', area: 'Public and private room creation', run: require('./CreateRoom').run },
@@ -39,6 +70,7 @@ async function run() {
   const reportMeta = () => ({
     ...(loginSetupMs != null ? { loginSetupMs } : {}),
     ...(suiteDurationMs != null ? { suiteDurationMs } : {}),
+    suiteOptions: buildSuiteOptionsLine(),
   });
 
   try {
@@ -46,6 +78,7 @@ async function run() {
     await ensureLoggedIn(driver);
     loginSetupMs = Math.round(performance.now() - suiteStart);
     console.log(`Login + driver ready in ${formatDurationMs(loginSetupMs)}`);
+    console.log(`Suite options: ${buildSuiteOptionsLine()}`);
     report.write(results, reportMeta());
 
     for (const [index, test] of tests.entries()) {
@@ -57,7 +90,9 @@ async function run() {
       };
       report.write(results, reportMeta());
 
-      await resetToHome(driver);
+      if (!(skipResetBetweenFirstAndRest() && index > 0)) {
+        await resetToHome(driver);
+      }
       const testStart = performance.now();
       try {
         await test.run(driver, { skipLogin: true });
@@ -97,7 +132,8 @@ async function run() {
 }
 
 if (require.main === module) {
-  run().catch(err => {
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed('runAll', run).catch(err => {
     console.error('Suite failed:', err);
     console.error('Suite report written to reports/latest-suite-report.md');
     process.exit(1);

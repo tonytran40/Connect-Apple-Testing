@@ -7,6 +7,17 @@ const { runWithOptionalDriver } = require('../utils/testSession');
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'ConversationList';
 
+function boundedInt(envVal, fallback, min, max) {
+  const n = parseInt(envVal, 10);
+  const v = Number.isFinite(n) ? n : fallback;
+  return Math.min(max, Math.max(min, v));
+}
+
+const SCROLL_TO_TEXT_MAX = boundedInt(process.env.CONVERSATION_SCROLL_MAX, 10, 4, 20);
+const SCROLL_STEP_PAUSE_MS = boundedInt(process.env.CONVERSATION_SCROLL_PAUSE_MS, 260, 120, 800);
+const MENU_OPEN_PAUSE_MS = boundedInt(process.env.CONVERSATION_MENU_OPEN_PAUSE_MS, 450, 200, 1200);
+const MENU_ACTION_PAUSE_MS = boundedInt(process.env.CONVERSATION_MENU_ACTION_PAUSE_MS, 350, 150, 800);
+
 const LAYOUT_OPTIONS = (process.env.CONVERSATION_LAYOUTS || 'Classic,Cozy')
   .split(',')
   .map(s => s.trim())
@@ -25,7 +36,7 @@ function containsAnyTextPredicate(text) {
   );
 }
 
-async function scrollToText(driver, text, maxScrolls = 8) {
+async function scrollToText(driver, text, maxScrolls = SCROLL_TO_TEXT_MAX) {
   const predicate = containsAnyTextPredicate(text);
   for (let i = 0; i < maxScrolls; i++) {
     const el = await driver.$(`-ios predicate string:${predicate}`);
@@ -33,7 +44,7 @@ async function scrollToText(driver, text, maxScrolls = 8) {
     try {
       await driver.execute('mobile: scroll', { direction: 'down' });
     } catch {}
-    await driver.pause(350);
+    await driver.pause(SCROLL_STEP_PAUSE_MS);
   }
   throw new Error(`Could not find "${text}" after ${maxScrolls} scrolls`);
 }
@@ -78,14 +89,14 @@ async function openUserSettings(driver) {
   const settings = await driver.$('~settingsButton');
   await settings.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await settings.click();
-  await driver.pause(700);
+  await driver.pause(MENU_OPEN_PAUSE_MS);
 }
 
 async function closeUserSettings(driver) {
   const closeBtn = await driver.$('~closeButton');
   await closeBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await closeBtn.click();
-  await driver.pause(500);
+  await driver.pause(MENU_ACTION_PAUSE_MS);
 }
 
 /** After closing settings, main conversation list should be usable again. */
@@ -106,14 +117,14 @@ async function applyEachLayout(driver) {
   for (const layout of LAYOUT_OPTIONS) {
     console.log(`Layout: ${layout}`);
     await openUserSettings(driver);
-    await scrollToText(driver, 'Conversation Layout', 10);
+    await scrollToText(driver, 'Conversation Layout');
     await tapByText(driver, 'Conversation Layout', DEFAULT_TIMEOUT);
-    await driver.pause(500);
+    await driver.pause(MENU_ACTION_PAUSE_MS);
     await saveScreenshot(driver, TEST_NAME, `layout_${slug(layout)}_menu_open.png`);
 
-    await scrollToText(driver, layout, 8);
+    await scrollToText(driver, layout, SCROLL_TO_TEXT_MAX);
     await tapRadioLoose(driver, layout, DEFAULT_TIMEOUT);
-    await driver.pause(500);
+    await driver.pause(MENU_ACTION_PAUSE_MS);
     await saveScreenshot(driver, TEST_NAME, `layout_${slug(layout)}_after_switch_in_menu.png`);
 
     await closeUserSettings(driver);
@@ -126,14 +137,14 @@ async function applyEachSort(driver) {
   for (const sort of SORT_OPTIONS) {
     console.log(`Sort: ${sort}`);
     await openUserSettings(driver);
-    await scrollToText(driver, 'Conversation Sorting', 10);
+    await scrollToText(driver, 'Conversation Sorting');
     await tapByText(driver, 'Conversation Sorting', DEFAULT_TIMEOUT);
-    await driver.pause(500);
+    await driver.pause(MENU_ACTION_PAUSE_MS);
     await saveScreenshot(driver, TEST_NAME, `sort_${slug(sort)}_menu_open.png`);
 
-    await scrollToText(driver, sort, 8);
+    await scrollToText(driver, sort, SCROLL_TO_TEXT_MAX);
     await tapRadioLoose(driver, sort, DEFAULT_TIMEOUT);
-    await driver.pause(500);
+    await driver.pause(MENU_ACTION_PAUSE_MS);
     await saveScreenshot(driver, TEST_NAME, `sort_${slug(sort)}_after_switch_in_menu.png`);
 
     await closeUserSettings(driver);
@@ -170,5 +181,6 @@ async function run(driver, options = {}) {
 module.exports = { run };
 
 if (require.main === module) {
-  run().catch(() => process.exit(1));
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
 }

@@ -382,5 +382,6 @@ async function run(driver, options = {}) {
 module.exports = { run };
 
 if (require.main === module) {
-  run().catch(() => process.exit(1));
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
 }

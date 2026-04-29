@@ -10,6 +10,8 @@ const { runWithOptionalDriver, goBack } = require('../utils/testSession');
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'CreateRoom';
 
+const CREATE_ROOM_SMOKE = process.env.CREATE_ROOM_MODE === 'smoke';
+
 async function typeComposerMessage(driver, message, timeout = DEFAULT_TIMEOUT) {
   const byId = await driver.$('~messageComposerTextView');
   if (await byId.isExisting().catch(() => false)) {
@@ -224,6 +226,12 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, 'rooms_list_after_public.png');
 
   await waitForRoomsListReady(driver);
+
+  if (CREATE_ROOM_SMOKE) {
+    console.log('CreateRoom: CREATE_ROOM_MODE=smoke — skipping private room flow');
+    return;
+  }
+
   await openRoomsPlusMenu(driver);
 
   const privateCreateRoomBtn = await driver.$('~createRoomButton');
@@ -272,5 +280,6 @@ async function run(driver, options = {}) {
 module.exports = { run, generateRoomName, createPrivateRoom };
 
 if (require.main === module) {
-  run().catch(() => process.exit(1));
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
 }

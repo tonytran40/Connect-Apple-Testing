@@ -24,7 +24,7 @@ function formatDurationMs(ms) {
 }
 
 function buildMarkdown(results, startedAt, meta = {}) {
-  const { suiteDurationMs, loginSetupMs } = meta;
+  const { suiteDurationMs, loginSetupMs, suiteOptions } = meta;
   const total = results.length;
   const passed = results.filter(result => result.status === 'PASS').length;
   const failed = results.filter(result => result.status === 'FAIL').length;
@@ -46,6 +46,9 @@ function buildMarkdown(results, startedAt, meta = {}) {
   }
   if (suiteDurationMs != null) {
     lines.push(`- **Total suite duration:** ${formatDurationMs(suiteDurationMs)}`);
+  }
+  if (suiteOptions) {
+    lines.push(`- Suite options: ${escapeCell(suiteOptions)}`);
   }
 
   lines.push(

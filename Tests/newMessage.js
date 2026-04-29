@@ -2,38 +2,9 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver } = require('../utils/testSession');
+const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
 
 const TEST_NAME = 'newMessage';
-
-/** Many rooms push `peoplePlus` / new-conversation off-screen; scroll the list down until one is visible. */
-async function scrollUntilConversationEntryVisible(driver, maxScrolls = 24) {
-  const peoplePlus = await driver.$('~peoplePlusButton');
-  const newConversationButton = await driver.$('~newConversationButton');
-
-  for (let i = 0; i < maxScrolls; i++) {
-    const plus = await peoplePlus.isDisplayed().catch(() => false);
-    const newConv = await newConversationButton.isDisplayed().catch(() => false);
-    if (plus || newConv) {
-      if (i > 0) {
-        console.log(`newMessage: ~peoplePlusButton / ~newConversationButton visible after ${i} scroll(s) down`);
-      }
-      return;
-    }
-    try {
-      await driver.execute('mobile: scroll', { direction: 'down' });
-    } catch {
-      try {
-        await driver.execute('mobile: swipe', { direction: 'down' });
-      } catch {}
-    }
-    await driver.pause(250);
-  }
-
-  throw new Error(
-    `Neither ~peoplePlusButton nor ~newConversationButton appeared after ${maxScrolls} downward scrolls`
-  );
-}
 
 async function tapSearchResultByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
@@ -190,5 +161,6 @@ async function run(driver, options = {}) {
 module.exports = { run };
 
 if (require.main === module) {
-  run().catch(() => process.exit(1));
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
 }

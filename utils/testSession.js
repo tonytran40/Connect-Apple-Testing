@@ -96,6 +96,49 @@ async function resetToHome(driver, maxSteps = 8) {
   }
 }
 
+function boundedInt(envVal, fallback, min, max) {
+  const n = parseInt(envVal, 10);
+  const v = Number.isFinite(n) ? n : fallback;
+  return Math.min(max, Math.max(min, v));
+}
+
+const DEFAULT_ENTRY_MAX_SCROLLS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_MAX_SCROLLS, 24, 4, 40);
+const DEFAULT_ENTRY_SCROLL_PAUSE_MS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_SCROLL_PAUSE_MS, 250, 120, 600);
+
+/**
+ * Scroll the main list down until ~peoplePlusButton or ~newConversationButton is visible (long room lists).
+ * Env: CONNECT_CONVERSATION_ENTRY_MAX_SCROLLS, CONNECT_CONVERSATION_ENTRY_SCROLL_PAUSE_MS
+ */
+async function scrollUntilConversationEntryVisible(driver, opts = {}) {
+  const maxScrolls = opts.maxScrolls ?? DEFAULT_ENTRY_MAX_SCROLLS;
+  const pauseMs = opts.pauseMs ?? DEFAULT_ENTRY_SCROLL_PAUSE_MS;
+  const peoplePlus = await driver.$('~peoplePlusButton');
+  const newConversationButton = await driver.$('~newConversationButton');
+
+  for (let i = 0; i < maxScrolls; i++) {
+    const plus = await peoplePlus.isDisplayed().catch(() => false);
+    const newConv = await newConversationButton.isDisplayed().catch(() => false);
+    if (plus || newConv) {
+      if (i > 0) {
+        console.log(`scrollUntilConversationEntryVisible: entry control visible after ${i} scroll(s) down`);
+      }
+      return;
+    }
+    try {
+      await driver.execute('mobile: scroll', { direction: 'down' });
+    } catch {
+      try {
+        await driver.execute('mobile: swipe', { direction: 'down' });
+      } catch {}
+    }
+    await driver.pause(pauseMs);
+  }
+
+  throw new Error(
+    `Neither ~peoplePlusButton nor ~newConversationButton appeared after ${maxScrolls} downward scrolls`
+  );
+}
+
 async function ensureRoomsSectionReady(driver, maxScrolls = 6) {
   for (let i = 0; i < maxScrolls; i++) {
     if (await isDisplayed(driver, '~Rooms section header', 800)) {
@@ -120,4 +163,5 @@ module.exports = {
   resetToHome,
   ensureRoomsSectionReady,
   goBack,
+  scrollUntilConversationEntryVisible,
 };

@@ -8,6 +8,8 @@
     "appium": "appium",
     "test:ios": "node test.js",
     "test:suite": "node Tests/runAll.js",
+    "test:suite:full": "node Tests/runAll.js",
+    "test:suite:fast": "CREATE_ROOM_MODE=smoke CONVERSATION_LAYOUTS=Classic CONVERSATION_SORTS='Recent Activity' MARKDOWN_EXAMPLE_IDS=01_headings,02_emphasis,09_emojis node Tests/runAll.js",
     "test:time": "node Tests/testTime.js"
   },
   "repository": {

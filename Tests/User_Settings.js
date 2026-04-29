@@ -7,6 +7,7 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { runWithOptionalDriver, goBack } = require('../utils/testSession');
 
 const DEBUG_DUMP_SOURCE = true;
+const TEST_NAME = 'User_Settings';
 
 function ensureArtifactsDir() {
   const dir = path.resolve(__dirname, '../screenshots');
@@ -189,5 +190,6 @@ async function run(driver, options = {}) {
 module.exports = { run };
 
 if (require.main === module) {
-  run().catch(() => process.exit(1));
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
 }

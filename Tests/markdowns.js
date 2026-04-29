@@ -7,6 +7,46 @@ const { runWithOptionalDriver } = require('../utils/testSession');
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'markdowns';
 
+/** Comma-separated `id` values from MARKDOWN_EXAMPLES, e.g. `01_headings,02_emphasis,09_emojis` — omit to run all. */
+const MARKDOWN_EXAMPLE_IDS = (process.env.MARKDOWN_EXAMPLE_IDS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+/** Skip `${id}.png` after each example (keeps `01_room_opened`); big time saver for CI / timing runs. */
+const SKIP_EXAMPLE_SCREENSHOTS =
+  process.env.MARKDOWN_SKIP_EXAMPLE_SCREENSHOTS === '1' ||
+  process.env.MARKDOWN_SKIP_EXAMPLE_SCREENSHOTS === 'true';
+
+function intEnv(name, fallback, min, max) {
+  const n = parseInt(process.env[name], 10);
+  const v = Number.isFinite(n) ? n : fallback;
+  return Math.min(max, Math.max(min, v));
+}
+
+const COMPOSER_READY_TIMEOUT_MS = intEnv('MARKDOWN_COMPOSER_READY_TIMEOUT_MS', 10000, 2000, 20000);
+const COMPOSER_READY_INTERVAL_MS = intEnv('MARKDOWN_COMPOSER_READY_INTERVAL_MS', 200, 80, 500);
+const COMPOSER_POST_READY_MS = intEnv('MARKDOWN_COMPOSER_POST_READY_MS', 120, 0, 400);
+const COMPOSER_FALLBACK_PAUSE_MS = intEnv('MARKDOWN_COMPOSER_FALLBACK_PAUSE_MS', 500, 200, 1500);
+const TYPE_PLACEHOLDER_PAUSE_MS = intEnv('MARKDOWN_TYPE_PLACEHOLDER_PAUSE_MS', 0, 0, 600);
+const TYPE_TEXTVIEW_PAUSE_MS = intEnv('MARKDOWN_TYPE_TEXTVIEW_PAUSE_MS', 0, 0, 400);
+const MARKDOWN_ROOM_WAIT_TIMEOUT_MS = intEnv('MARKDOWN_ROOM_WAIT_TIMEOUT_MS', 30000, 8000, 90000);
+const MARKDOWN_ROOM_WAIT_INTERVAL_MS = intEnv('MARKDOWN_ROOM_WAIT_INTERVAL_MS', 600, 200, 2000);
+
+function selectMarkdownExamples(all) {
+  if (!MARKDOWN_EXAMPLE_IDS.length) {
+    return all;
+  }
+  const picked = all.filter(ex => MARKDOWN_EXAMPLE_IDS.includes(ex.id));
+  if (!picked.length) {
+    throw new Error(
+      `MARKDOWN_EXAMPLE_IDS matched no examples (got: ${MARKDOWN_EXAMPLE_IDS.join(', ')}). Check ids in markdowns.js.`
+    );
+  }
+  console.log(`markdowns: running ${picked.length} example(s) from MARKDOWN_EXAMPLE_IDS`);
+  return picked;
+}
+
 async function tapByText(driver, text, timeout = 20000) {
   const safe = text.replace(/"/g, '\\"');
 
@@ -38,12 +78,41 @@ async function tapByText(driver, text, timeout = 20000) {
   await parentCell.click();
 }
 
+async function openRoomWhenReady(driver, roomName) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < MARKDOWN_ROOM_WAIT_TIMEOUT_MS) {
+    try {
+      await tapByText(driver, roomName, Math.min(MARKDOWN_ROOM_WAIT_INTERVAL_MS, 2500));
+      return;
+    } catch {}
+    await driver.pause(MARKDOWN_ROOM_WAIT_INTERVAL_MS);
+  }
+
+  throw new Error(
+    `Room "${roomName}" was not visible after ${MARKDOWN_ROOM_WAIT_TIMEOUT_MS}ms. ` +
+      'Try increasing MARKDOWN_ROOM_WAIT_TIMEOUT_MS for slower standalone login loads.'
+  );
+}
+
 async function typeComposerMessage(driver, message, timeout = 20000) {
+  const setComposerValue = async el => {
+    try {
+      await el.setValue(message);
+      return true;
+    } catch {
+      // Composer focus can race with iOS keyboard animation; retry quickly instead of fixed waits.
+      await el.waitForDisplayed({ timeout: 1200 });
+      await el.click();
+      await el.setValue(message);
+      return true;
+    }
+  };
+
   const byId = await driver.$('~messageComposerTextView');
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
-    await byId.setValue(message);
+    await setComposerValue(byId);
     return;
   }
 
@@ -56,15 +125,19 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
   if (await placeholder.isExisting().catch(() => false)) {
     await placeholder.waitForDisplayed({ timeout });
     await placeholder.click();
-    await driver.pause(300);
+    if (TYPE_PLACEHOLDER_PAUSE_MS > 0) {
+      await driver.pause(TYPE_PLACEHOLDER_PAUSE_MS);
+    }
   }
 
   const textViews = await driver.$$('//XCUIElementTypeTextView');
   for (const tv of textViews) {
     if (await tv.isDisplayed().catch(() => false)) {
       await tv.click();
-      await driver.pause(150);
-      await tv.setValue(message);
+      if (TYPE_TEXTVIEW_PAUSE_MS > 0) {
+        await driver.pause(TYPE_TEXTVIEW_PAUSE_MS);
+      }
+      await setComposerValue(tv);
       return;
     }
   }
@@ -76,6 +149,49 @@ async function sendMessage(driver, timeout = DEFAULT_TIMEOUT) {
   const sendBtn = await driver.$('~sendMessageButton');
   await sendBtn.waitForEnabled({ timeout });
   await sendBtn.click();
+}
+
+async function anyVisibleComposerTextView(driver) {
+  const textViews = await driver.$$('//XCUIElementTypeTextView');
+  for (const tv of textViews) {
+    if (await tv.isDisplayed().catch(() => false)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * After send, the thread may briefly not expose the same accessibility ids; we wait for any known
+ * composer surface, then a short settle. On timeout, fall back to the legacy fixed pause so the suite keeps going.
+ */
+async function waitForComposerReadyAfterSend(driver) {
+  const byId = await driver.$('~messageComposerTextView');
+  const placeholder = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
+     (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
+      label CONTAINS "Message" OR name CONTAINS "Message")`
+  );
+
+  try {
+    await driver.waitUntil(
+      async () =>
+        (await byId.isDisplayed().catch(() => false)) ||
+        (await placeholder.isDisplayed().catch(() => false)) ||
+        (await anyVisibleComposerTextView(driver)),
+      {
+        timeout: COMPOSER_READY_TIMEOUT_MS,
+        interval: COMPOSER_READY_INTERVAL_MS,
+        timeoutMsg: 'Composer did not become ready again after send',
+      }
+    );
+  } catch {
+    console.warn('markdowns: composer readiness wait timed out; using fallback settle');
+    await driver.pause(COMPOSER_FALLBACK_PAUSE_MS);
+  }
+  if (COMPOSER_POST_READY_MS > 0) {
+    await driver.pause(COMPOSER_POST_READY_MS);
+  }
 }
 
 async function focusComposer(driver, timeout = DEFAULT_TIMEOUT) {
@@ -250,17 +366,19 @@ async function runTest(driver, options = {}) {
   if (!skipLogin) {
     await ensureLoggedIn(driver);
   }
-  await tapByText(driver, roomName, DEFAULT_TIMEOUT);
+  await openRoomWhenReady(driver, roomName);
   await saveScreenshot(driver, TEST_NAME, '01_room_opened.png');
 
-  for (const example of MARKDOWN_EXAMPLES) {
+  for (const example of selectMarkdownExamples(MARKDOWN_EXAMPLES)) {
     if (example.useEmojiKeyboard) {
       await tapEmojiKeyboard(driver, DEFAULT_TIMEOUT);
     }
     await typeComposerMessage(driver, example.text, DEFAULT_TIMEOUT);
     await sendMessage(driver, DEFAULT_TIMEOUT);
-    await driver.pause(600);
-    await saveScreenshot(driver, TEST_NAME, `${example.id}.png`);
+    await waitForComposerReadyAfterSend(driver);
+    if (!SKIP_EXAMPLE_SCREENSHOTS) {
+      await saveScreenshot(driver, TEST_NAME, `${example.id}.png`);
+    }
   }
 }
 
@@ -280,5 +398,6 @@ async function run(driver, options = {}) {
 module.exports = { run };
 
 if (require.main === module) {
-  run().catch(() => process.exit(1));
+  const { runCliTimed } = require('../utils/cliTestTiming');
+  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
 }
