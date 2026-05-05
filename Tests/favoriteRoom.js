@@ -31,8 +31,7 @@ async function pause(driver, ms) {
   if (ms > 0) await driver.pause(ms);
 }
 
-/** Row bounds for swipe math (WDIO here often has no `getRect()` on elements). */
-async function getRowRect(el) {
+async function getRectCompat(el) {
   if (typeof el.getRect === 'function') {
     return el.getRect();
   }
@@ -41,7 +40,10 @@ async function getRowRect(el) {
   return { x: loc.x, y: loc.y, width: size.width, height: size.height };
 }
 
-/** Hold at (fromX, y), then drag to (toX, y) — avoids opening the row like element-level long-press can. */
+function escapePredicateString(s) {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 async function holdThenSwipeRight(driver, fromX, toX, y) {
   await driver.performActions([
     {
@@ -60,26 +62,18 @@ async function holdThenSwipeRight(driver, fromX, toX, y) {
   await driver.releaseActions();
 }
 
-function swipeEndpoints(rect, win) {
-  const y = Math.round(rect.y + rect.height / 2);
-  const fromX = Math.max(8, Math.round(rect.x + rect.width * 0.06));
-  const toX = Math.min(win.width - 8, Math.round(rect.x + rect.width * 0.92));
-  return { fromX, toX, y };
-}
-
-/**
- * Swipe the row right: coordinate hold+drag first, then one Appium drag fallback.
- */
 async function swipeRightOnElement(driver, el) {
-  const rect = await getRowRect(el);
+  const rect = await getRectCompat(el);
   const win = await driver.getWindowRect();
-  const { fromX, toX, y } = swipeEndpoints(rect, win);
+  const y = Math.round(rect.y + rect.height / 2);
+  const fromX = Math.max(8, Math.round(win.width * 0.08));
+  const toX = Math.min(win.width - 8, Math.round(win.width * 0.55));
 
   try {
     await holdThenSwipeRight(driver, fromX, toX, y);
     return;
-  } catch (e) {
-    console.warn(`favoriteRoom: hold+drag failed (${e?.message || e}), trying drag only`);
+  } catch (err) {
+    console.warn(`favoriteRoom: hold+drag failed (${err?.message || err}), trying drag only`);
   }
 
   const safeToX = Math.max(fromX + 2, toX);
@@ -92,54 +86,18 @@ async function swipeRightOnElement(driver, el) {
   });
 }
 
-async function findRowElementForTitle(driver, title, displayTimeout = 2500) {
-  const esc = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-
-  const byPredicate = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND (name == "${esc}" OR label == "${esc}")`
-  );
-  if (await byPredicate.isDisplayed().catch(() => false)) {
-    return byPredicate;
-  }
-
-  const rowBtn = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${esc}" or @label="${esc}"]/ancestor::XCUIElementTypeButton[1]`
-  );
-  if (await rowBtn.isExisting().catch(() => false)) {
-    await rowBtn.waitForDisplayed({ timeout: displayTimeout });
-    return rowBtn;
-  }
-
-  const cell = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${esc}" or @label="${esc}"]/ancestor::XCUIElementTypeCell[1]`
-  );
-  if (await cell.isExisting().catch(() => false)) {
-    await cell.waitForDisplayed({ timeout: displayTimeout });
-    return cell;
-  }
-
-  const other = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${esc}" or @label="${esc}"]/ancestor::XCUIElementTypeOther[1]`
-  );
-  if (await other.isExisting().catch(() => false)) {
-    await other.waitForDisplayed({ timeout: displayTimeout });
-    return other;
-  }
-
-  return null;
-}
-
 async function waitForFavoriteRow(driver, roomName) {
+  const esc = escapePredicateString(roomName);
+  const title = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name == "${esc}" OR label == "${esc}")`
+  );
   const started = Date.now();
   let scrolls = 0;
 
   while (Date.now() - started < WAIT_TIMEOUT_MS) {
-    const row = await findRowElementForTitle(
-      driver,
-      roomName,
-      Math.min(WAIT_INTERVAL_MS, 2500)
-    ).catch(() => null);
-    if (row) return row;
+    if (await title.isDisplayed().catch(() => false)) {
+      return title;
+    }
 
     if (scrolls < MAX_LIST_SCROLLS) {
       try {
@@ -159,6 +117,21 @@ async function waitForFavoriteRow(driver, roomName) {
     `Room "${roomName}" was not found after ${WAIT_TIMEOUT_MS}ms. ` +
       'Create the room or set FAVORITE_ROOM_NAME. Increase FAVORITE_ROOM_MAX_SCROLLS if it is below the fold.'
   );
+}
+
+async function tapRevealedFavorite(driver) {
+  const esc = escapePredicateString(FAVORITE_ROOM_NAME);
+  const candidate = await driver.$(
+    `//XCUIElementTypeStaticText[@name="${esc}" or @label="${esc}"]/preceding::XCUIElementTypeButton[@name="favoritesButton" or @label=""][1]`
+  );
+
+  const exists = await candidate.isExisting().catch(() => false);
+  if (!exists) {
+    throw new Error('favoriteRoom: favoritesButton next to room title was not found after swipe');
+  }
+
+  await candidate.waitForDisplayed({ timeout: 8000 });
+  await candidate.click();
 }
 
 async function runTest(driver, options = {}) {
@@ -181,7 +154,16 @@ async function runTest(driver, options = {}) {
   await swipeRightOnElement(driver, row);
   await pause(driver, POST_SWIPE_PAUSE_MS);
   await saveScreenshot(driver, TEST_NAME, '02_after_swipe_right.png');
-  
+  await tapRevealedFavorite(driver);
+  await saveScreenshot(driver, TEST_NAME, '03_after_click_favorites.png');
+
+  // Toggle off: same row action again (swipe actions usually collapse after tap).
+  const rowAgain = await waitForFavoriteRow(driver, FAVORITE_ROOM_NAME);
+  await pause(driver, 400);
+  await swipeRightOnElement(driver, rowAgain);
+  await pause(driver, POST_SWIPE_PAUSE_MS);
+  await tapRevealedFavorite(driver);
+  await saveScreenshot(driver, TEST_NAME, '04_after_unfavorite.png');
 }
 
 async function run(driver, options = {}) {
@@ -197,7 +179,7 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run, swipeRightOnElement, findRowElementForTitle, waitForFavoriteRow };
+module.exports = { run };
 
 if (require.main === module) {
   const { runCliTimed } = require('../utils/cliTestTiming');
