@@ -1,269 +1,270 @@
 # Connect Apple – iOS Automation Test Suite
 
-This repository contains **end-to-end (E2E) automation tests** for the **Connect Apple (iOS)** application, built using **Appium + WebdriverIO**.  
-The goal of this project is to validate critical user workflows against the real iOS UI using accessibility identifiers and resilient selector strategies designed for SwiftUI, **while significantly reducing the amount of manual and regression testing required by our QA ninjas**.
-
-This is **not** a demo repo — these tests are intended to be:
-- Reliable
-- Maintainable
-- CI-ready
-- Resistant to SwiftUI quirks
-- A practical replacement for repetitive manual regression testing
+End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**. Tests drive the real simulator UI via accessibility identifiers, iOS predicates, and XPath where needed—aimed at reducing repetitive manual regression for QA.
 
 ---
 
-## 📌 Scope & Goals
+## What this repo covers
 
-### What this test suite is for
-- Validating **core user flows** end-to-end in the Connect Apple iOS app
-- Catching regressions related to:
-  - Room creation
-  - Privacy toggles
-  - Messaging
-  - Navigation
-  - Future Connect features as they are introduced
-- Exercising **real UI behavior** against production-like builds (no mocks or stubs)
-- Reducing repetitive **manual and regression testing** for QA ninjas
+| Area | Tests / behavior |
+|------|------------------|
+| **Login** | Auto-login when `loginView` is shown (localhost server, credentials from `.env`) |
+| **Rooms** | Create public/private rooms (`CreateRoom.js`); swipe-left remove on list rows (`removeRoom.js`) |
+| **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); swipe-left clear/remove (`removeRoom.js`) |
+| **Messaging** | New DM (`newMessage.js`); markdown rendering (`markdowns.js`); pin/edit/unpin (`PinnedMessageEditFlow.js`) |
+| **Settings** | Conversation layout & sort (`ConversationList.js`); sign out (`Login_Signout.js`) |
+| **Suite** | One session, shared login, markdown report (`Tests/runAll.js`) |
 
-### What this test suite is NOT for
-- Unit testing (handled at the app layer)
-- Snapshot or visual regression testing
-- Pixel-perfect UI validation
-- Performance or load benchmarking
+**Not in scope:** unit tests, pixel-perfect visual diff, load/performance benchmarks.
 
 ---
 
-## 🧱 Tech Stack
+## Tech stack
 
 | Layer | Tool |
-|-----|-----|
-| Language | JavaScript (Node.js) |
-| Automation Framework | WebdriverIO |
-| Mobile Automation | Appium |
-| iOS Driver | XCUITest |
-| UI Framework Under Test | SwiftUI |
-| Platform | iOS Simulator |
+|-------|------|
+| Language | Node.js (JavaScript) |
+| Client | WebdriverIO 9 |
+| Server | Appium 2+ with **XCUITest** |
+| App | SwiftUI (debug build on simulator) |
 
 ---
 
-## 🧩 Test Coverage
+## Prerequisites
 
-### Rooms
-- Opening the **Rooms `+` menu**
-- Creating **public rooms**
-- Creating **private rooms**
-- Verifying newly created rooms appear in the list
+- **macOS** with **Xcode** and an iOS **Simulator** installed
+- **Node.js** (LTS recommended) and **npm**
+- **Appium** globally or via `npx`
+- **Connect iOS** debug app installed on the simulator (`com.powerhrg.connect.v3.debug`)
+- Local **localhost** backend available when login runs (tests select **localhost** in the server picker)
 
-### Messaging
-- Entering the message composer
-- Sending messages in newly created rooms
-- Handling SwiftUI text input behavior
+Check simulators:
 
-### Stability Features
-- Unique test data per run (random room names)
-- Explicit waits for async SwiftUI rendering
-- Defensive selectors for menus, toggles, and navigation bars
+```bash
+xcrun simctl list devices available
+```
+
+The default driver targets **`iPhone 17 Pro`** (see `Login_Flow/Open_App.js`). Use a simulator that matches that name, or update `appium:deviceName` (and optionally `appium:udid`) in `Open_App.js`.
 
 ---
 
-## ✅ System Requirements
+## Setup
 
-### Operating System
-- macOS (required for iOS automation)
+### 1. Install Node dependencies
 
-### Xcode
-- Latest stable Xcode
-- iOS Simulator installed (recommended: latest iOS)
+From the project root:
 
-Verify simulators:
 ```bash
-xcrun simctl list
-```
-### Node.js
-```bash
-node -v
-npm -v
-```
-
-## 🔧 Project Setup
-
-### 1. Install dependencies
-From project root:
-```bash 
 npm install
 ```
-2. Install Appium
+
+### 2. Install Appium and XCUITest driver
+
 ```bash
 npm install -g appium
-```
-Verify
-```bash
-appium -v
-```
-3. Install XCUITest Driver
-```bash
 appium driver install xcuitest
-```
-Confirm installation:
-```bash
 appium driver list
 ```
-## Xcode configuration
-1. Open **Xcode**
-2. Go to **Settings** -> **Locations**
-3. Ensure **Command Line Tools** is set
-    PS: Appium will reuse the simulator once it's booted
 
-### Running Appium
-Start Appium on a separate terminal:
+### 3. Xcode command-line tools
+
+In **Xcode → Settings → Locations**, set **Command Line Tools**.
+
+Boot the simulator you intend to use before or during the first test run.
+
+### 4. Environment variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set at minimum:
+
+```bash
+Connect_username=your@email
+Connect_password=yourpassword
+```
+
+Other variables tune suite speed, room names, screenshots, etc. See `.env.example` for comments.
+
+**Login flow:** If the app is already logged in (`loginView` absent), tests skip login. With `appium:noReset: true`, session state persists across runs.
+
+### 5. Start Appium (separate terminal)
+
 ```bash
 appium
 ```
-Leave it running.
 
+Default URL: `http://127.0.0.1:4723` (used by `Login_Flow/Open_App.js`).
 
-### Running Tests
-Run a single test file
+### 6. Verify launch (optional)
+
 ```bash
-Connect-Apple-Testing node Tests/CreateRoom.js
+npm run test:ios
 ```
-## Expected behavior:
-1. App launches in simulator
-2. User is logged in (or login flow executes)
-3. Test steps run sequentially
-4. Simulator remains open until test completes or fails
 
-##  Test Lifecycle (High-Level)
-Each test follows this general lifecycle:
-1. Create Appium session
-2. Launch app
-3. Ensure authenticated state
-4. Navigate to required screen
-5. Perform user actions
-6. Validate UI responses
-7. Cleanly exit or return to a known state
+Writes `connect-launch.png` after activating the app—confirms driver + bundle ID work.
 
-## 🧠 Key Design Decisions
+---
 
-## Accessibility-First Selectors
-Primary Strategy:
-* ```accessibilityIdentifier```
-* ```accessibilityLabel```
-Fallbacks:
-* iOS predicate strings
-* XPath
+## Running tests
 
-## SwiftUI-Safe Menu Handling
-SwiftUI Menu components do not exist in the UI tree until tapped.
-Because of this:
-* We first tap the Rooms + button
-* Only then does createRoomButton appear
-* Tests explicitly wait for this condition
+### Full regression suite
 
-## Robust Toggle Interaction
-SwiftUI toggles may:
-* Have no label
-* Be wrapped in multiple containers
-* Render as ```XCUIElementTypeSwitch```
-The toggle helper:
-* Looks for labeled switch
-* Falls back to the first visible switch
-* Fails loudly if nothing is found
+One Appium session, login once, `resetToHome` between tests (unless skipped via env):
 
-## Unique Test Data Per Run
-To prevent collisions:
-```js
-function generateRoomName(prefix = 'Room') {
-  const rand = Math.random().toString(36).slice(2, 10);
-  return `${prefix}-${rand}`;
-}
+```bash
+npm run test:suite
 ```
-This ensures:
-* Parallel test safety
-* Repeatability
-* No manual cleanup
 
-## 🗂 Folder Structure
+**Order in `runAll.js`:**
+
+1. `newMessage` — new direct message  
+2. `CreateRoom` — public and private room creation  
+3. `PinnedMessageEditFlow` — pin, edit, unpin  
+4. `markdowns` — markdown / emoji in composer  
+5. `ConversationList` — layout and sort in user settings  
+6. `Login_Signout` — sign out  
+
+Report: `reports/latest-suite-report.md` (pass/fail, durations, options).
+
+### Faster suite (subset)
+
+```bash
+npm run test:suite:fast
+```
+
+Uses smoke room creation, one layout/sort, and a subset of markdown examples (see `package.json`).
+
+### Single test files
+
+Any test that exports `{ run }` can be run directly (creates its own session unless you pass a driver):
+
+```bash
+node Tests/CreateRoom.js
+node Tests/favoriteRoom.js
+node Tests/removeRoom.js
+node Tests/newMessage.js
+```
+
+Wall-clock time is printed via `utils/cliTestTiming.js`.
+
+### Suite options (environment)
+
+| Variable | Effect |
+|----------|--------|
+| `CONNECT_SKIP_RESET_BETWEEN_TESTS=1` | Skip `resetToHome` before tests 2+ (faster; tests must tolerate shared state) |
+| `CREATE_ROOM_MODE=smoke` | `CreateRoom`: public room only |
+| `MARKDOWN_EXAMPLE_IDS` | Comma-separated markdown example ids |
+| `CONVERSATION_LAYOUTS` / `CONVERSATION_SORTS` | Limit `ConversationList` matrix |
+| `CONNECT_SCREENSHOTS=0` or `SKIP_SCREENSHOTS=1` | Disable screenshots |
+
+---
+
+## Standalone list-action tests (not in `runAll` yet)
+
+These follow the same login + home pattern but are run individually today.
+
+### `favoriteRoom.js`
+
+- Finds a row whose title contains `FAVORITE_ROOM_NAME` (default **Favorite Room**), scrolls the list if needed.
+- **Swipe right** → tap `favoritesButton` (heart) → swipe again → tap to **unfavorite**.
+- Screenshots under `screenshots/favoriteRoom/`.
+
+### `removeRoom.js`
+
+- Finds the first visible row whose title **contains** `A-Public` or `B-Private` (`REMOVE_ROOM_CANDIDATES`, comma-separated).
+- Resolves the **full** row title (e.g. `A-Public Room-abc123`) for reliable XPath.
+- **Swipe left** → tap clear button (`name` / `label` ****) → waits until that title disappears.
+- Uses `getLocation` + `getSize` for swipe Y (WebdriverIO `getRect` is unreliable on some elements).
+- Screenshots under `screenshots/removeRoom/`.
+
+**Typical manual flow:** run `CreateRoom` (or have `A-Public` / `B-Private` rooms on screen) → `removeRoom` to clean up.
+
+---
+
+## Project layout
+
 ```text
 Connect-Apple-Testing/
-├─ Tests/
-│  ├─ CreateRoom.js
-│  ├─ Messaging.js
-│  └─ SmokeTests.js
-├─ Login_Flow/
-│  ├─ Open_App.js
-│  └─ Login_User.js
-├─ screenshots/
-├─ package.json
-└─ README.md
+├── Login_Flow/
+│   ├── Open_App.js          # WebdriverIO session + capabilities
+│   └── Login_User.js        # ensureLoggedIn (localhost + .env credentials)
+├── Tests/
+│   ├── runAll.js            # Suite runner + report
+│   ├── CreateRoom.js
+│   ├── newMessage.js
+│   ├── favoriteRoom.js      # standalone
+│   ├── removeRoom.js        # standalone
+│   ├── markdowns.js
+│   ├── PinnedMessageEditFlow.js
+│   ├── ConversationList.js
+│   ├── Login_Signout.js
+│   └── …                    # EditMessage, PinnedMessages, User_Settings, etc.
+├── utils/
+│   ├── testSession.js       # resetToHome, scroll helpers, runWithOptionalDriver
+│   ├── screenshots.js
+│   ├── reportWriter.js
+│   └── cliTestTiming.js
+├── screenshots/             # per-test artifacts (gitignored)
+├── reports/                 # suite markdown reports
+├── .env.example
+├── test.js                  # npm run test:ios — launch smoke
+└── package.json
 ```
-## 🧯 Debugging & Diagnostics
-Save page source:
+
+---
+
+## Design notes
+
+- **Accessibility-first:** prefer `~accessibilityId`, then predicates, then XPath anchored to row titles.
+- **SwiftUI menus:** e.g. room creation—tap **Rooms +** before `createRoomButton` exists in the tree.
+- **Swipe actions:** favorite (right) and remove (left) buttons often sit off-screen until swiped; XPath is tied to the **full** `StaticText` title next to the action.
+- **Unique room names:** `CreateRoom` uses random suffixes to avoid collisions.
+- **Screenshots:** saved per test under `screenshots/<testName>/`; disable with env when iterating quickly.
+
+### Debugging
+
 ```js
 const xml = await driver.getPageSource();
 fs.writeFileSync('debug.xml', xml);
 ```
-Capture Screenshot
+
 ```js
-await driver.saveScreenshot('Error.png')
+await driver.saveScreenshot('error.png');
 ```
-Reasons:
-* SwiftUI layouts are opaque
-* Page source is the source of truth
-* If Appium can’t see it, automation can’t tap it
 
-Recommended ```.gitignore```
-```gitignore
-node_modules/
-screenshots/
-*.png
-*.xml
-.env
-```
-Why screenshots & XML are ignored
-* Generated per run
-* Not deterministic
-* Useful locally, noisy in PRs
+If Appium cannot see a control in the page source, automation cannot tap it.
 
-## ⚙️ CI / Headless Execution
-**Local**
-* One simulator
-* One test session at a time
+### Recommended `.gitignore` (already in repo)
 
-**CI (Planned)**
-* Tests typically run sequentially
-* Simulator runs headlessly
-* Appium session reused per job
+- `node_modules/`, `.env`, `screenshots/`, `*.png`, `*.xml`, `*.log`
 
-## ✅ Best Practices
-* Always navigate back to a known screen between tests
-* Try to not reuse stale element references
-* Re-query elements after navigation
-* Prefer explicit waits over sleeps
-* Dump page source immediately when stuck
+---
 
-## 🧭 Future Plans
-Potential next steps:
-* Smoke test suite
-* Login state caching
-* CI integration (GitHub Actions)
-* Parallel execution
-* Reporting (JUnit / Allure)
+## npm scripts
 
-## 🏁 Final Notes
-This test suite is built to survive:
+| Script | Command |
+|--------|---------|
+| `npm run appium` | Start Appium via local `node_modules` binary |
+| `npm run test:ios` | Launch app + `connect-launch.png` |
+| `npm run test:suite` | Full `runAll.js` suite |
+| `npm run test:suite:fast` | Reduced suite |
+| `npm run test:time` | Timing helper test |
 
-* SwiftUI refactors
-* Accessibility changes
-* Real production data
-* CI environments
+---
 
-## 🧑‍💻 Ownership & Contributions
+## CI / future work
 
-- Tests should be added alongside new Connect features when possible
-- Prefer extending existing helpers over creating new one-off selectors
-- If a test becomes flaky, treat it as a bug and fix it — do not disable it
+- Today: local simulator, sequential tests, one session per suite run.
+- Planned: GitHub Actions, parallel jobs, JUnit/Allure export if needed.
 
-**If a test fails here, it’s probably a real bug, not flaky automation.**
+---
 
-Thanks for reading! Happy automating!
+## Contributing
+
+- Add tests next to new Connect features when possible.
+- Reuse `utils/testSession.js` and shared login instead of one-off drivers.
+- Treat flaky tests as bugs—fix selectors or waits rather than disabling coverage.
+
+If a test fails here after a stable run, it is often a real product or environment issue—not “automation noise.”
