@@ -10,7 +10,7 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 |------|------------------|
 | **Login** | Auto-login when `loginView` is shown (localhost server, credentials from `.env`) |
 | **Rooms** | Create public/private rooms (`CreateRoom.js`); swipe-left remove on list rows (`removeRoom.js`) |
-| **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); swipe-left clear/remove (`removeRoom.js`) |
+| **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); mark unread/read (`markAsRead.js`); swipe-left remove (`removeRoom.js`) |
 | **Messaging** | New DM (`newMessage.js`); markdown rendering (`markdowns.js`); pin/edit/unpin (`PinnedMessageEditFlow.js`) |
 | **Settings** | Conversation layout & sort (`ConversationList.js`); sign out (`Login_Signout.js`) |
 | **Suite** | One session, shared login, markdown report (`Tests/runAll.js`) |
@@ -171,6 +171,13 @@ These follow the same login + home pattern but are run individually today.
 - **Swipe right** → tap `favoritesButton` (heart) → swipe again → tap to **unfavorite**.
 - Screenshots under `screenshots/favoriteRoom/`.
 
+### `markAsRead.js`
+
+- Finds a row whose title **contains** any of `MARK_AS_READ_CANDIDATES` (default **Message Room**, **Markdown room**).
+- **Swipe right** → tap `markAsUnreadButton` (`label` **message-dot**) via XPath anchored to the full row title.
+- Swipes and taps again to toggle back to read.
+- Screenshots under `screenshots/markAsRead/`.
+
 ### `removeRoom.js`
 
 - Finds the first visible row whose title **contains** `A-Public` or `B-Private` (`REMOVE_ROOM_CANDIDATES`, comma-separated).
@@ -195,6 +202,7 @@ Connect-Apple-Testing/
 │   ├── CreateRoom.js
 │   ├── newMessage.js
 │   ├── favoriteRoom.js      # standalone
+│   ├── markAsRead.js        # standalone (mark unread/read)
 │   ├── removeRoom.js        # standalone
 │   ├── markdowns.js
 │   ├── PinnedMessageEditFlow.js

@@ -187,6 +187,39 @@ async function createPrivateRoom(driver, roomName, options = {}) {
   console.log(`createPrivateRoom: ${roomName}`);
 }
 
+/**
+ * From the main list (Rooms visible): open Rooms +, create a **public** room named `roomName`, then **Create**.
+ * By default: Skip for now → stays in the room (caller taps nav title, etc.).
+ * With `sendStarterMessage: true`: sends one message before returning (still in room).
+ */
+async function createPublicRoom(driver, roomName, options = {}) {
+  const { sendStarterMessage = false } = options;
+
+  await openRoomsPlusMenu(driver);
+
+  const createRoomBtn = await driver.$('~createRoomButton');
+  await createRoomBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await createRoomBtn.click();
+
+  const roomField = await driver.$('~roomNameText');
+  await roomField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await roomField.click();
+  await roomField.setValue(roomName);
+
+  await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
+  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
+
+  if (sendStarterMessage) {
+    await typeComposerMessage(driver, generateRandomMessage());
+    const sendBtn = await driver.$('~sendMessageButton');
+    await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+    await sendBtn.click();
+    await driver.pause(400);
+  }
+
+  console.log(`createPublicRoom: ${roomName}`);
+}
+
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
 
@@ -277,7 +310,7 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run, generateRoomName, createPrivateRoom };
+module.exports = { run, generateRoomName, createPrivateRoom, createPublicRoom };
 
 if (require.main === module) {
   const { runCliTimed } = require('../utils/cliTestTiming');
