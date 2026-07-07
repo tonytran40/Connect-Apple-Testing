@@ -1,0 +1,12 @@
+{
+  "aps": {
+    "alert": {
+      "title": "Connect",
+      "body": "New message in Message Room"
+    },
+    "badge": 1,
+    "sound": "default"
+  },
+  "roomId": "automation-room-id",
+  "eventType": "message"
+}
