@@ -9,9 +9,10 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 | Area | Tests / behavior |
 |------|------------------|
 | **Login** | Auto-login when `loginView` is shown (localhost server, credentials from `.env`) |
-| **Rooms** | Create public/private rooms (`CreateRoom.js`); swipe-left remove on list rows (`removeRoom.js`) |
+| **Rooms** | Create public/private rooms (`CreateRoom.js`); edit room settings (`editRoom.js`); remove room rows (`removeRoom.js`); manage room members (`membersRoom.js`) |
 | **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); mark unread/read (`markAsRead.js`); swipe-left remove (`removeRoom.js`) |
-| **Messaging** | New DM (`newMessage.js`); markdown rendering (`markdowns.js`); pin/edit/unpin (`PinnedMessageEditFlow.js`) |
+| **Messaging** | New DM (`newMessage.js`); markdown rendering (`markdowns.js`); pin/edit/unpin (`PinnedMessageEditFlow.js`); attachment entry points (`attachments.js`) |
+| **Notifications** | Push a simulator notification and verify app re-entry (`notifications.js`) |
 | **Settings** | Conversation layout & sort (`ConversationList.js`); sign out (`Login_Signout.js`) |
 | **Suite** | One session, shared login, markdown report (`Tests/runAll.js`) |
 
@@ -142,12 +143,27 @@ Any test that exports `{ run }` can be run directly (creates its own session unl
 
 ```bash
 node Tests/CreateRoom.js
+node Tests/editRoom.js
 node Tests/favoriteRoom.js
+node Tests/markAsRead.js
+node Tests/membersRoom.js
+node Tests/notifications.js
 node Tests/removeRoom.js
 node Tests/newMessage.js
 ```
 
 Wall-clock time is printed via `utils/cliTestTiming.js`.
+
+### Handy npm scripts
+
+```bash
+npm run test:ios
+npm run test:suite
+npm run test:suite:fast
+npm run test:notifications
+npm run test:members-room
+npm run test:attachments
+```
 
 ### Suite options (environment)
 
@@ -161,7 +177,7 @@ Wall-clock time is printed via `utils/cliTestTiming.js`.
 
 ---
 
-## Standalone list-action tests (not in `runAll` yet)
+## Standalone scenario tests (not in `runAll` yet)
 
 These follow the same login + home pattern but are run individually today.
 
@@ -188,6 +204,30 @@ These follow the same login + home pattern but are run individually today.
 
 **Typical manual flow:** run `CreateRoom` (or have `A-Public` / `B-Private` rooms on screen) → `removeRoom` to clean up.
 
+### `editRoom.js`
+
+- Creates a public room, opens the room settings modal, toggles the private switch, updates the room name, and fills the topic field.
+- Saves the modal, closes it, and reopens settings to verify the saved room name can be found again.
+- Useful for validating the edit modal selectors and save flow without bundling it into the main suite yet.
+
+### `membersRoom.js`
+
+- Creates a public room, opens **Members**, switches into **Edit**, optionally removes one member, then uses the add-individuals typeahead to invite a user.
+- Defaults to inviting `greg.blake` (or `RECIPIENT`) and supports `MEMBERS_ROOM_REMOVE_MEMBER` if you want to target a specific existing member.
+- Screenshots under `screenshots/membersRoom/`.
+
+### `notifications.js`
+
+- Backgrounds the app, pushes an APNS payload into the booted simulator via `xcrun simctl push`, taps the notification banner, and verifies the app comes back into a usable in-app state.
+- Payload comes from `Tests/fixtures/connect-notification.apns` by default, or can be generated from env values.
+- Screenshots under `screenshots/notifications/`.
+
+### `attachments.js`
+
+- Creates a public attachment room, opens the share options sheet, enters **Attach Photos**, selects the first visible row’s first 3 photos, confirms they appear in the composer, and sends them.
+- Includes photo-picker probing logic so you can validate the picker is reachable and tap visible photos on the simulator.
+- Tuned by the `ATTACHMENT_*` env vars documented in `.env.example`; screenshots under `screenshots/attachments/`.
+
 ---
 
 ## Project layout
@@ -201,9 +241,13 @@ Connect-Apple-Testing/
 │   ├── runAll.js            # Suite runner + report
 │   ├── CreateRoom.js
 │   ├── newMessage.js
+│   ├── editRoom.js          # standalone room settings flow
 │   ├── favoriteRoom.js      # standalone
 │   ├── markAsRead.js        # standalone (mark unread/read)
+│   ├── membersRoom.js       # standalone room members flow
+│   ├── notifications.js     # standalone simctl push flow
 │   ├── removeRoom.js        # standalone
+│   ├── attachments.js       # standalone attachment entry flow
 │   ├── markdowns.js
 │   ├── PinnedMessageEditFlow.js
 │   ├── ConversationList.js
@@ -257,8 +301,12 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run appium` | Start Appium via local `node_modules` binary |
 | `npm run test:ios` | Launch app + `connect-launch.png` |
 | `npm run test:suite` | Full `runAll.js` suite |
+| `npm run test:suite:full` | Alias for full `runAll.js` suite |
 | `npm run test:suite:fast` | Reduced suite |
 | `npm run test:time` | Timing helper test |
+| `npm run test:notifications` | Push simulator notification and verify app re-entry |
+| `npm run test:members-room` | Create room and exercise Members edit flow |
+| `npm run test:attachments` | Create room and validate attachment entry points |
 
 ---
 

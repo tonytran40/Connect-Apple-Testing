@@ -1,0 +1,24 @@
+{
+  "win": {
+    "y": 0,
+    "x": 0,
+    "width": 402,
+    "height": 874
+  },
+  "inventory": [],
+  "xmlLines": [
+    "<XCUIElementTypeButton type=\"XCUIElementTypeButton\" name=\"\" label=\"\" enabled=\"true\" visible=\"true\" accessible=\"true\" x=\"16\" y=\"56\" width=\"44\" height=\"45\" index=\"0\" traits=\"Button\"/>",
+    "<XCUIElementTypeButton type=\"XCUIElementTypeButton\" name=\"openRoomSettingsButton\" label=\"A-AttachmentRoom-c89t04ef, , 1 Member\" enabled=\"true\" visible=\"true\" accessible=\"true\" x=\"72\" y=\"60\" width=\"258\" height=\"37\" index=\"0\" traits=\"Button\"",
+    "</XCUIElementTypeButton>",
+    "<XCUIElementTypeOther type=\"XCUIElementTypeOther\" name=\"chatSearchButton\" label=\"\" enabled=\"true\" visible=\"true\" accessible=\"false\" x=\"366\" y=\"68\" width=\"20\" height=\"21\" index=\"2\" traits=\"\">",
+    "<XCUIElementTypeButton type=\"XCUIElementTypeButton\" name=\"chatSearchButton\" label=\"\" enabled=\"true\" visible=\"true\" accessible=\"true\" x=\"366\" y=\"68\" width=\"20\" height=\"21\" index=\"0\" traits=\"Button\"/>",
+    "<XCUIElementTypeButton type=\"XCUIElementTypeButton\" name=\"cancelEditMessageButton\" label=\"CANCEL\" enabled=\"true\" visible=\"false\" accessible=\"false\" x=\"16\" y=\"801\" width=\"52\" height=\"17\" index=\"10\" traits=\"Button\">",
+    "<XCUIElementTypeStaticText type=\"XCUIElementTypeStaticText\" value=\"CANCEL\" name=\"CANCEL\" label=\"CANCEL\" enabled=\"true\" visible=\"true\" accessible=\"true\" x=\"16\" y=\"801\" width=\"52\" height=\"17\" index=\"0\" traits=\"StaticText\"/>",
+    "</XCUIElementTypeButton>",
+    "<XCUIElementTypeButton type=\"XCUIElementTypeButton\" name=\"saveEditMessageButton\" label=\"SAVE\" enabled=\"false\" visible=\"false\" accessible=\"false\" x=\"352\" y=\"801\" width=\"34\" height=\"17\" index=\"11\" traits=\"NotEnabled, Button\">",
+    "</XCUIElementTypeButton>",
+    "<XCUIElementTypeButton type=\"XCUIElementTypeButton\" name=\"shareOptionsButton\" label=\"\" enabled=\"true\" visible=\"true\" accessible=\"true\" x=\"18\" y=\"794\" width=\"29\" height=\"31\" index=\"12\" traits=\"Button\"/>",
+    "<XCUIElementTypeButton type=\"XCUIElementTypeButton\" name=\"sendMessageButton\" label=\"\" enabled=\"true\" visible=\"false\" accessible=\"false\" x=\"370\" y=\"802\" width=\"14\" height=\"15\" index=\"13\" traits=\"Button\">",
+    "</XCUIElementTypeButton>"
+  ]
+}
