@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 
 const TEST_NAME = 'Login_Signout';
 
@@ -16,13 +17,13 @@ async function runTest(driver, options = {}) {
     await saveScreenshot(driver, TEST_NAME, 'Logged_In.png');
   }
 
-  const userSettingsButton = await driver.$('~settingsButton');
+  const userSettingsButton = await driver.$(SELECTORS.settingsButton);
   await userSettingsButton.waitForDisplayed({ timeout: 10000 });
   await userSettingsButton.click();
   await saveScreenshot(driver, TEST_NAME, 'User_Settings.png');
   await driver.pause(800);
 
-  const signOutButton = await driver.$('~logoutButton');
+  const signOutButton = await driver.$(SELECTORS.logoutButton);
   await signOutButton.waitForDisplayed({ timeout: 10000 });
   await signOutButton.click();
   await driver.pause(800);

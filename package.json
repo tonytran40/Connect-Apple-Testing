@@ -10,10 +10,14 @@
     "test:suite": "node Tests/runAll.js",
     "test:suite:full": "node Tests/runAll.js",
     "test:suite:fast": "CREATE_ROOM_MODE=smoke CONVERSATION_LAYOUTS=Classic CONVERSATION_SORTS='Recent Activity' MARKDOWN_EXAMPLE_IDS=01_headings,02_emphasis,09_emojis node Tests/runAll.js",
+    "test:suite:turbo": "CONNECT_SCREENSHOTS=0 CREATE_ROOM_MODE=smoke CONVERSATION_LAYOUTS=Classic CONVERSATION_SORTS='Recent Activity' MARKDOWN_EXAMPLE_IDS=01_headings,02_emphasis,09_emojis node Tests/runAll.js",
+    "test:parallel": "node Tests/runParallel.js",
+    "test:parallel:split": "node Tests/runSplitParallel.js",
     "test:time": "node Tests/testTime.js",
     "test:notifications": "node Tests/notifications.js",
     "test:members-room": "node Tests/membersRoom.js",
-    "test:attachments": "node Tests/attachments.js"
+    "test:attachments": "node Tests/attachments.js",
+    "test:remove-all-rooms": "node Tests/removeAllrooms.js"
   },
   "repository": {
     "type": "git",

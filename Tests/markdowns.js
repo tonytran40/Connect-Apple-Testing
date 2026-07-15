@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'markdowns';
@@ -108,7 +109,7 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
     }
   };
 
-  const byId = await driver.$('~messageComposerTextView');
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
@@ -146,7 +147,7 @@ async function typeComposerMessage(driver, message, timeout = 20000) {
 }
 
 async function sendMessage(driver, timeout = DEFAULT_TIMEOUT) {
-  const sendBtn = await driver.$('~sendMessageButton');
+  const sendBtn = await driver.$(SELECTORS.sendMessageButton);
   await sendBtn.waitForEnabled({ timeout });
   await sendBtn.click();
 }
@@ -166,7 +167,7 @@ async function anyVisibleComposerTextView(driver) {
  * composer surface, then a short settle. On timeout, fall back to the legacy fixed pause so the suite keeps going.
  */
 async function waitForComposerReadyAfterSend(driver) {
-  const byId = await driver.$('~messageComposerTextView');
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
   const placeholder = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
      (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
@@ -195,7 +196,7 @@ async function waitForComposerReadyAfterSend(driver) {
 }
 
 async function focusComposer(driver, timeout = DEFAULT_TIMEOUT) {
-  const byId = await driver.$('~messageComposerTextView');
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();

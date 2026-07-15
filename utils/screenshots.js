@@ -9,6 +9,10 @@ function ensureArtifactsDir(dir) {
 }
 
 function ensureTestArtifactsDir(testName) {
+  const runId = process.env.TEST_RUN_ID || process.env.PARALLEL_RUN_ID || '';
+  if (runId) {
+    return ensureArtifactsDir(path.join(ARTIFACTS_ROOT, runId, testName));
+  }
   return ensureArtifactsDir(path.join(ARTIFACTS_ROOT, testName));
 }
 

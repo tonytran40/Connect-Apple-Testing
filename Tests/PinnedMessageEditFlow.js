@@ -2,7 +2,13 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
+const {
+  runWithOptionalDriver,
+  scrollUntilConversationEntryVisible,
+  ensureRoomsSectionReady,
+  goBack,
+} = require('../utils/testSession');
+const { SELECTORS, PREDICATES } = require('../utils/selectors');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'PinnedMessageEditFlow';
@@ -12,18 +18,18 @@ const SEARCH_AFTER_TYPE_MS = 500;
 
 async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
   await scrollUntilConversationEntryVisible(driver);
-  const peoplePlus = await driver.$('~peoplePlusButton');
+  const peoplePlus = await driver.$(SELECTORS.peoplePlusButton);
   if (await peoplePlus.isDisplayed().catch(() => false)) {
     await peoplePlus.click();
     return;
   }
-  const newConversationButton = await driver.$('~newConversationButton');
+  const newConversationButton = await driver.$(SELECTORS.newConversationButton);
   await newConversationButton.waitForDisplayed({ timeout });
   await newConversationButton.click();
 }
 
 async function tapByTextButtonOrStatic(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const safe = text.replace(/"/g, '\\"');
+  const safe = escapePredicateString(text);
   const el = await driver.$(
     `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "${safe}" OR name == "${safe}")`
   );
@@ -31,8 +37,12 @@ async function tapByTextButtonOrStatic(driver, text, timeout = DEFAULT_TIMEOUT) 
   await el.click();
 }
 
+function escapePredicateString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 async function tapSearchResultByText(driver, text, timeout = 20000) {
-  const safe = text.replace(/"/g, '\\"');
+  const safe = escapePredicateString(text);
   const buttonEl = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
   );
@@ -61,7 +71,7 @@ async function tapSearchResultByText(driver, text, timeout = 20000) {
 }
 
 async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGET_MS) {
-  const safe = text.replace(/"/g, '\\"');
+  const safe = escapePredicateString(text);
   const deadline = Date.now() + budgetMs;
   const buttonEl = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
@@ -85,32 +95,118 @@ async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGE
 }
 
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
-  const roomsHeader = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND label CONTAINS "Rooms"`
-  );
+  await ensureRoomsSectionReady(driver);
+
+  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
   await roomsHeader.waitForDisplayed({ timeout });
-  const roomsPlus = await driver.$(
-    `//XCUIElementTypeButton[contains(@label,"Rooms")]/following-sibling::XCUIElementTypeButton[1]`
+
+  const headerLocation = await roomsHeader.getLocation();
+  const headerSize = await roomsHeader.getSize();
+  const windowRect = await driver.getWindowRect();
+  await driver.execute('mobile: tap', {
+    x: Math.min(windowRect.width - 20, Math.round(headerLocation.x + headerSize.width + 8)),
+    y: Math.round(headerLocation.y + headerSize.height / 2),
+  });
+}
+
+async function isConversationTitleVisible(driver, roomName, timeout = 1200) {
+  const safe = escapePredicateString(roomName);
+  const title = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
   );
-  await roomsPlus.waitForDisplayed({ timeout });
-  await roomsPlus.click();
+  return title.waitForDisplayed({ timeout }).then(() => true).catch(() => false);
+}
+
+async function isComposerForRoomVisible(driver, roomName, timeout = 1200) {
+  const safe = escapePredicateString(roomName);
+  const composer = await driver.$(
+    `-ios predicate string:(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeTextView") AND ` +
+      `(label CONTAINS "Message ${safe}" OR name CONTAINS "Message ${safe}" OR value CONTAINS "Message ${safe}")`
+  );
+  return composer.waitForDisplayed({ timeout }).then(() => true).catch(() => false);
+}
+
+async function isTargetRoomOpen(driver, roomName, timeout = 1200) {
+  const roomSettings = await driver.$(SELECTORS.openRoomSettingsButton);
+  const inRoom = await roomSettings.waitForDisplayed({ timeout }).then(() => true).catch(() => false);
+  return (
+    inRoom &&
+    (await isConversationTitleVisible(driver, roomName, timeout)) &&
+    (await isComposerForRoomVisible(driver, roomName, timeout))
+  );
+}
+
+async function openRoomFromRoomsList(driver, roomName, timeout = DEFAULT_TIMEOUT) {
+  await ensureRoomsSectionReady(driver);
+
+  for (let i = 0; i < 10; i++) {
+    try {
+      await tapByTextButtonOrStatic(driver, roomName, Math.min(timeout, 2500));
+      break;
+    } catch (err) {
+      if (i === 9) throw new Error(`Could not find room "${roomName}" in the Rooms list`);
+      try {
+        await driver.execute('mobile: scroll', { direction: 'down' });
+      } catch {
+        try {
+          await driver.execute('mobile: swipe', { direction: 'up' });
+        } catch {}
+      }
+      await driver.pause(300);
+    }
+  }
+
+  if (!(await isTargetRoomOpen(driver, roomName, timeout))) {
+    throw new Error(`Expected to open room "${roomName}", but another conversation is active`);
+  }
+}
+
+async function ensureTargetRoomOpen(driver, roomName, timeout = DEFAULT_TIMEOUT) {
+  if (await isTargetRoomOpen(driver, roomName, 3000)) {
+    await driver.pause(1200);
+  }
+
+  if (await isTargetRoomOpen(driver, roomName, 3000)) {
+    return;
+  }
+
+  console.log(`PinnedMessageEditFlow: "${roomName}" is not active; reopening from Rooms list`);
+  if (await driver.$(SELECTORS.backButton).isDisplayed().catch(() => false)) {
+    await goBack(driver, 700);
+  }
+  await openRoomFromRoomsList(driver, roomName, timeout);
 }
 
 async function createRoomFromSheet(driver, roomName, timeout = DEFAULT_TIMEOUT) {
-  const closeBtn = await driver.$('~closeButton');
+  const closeBtn = await driver.$(SELECTORS.closeButton);
   await closeBtn.waitForDisplayed({ timeout });
   await closeBtn.click();
   await driver.pause(500);
   await openRoomsPlusMenu(driver, timeout);
-  const createRoomBtn = await driver.$('~createRoomButton');
+  const createRoomBtn = await driver.$(SELECTORS.createRoomButton);
   await createRoomBtn.waitForDisplayed({ timeout });
   await createRoomBtn.click();
-  const roomField = await driver.$('~roomNameText');
+  const roomField = await driver.$(SELECTORS.roomNameText);
   await roomField.waitForDisplayed({ timeout });
   await roomField.click();
   await roomField.setValue(roomName);
   await tapByTextButtonOrStatic(driver, 'Create', timeout);
   await tapByTextButtonOrStatic(driver, 'Skip for now', timeout);
+  await ensureTargetRoomOpen(driver, roomName, timeout);
+}
+
+async function createRoomFromRoomsList(driver, roomName, timeout = DEFAULT_TIMEOUT) {
+  await openRoomsPlusMenu(driver, timeout);
+  const createRoomBtn = await driver.$(SELECTORS.createRoomButton);
+  await createRoomBtn.waitForDisplayed({ timeout });
+  await createRoomBtn.click();
+  const roomField = await driver.$(SELECTORS.roomNameText);
+  await roomField.waitForDisplayed({ timeout });
+  await roomField.click();
+  await roomField.setValue(roomName);
+  await tapByTextButtonOrStatic(driver, 'Create', timeout);
+  await tapByTextButtonOrStatic(driver, 'Skip for now', timeout);
+  await ensureTargetRoomOpen(driver, roomName, timeout);
 }
 
 function generateRandomMessage(prefix = 'Message test') {
@@ -118,8 +214,13 @@ function generateRandomMessage(prefix = 'Message test') {
   return `${prefix} - ${rand}`;
 }
 
+function generatePinnedRoomName() {
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `A-Pinned Edit Flow-${rand}`;
+}
+
 async function typeComposerMessage(driver, message, timeout = 20000) {
-  const byId = await driver.$('~messageComposerTextView');
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
@@ -198,7 +299,7 @@ async function tapContextMenuItem(driver, text, timeout = DEFAULT_TIMEOUT) {
 }
 
 async function replaceComposerText(driver, newText, timeout = DEFAULT_TIMEOUT) {
-  const byId = await driver.$('~messageComposerTextView');
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
@@ -235,7 +336,7 @@ async function findPinnedRowByText(driver, text, timeout = 20000) {
 }
 
 async function openPinnedMessagesPanel(driver) {
-  const pinButton = await driver.$('~pinnedMessagesButton');
+  const pinButton = await driver.$(SELECTORS.pinnedMessagesButton);
   await pinButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await driver.pause(300);
   await pinButton.click();
@@ -243,13 +344,13 @@ async function openPinnedMessagesPanel(driver) {
 }
 
 async function closePinnedSheet(driver) {
-  const closeBtn = await driver.$('~closeButton');
+  const closeBtn = await driver.$(SELECTORS.closeButton);
   if (await closeBtn.isDisplayed().catch(() => false)) {
     await closeBtn.click();
     await driver.pause(400);
     return;
   }
-  const pinBtn = await driver.$('~pinnedMessagesButton');
+  const pinBtn = await driver.$(SELECTORS.pinnedMessagesButton);
   if (await pinBtn.isDisplayed().catch(() => false)) {
     await pinBtn.click();
     await driver.pause(400);
@@ -263,9 +364,15 @@ async function checkPinShowsText(driver, text, stepLabel) {
   await saveScreenshot(driver, TEST_NAME, `${stepLabel}.png`);
 }
 
-async function navigateToRoom(driver, roomName) {
+async function navigateToRoom(driver, roomName, options = {}) {
+  if (options.forceCreate) {
+    console.log(`PinnedMessageEditFlow: creating isolated room "${roomName}"`);
+    await createRoomFromRoomsList(driver, roomName, DEFAULT_TIMEOUT);
+    return;
+  }
+
   await openNewConversation(driver, DEFAULT_TIMEOUT);
-  const searchField = await driver.$('~searchUsersTextField');
+  const searchField = await driver.$(SELECTORS.searchUsersTextField);
   await searchField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await searchField.click();
   await searchField.setValue(roomName);
@@ -275,28 +382,32 @@ async function navigateToRoom(driver, roomName) {
   } else {
     await createRoomFromSheet(driver, roomName, DEFAULT_TIMEOUT);
   }
+
+  await ensureTargetRoomOpen(driver, roomName, DEFAULT_TIMEOUT);
 }
 
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
-  const roomName =
+  const configuredRoomName =
     process.env.PINNED_EDIT_FLOW_ROOM_NAME ||
     process.env.PINNED_MESSAGES_ROOM_NAME ||
-    process.env.EDIT_MESSAGE_ROOM_NAME ||
-    'Message Room';
+    process.env.EDIT_MESSAGE_ROOM_NAME;
+  const roomName = configuredRoomName || generatePinnedRoomName();
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
   }
 
-  await navigateToRoom(driver, roomName);
+  await navigateToRoom(driver, roomName, { forceCreate: !configuredRoomName });
+  await ensureTargetRoomOpen(driver, roomName, DEFAULT_TIMEOUT);
+  await saveScreenshot(driver, TEST_NAME, '01_room_opened.png');
 
   const sentText = generateRandomMessage();
   const editedText = `${sentText} — edited`;
 
   // 1. Send a message
   await typeComposerMessage(driver, sentText);
-  const sendBtn = await driver.$('~sendMessageButton');
+  const sendBtn = await driver.$(SELECTORS.sendMessageButton);
   await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
   await sendBtn.click();
   await driver.pause(800);
@@ -319,7 +430,7 @@ async function runTest(driver, options = {}) {
   await tapEditFromContextMenu(driver, DEFAULT_TIMEOUT);
   await driver.pause(400);
   await replaceComposerText(driver, editedText, DEFAULT_TIMEOUT);
-  const sendAfterEdit = await driver.$('~sendMessageButton');
+  const sendAfterEdit = await driver.$(SELECTORS.sendMessageButton);
   await sendAfterEdit.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
   await sendAfterEdit.click();
   await driver.pause(800);
@@ -364,5 +475,8 @@ module.exports = { run };
 
 if (require.main === module) {
   const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
+  runCliTimed(TEST_NAME, run).catch(err => {
+    console.error(err?.stack || err);
+    process.exit(1);
+  });
 }

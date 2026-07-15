@@ -1,24 +1,18 @@
 require('dotenv').config();
 
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
+const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
 const { runWithOptionalDriver, goBack } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 
-const DEBUG_DUMP_SOURCE = true;
+const DEBUG_DUMP_SOURCE = process.env.USER_SETTINGS_DUMP_SOURCE === '1';
 const TEST_NAME = 'User_Settings';
 
-function ensureArtifactsDir() {
-  const dir = path.resolve(__dirname, '../screenshots');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
-
 async function screenshot(driver, name) {
-  const file = path.join(ensureArtifactsDir(), name);
-  await driver.saveScreenshot(file);
-  console.log(`Screenshot: ${file}`);
+  await saveScreenshot(driver, TEST_NAME, name);
 }
 
 async function step(driver, label, shotName) {
@@ -29,7 +23,7 @@ async function step(driver, label, shotName) {
 async function dumpSource(driver, filename = 'page_source.xml') {
   if (!DEBUG_DUMP_SOURCE) return;
 
-  const file = path.join(ensureArtifactsDir(), filename);
+  const file = path.join(ensureTestArtifactsDir(TEST_NAME), filename);
   const xml = await driver.getPageSource();
   fs.writeFileSync(file, xml, 'utf8');
   console.log(`Page source saved: ${file}`);
@@ -110,7 +104,7 @@ async function toggleSectionItems(driver, sectionTitle, itemLabels, timeout = 10
 
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
-  const closeButton = await driver.$('~closeButton');
+  const closeButton = await driver.$(SELECTORS.closeButton);
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
@@ -118,7 +112,7 @@ async function runTest(driver, options = {}) {
     await step(driver, 'Logged in / app ready', '00_ready.png');
   }
 
-  const userSettings = await driver.$('~settingsButton');
+  const userSettings = await driver.$(SELECTORS.settingsButton);
   await userSettings.waitForDisplayed({ timeout: 15000 });
   await userSettings.click();
   await driver.pause(800);

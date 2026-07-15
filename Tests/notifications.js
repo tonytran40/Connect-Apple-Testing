@@ -8,6 +8,7 @@ const { spawnSync } = require('child_process');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 
 const TEST_NAME = 'notifications';
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.NOTIFICATION_WAIT_TIMEOUT_MS, 10) || 15000;
@@ -125,10 +126,10 @@ async function tapNotificationBanner(driver, title, body) {
 
 async function waitForInAppAfterNotification(driver, hints = [], timeout = DEFAULT_TIMEOUT) {
   const checks = [
-    '~openRoomSettingsButton',
-    '~sendMessageButton',
-    '~peoplePlusButton',
-    '~Rooms section header',
+    SELECTORS.openRoomSettingsButton,
+    SELECTORS.sendMessageButton,
+    SELECTORS.peoplePlusButton,
+    SELECTORS.roomsSectionHeader,
     ...hints.map(h => `~${h}`),
   ];
 

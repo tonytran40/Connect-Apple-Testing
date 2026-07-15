@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const { SELECTORS } = require('./selectors');
 
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_ROOM_TIMEOUT_MS, 10) || 20000;
 const PHOTO_PICKER_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_PHOTO_PICKER_TIMEOUT_MS, 10) || 20000;
@@ -104,8 +105,8 @@ async function tapDoneInPhotoPicker(driver, timeout = DEFAULT_TIMEOUT) {
 async function waitForAttachmentDraftInComposer(driver, timeout = DEFAULT_TIMEOUT) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    const inRoom = await driver.$('~openRoomSettingsButton').isDisplayed().catch(() => false);
-    const sendEnabled = await driver.$('~sendMessageButton').isEnabled().catch(() => false);
+    const inRoom = await driver.$(SELECTORS.openRoomSettingsButton).isDisplayed().catch(() => false);
+    const sendEnabled = await driver.$(SELECTORS.sendMessageButton).isEnabled().catch(() => false);
     const doneVisible = await driver
       .$(`-ios predicate string:type == "XCUIElementTypeButton" AND (name == "Done" OR label == "Done")`)
       .isDisplayed()
@@ -121,7 +122,7 @@ async function waitForAttachmentDraftInComposer(driver, timeout = DEFAULT_TIMEOU
 }
 
 async function sendComposerDraft(driver, timeout = DEFAULT_TIMEOUT) {
-  const sendBtn = await driver.$('~sendMessageButton');
+  const sendBtn = await driver.$(SELECTORS.sendMessageButton);
   await sendBtn.waitForEnabled({ timeout });
   await sendBtn.click();
   console.log('attachments: sent attachment draft');

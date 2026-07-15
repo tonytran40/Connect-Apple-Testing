@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'ConversationList';
@@ -86,14 +87,14 @@ function slug(label) {
 }
 
 async function openUserSettings(driver) {
-  const settings = await driver.$('~settingsButton');
+  const settings = await driver.$(SELECTORS.settingsButton);
   await settings.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await settings.click();
   await driver.pause(MENU_OPEN_PAUSE_MS);
 }
 
 async function closeUserSettings(driver) {
-  const closeBtn = await driver.$('~closeButton');
+  const closeBtn = await driver.$(SELECTORS.closeButton);
   await closeBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await closeBtn.click();
   await driver.pause(MENU_ACTION_PAUSE_MS);
@@ -101,10 +102,10 @@ async function closeUserSettings(driver) {
 
 /** After closing settings, main conversation list should be usable again. */
 async function assertConversationListReady(driver) {
-  const settings = await driver.$('~settingsButton');
+  const settings = await driver.$(SELECTORS.settingsButton);
   await settings.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-  const peoplePlus = await driver.$('~peoplePlusButton');
-  const newConv = await driver.$('~newConversationButton');
+  const peoplePlus = await driver.$(SELECTORS.peoplePlusButton);
+  const newConv = await driver.$(SELECTORS.newConversationButton);
   const ok =
     (await peoplePlus.isDisplayed().catch(() => false)) ||
     (await newConv.isDisplayed().catch(() => false));

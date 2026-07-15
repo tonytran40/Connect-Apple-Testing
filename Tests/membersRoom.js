@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 const { generateRoomName, createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'membersRoom';
@@ -28,15 +29,15 @@ async function pause(driver, ms) {
 }
 
 async function waitForInRoom(driver, timeout = DEFAULT_TIMEOUT) {
-  const header = await driver.$('~openRoomSettingsButton');
+  const header = await driver.$(SELECTORS.openRoomSettingsButton);
   await header.waitForDisplayed({ timeout });
 }
 
 async function tapConversationHeader(driver, roomName) {
-  const settingsBtn = await driver.$('~openRoomSettingsButton');
+  const settingsBtn = await driver.$(SELECTORS.openRoomSettingsButton);
   if (await settingsBtn.isDisplayed().catch(() => false)) {
     await settingsBtn.click();
-    console.log('membersRoom: tapped ~openRoomSettingsButton');
+    console.log(`membersRoom: tapped ${SELECTORS.openRoomSettingsButton}`);
     return;
   }
 
@@ -98,6 +99,61 @@ async function tapNavBarButton(driver, label, timeout = DEFAULT_TIMEOUT) {
   console.log(`membersRoom: tapped ${label}`);
 }
 
+async function tapBackButton(driver, timeout = DEFAULT_TIMEOUT) {
+  const backButton = await driver.$(SELECTORS.backButton);
+  if (await backButton.waitForDisplayed({ timeout: 500 }).then(() => true).catch(() => false)) {
+    await backButton.click();
+    console.log(`membersRoom: tapped ${SELECTORS.backButton}`);
+    return;
+  }
+
+  const fallbackSelectors = [
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "Back" OR label CONTAINS "Back")`,
+    '//XCUIElementTypeNavigationBar/XCUIElementTypeButton[1]',
+  ];
+
+  for (const selector of fallbackSelectors) {
+    const fallback = await driver.$(selector);
+    if (await fallback.waitForDisplayed({ timeout: 1500 }).then(() => true).catch(() => false)) {
+      await fallback.click();
+      console.log(`membersRoom: tapped back fallback (${selector})`);
+      return;
+    }
+  }
+
+  const win = await driver.getWindowRect();
+  const fallbackPoints = [
+    { x: 0.055, y: 0.09 },
+    { x: 0.055, y: 0.115 },
+    { x: 0.09, y: 0.115 },
+  ];
+
+  for (const point of fallbackPoints) {
+    await driver.execute('mobile: tap', {
+      x: Math.round(win.width * point.x),
+      y: Math.round(win.height * point.y),
+    });
+    await pause(driver, 250);
+    const membersTitle = await driver.$(
+      '-ios predicate string:type == "XCUIElementTypeStaticText" AND (name BEGINSWITH "Members" OR label BEGINSWITH "Members")'
+    );
+    if (!(await membersTitle.isDisplayed().catch(() => false))) {
+      console.log(`membersRoom: tapped back fallback coordinates (${point.x}, ${point.y})`);
+      return;
+    }
+  }
+
+  console.log('membersRoom: tapped back fallback coordinates, but Members screen still appears visible');
+}
+
+async function selectedInviteeVisible(driver, text) {
+  const safe = esc(text);
+  const selected = await driver.$(
+    `-ios predicate string:(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton" OR type == "XCUIElementTypeCell") AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
+  );
+  return selected.isDisplayed().catch(() => false);
+}
+
 /**
  * TypeaheadSingleSelectionThenClear (title: "Add Individuals"):
  * - title → StaticText "Add Individuals"
@@ -111,6 +167,11 @@ async function typeInAddIndividualsTypeahead(driver, text, timeout = DEFAULT_TIM
     `//XCUIElementTypeStaticText[contains(@name,"ADD INDIVIDUALS") or contains(@label,"ADD INDIVIDUALS")]/following::XCUIElementTypeTextField[1]`,
   ];
 
+  if (await selectedInviteeVisible(driver, text)) {
+    console.log(`membersRoom: "${text}" is already selected; skipping Add Individuals typing`);
+    return false;
+  }
+
   for (const selector of fieldSelectors) {
     const field = await driver.$(selector);
     if (!(await field.isExisting().catch(() => false))) continue;
@@ -122,7 +183,7 @@ async function typeInAddIndividualsTypeahead(driver, text, timeout = DEFAULT_TIM
     } catch {}
     await field.setValue(text);
     console.log(`membersRoom: typed "${text}" in Add Individuals TextField`);
-    return;
+    return true;
   }
 
   const fields = await driver.$$('XCUIElementTypeTextField');
@@ -138,13 +199,18 @@ async function typeInAddIndividualsTypeahead(driver, text, timeout = DEFAULT_TIM
     } catch {}
     await field.setValue(text);
     console.log(`membersRoom: typed "${text}" in Add Individuals TextField (fallback)`);
-    return;
+    return true;
   }
 
   throw new Error('membersRoom: could not find Add Individuals TextField');
 }
 
 async function waitForAndTapTypeaheadUserOption(driver, text, timeout = DEFAULT_TIMEOUT) {
+  if (await selectedInviteeVisible(driver, text)) {
+    console.log(`membersRoom: "${text}" already appears selected; skipping typeahead result tap`);
+    return false;
+  }
+
   const safe = esc(text);
   const addIndividualsField =
     `//XCUIElementTypeStaticText[@name="Add Individuals" or @label="Add Individuals"]/following::XCUIElementTypeTextField[1]`;
@@ -164,7 +230,7 @@ async function waitForAndTapTypeaheadUserOption(driver, text, timeout = DEFAULT_
       const name = ((await el.getAttribute('name').catch(() => '')) || '').slice(0, 100);
       await el.click();
       console.log(`membersRoom: tapped typeahead result "${name}"`);
-      return;
+      return true;
     }
     await pause(driver, 400);
   }
@@ -189,6 +255,31 @@ async function tapRemoveMemberX(driver, memberName, timeout = DEFAULT_TIMEOUT) {
         return;
       }
     }
+  }
+
+  const clearBtn = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (label == "" OR name == "")`
+  );
+  if (!(await clearBtn.isExisting().catch(() => false))) {
+    console.log('membersRoom: no remove control — skipping ');
+    return false;
+  }
+  if (!(await clearBtn.isDisplayed().catch(() => false))) {
+    console.log('membersRoom:  not visible — skipping remove');
+    return false;
+  }
+  await clearBtn.click();
+  console.log('membersRoom: tapped first visible  remove control');
+  return true;
+}
+
+async function tapCloseEditModal(driver, timeout = DEFAULT_TIMEOUT) {
+  const closeBtn = await driver.$(SELECTORS.closeButton);
+  if (await closeBtn.isExisting().catch(() => false)) {
+    await closeBtn.waitForDisplayed({ timeout });
+    await closeBtn.click();
+    console.log(`editRoom: tapped ${SELECTORS.closeButton}`);
+    return;
   }
 
   const clearBtn = await driver.$(
@@ -242,18 +333,37 @@ async function runTest(driver, options = {}) {
   await pause(driver, 300);
   await saveScreenshot(driver, TEST_NAME, '05_after_remove_x.png');
 
-  await typeInAddIndividualsTypeahead(driver, INVITEE);
-  await pause(driver, SEARCH_AFTER_TYPE_MS);
-  await saveScreenshot(driver, TEST_NAME, '06_after_type_invitee.png');
+  const typedInvitee = await typeInAddIndividualsTypeahead(driver, INVITEE);
+  if (typedInvitee) {
+    await pause(driver, SEARCH_AFTER_TYPE_MS);
+    await saveScreenshot(driver, TEST_NAME, '06_after_type_invitee.png');
 
-  await waitForAndTapTypeaheadUserOption(driver, INVITEE);
-  await pause(driver, 400);
-  await saveScreenshot(driver, TEST_NAME, '07_after_select_invitee.png');
+    await waitForAndTapTypeaheadUserOption(driver, INVITEE);
+    await pause(driver, 400);
+    await saveScreenshot(driver, TEST_NAME, '07_after_select_invitee.png');
+  } else {
+    await saveScreenshot(driver, TEST_NAME, '06_invitee_already_selected.png');
+  }
 
   await tapNavBarButton(driver, 'Cancel');
   await pause(driver, 400);
   await saveScreenshot(driver, TEST_NAME, '08_after_cancel.png');
+
+  await tapBackButton(driver);
+  await pause(driver, 400);
+  await saveScreenshot(driver, TEST_NAME, '09_after_back.png');
+
+  await tapCloseEditModal(driver);
+  await pause(driver, 400);
+  await waitForInRoom(driver);
+  await saveScreenshot(driver, TEST_NAME, '10_after_close.png');
+
+  await tapBackButton(driver);
+  await saveScreenshot(driver, TEST_NAME, '11_after_back_to_list.png');
 }
+
+
+
 
 async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {

@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { SELECTORS, A11Y } = require('../utils/selectors');
 const { generateRoomName, createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'editRoom';
@@ -23,15 +24,15 @@ async function pause(driver, ms) {
 }
 
 async function waitForInRoom(driver, timeout = DEFAULT_TIMEOUT) {
-  const header = await driver.$('~openRoomSettingsButton');
+  const header = await driver.$(SELECTORS.openRoomSettingsButton);
   await header.waitForDisplayed({ timeout });
 }
 
 async function tapConversationHeader(driver, roomName) {
-  const settingsBtn = await driver.$('~openRoomSettingsButton');
+  const settingsBtn = await driver.$(SELECTORS.openRoomSettingsButton);
   if (await settingsBtn.isDisplayed().catch(() => false)) {
     await settingsBtn.click();
-    console.log('editRoom: tapped ~openRoomSettingsButton');
+    console.log(`editRoom: tapped ${SELECTORS.openRoomSettingsButton}`);
     return;
   }
 
@@ -57,14 +58,14 @@ async function togglePrivateRoomInEditModal(driver, timeout = DEFAULT_TIMEOUT) {
 async function setEditedRoomName(driver, baseName, timeout = DEFAULT_TIMEOUT) {
   const edited = editedRoomName(baseName);
   const nameField = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeTextField" AND (name == "setRoomName" OR label == "setRoomName")`
+    `-ios predicate string:type == "XCUIElementTypeTextField" AND (name == "${A11Y.setRoomName}" OR label == "${A11Y.setRoomName}")`
   );
   if (!(await nameField.isExisting().catch(() => false))) {
-    const byId = await driver.$('~setRoomName');
+    const byId = await driver.$(SELECTORS.setRoomName);
     await byId.waitForDisplayed({ timeout });
     await byId.click();
     await byId.setValue(edited);
-    console.log(`editRoom: set room name via ~setRoomName: "${edited}"`);
+    console.log(`editRoom: set room name via ${SELECTORS.setRoomName}: "${edited}"`);
     return edited;
   }
 
@@ -77,14 +78,14 @@ async function setEditedRoomName(driver, baseName, timeout = DEFAULT_TIMEOUT) {
 
 async function fillTopicInput(driver, topic, timeout = DEFAULT_TIMEOUT) {
   const topicField = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeTextField" AND (name == "setTopic" OR label == "setTopic")`
+    `-ios predicate string:type == "XCUIElementTypeTextField" AND (name == "${A11Y.setTopic}" OR label == "${A11Y.setTopic}")`
   );
   if (!(await topicField.isExisting().catch(() => false))) {
-    const byId = await driver.$('~setTopic');
+    const byId = await driver.$(SELECTORS.setTopic);
     await byId.waitForDisplayed({ timeout });
     await byId.click();
     await byId.setValue(topic);
-    console.log(`editRoom: set topic via ~setTopic: "${topic}"`);
+    console.log(`editRoom: set topic via ${SELECTORS.setTopic}: "${topic}"`);
     return;
   }
 
@@ -114,11 +115,11 @@ async function tapSaveInEditModal(driver, timeout = DEFAULT_TIMEOUT) {
 }
 
 async function tapCloseEditModal(driver, timeout = DEFAULT_TIMEOUT) {
-  const closeBtn = await driver.$('~closeButton');
+  const closeBtn = await driver.$(SELECTORS.closeButton);
   if (await closeBtn.isExisting().catch(() => false)) {
     await closeBtn.waitForDisplayed({ timeout });
     await closeBtn.click();
-    console.log('editRoom: tapped ~closeButton');
+    console.log(`editRoom: tapped ${SELECTORS.closeButton}`);
     return;
   }
 

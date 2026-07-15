@@ -3,6 +3,7 @@ node_modules
 # Appium artifacts
 screenshots/
 artifacts/
+reports/runs/
 *.png
 *.xml
 *.log

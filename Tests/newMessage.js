@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 
 const TEST_NAME = 'newMessage';
 
@@ -58,11 +59,13 @@ async function tapSearchResultByText(driver, text, timeout = 20000) {
 }
 
 async function typeComposerMessage(driver, message, timeout = 20000) {
-  const byId = await driver.$('~messageComposerTextView');
-  if (await byId.isExisting().catch(() => false)) {
-    await byId.waitForDisplayed({ timeout });
-    await byId.click();
-    await byId.setValue(message);
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
+  const legacyById = await driver.$(SELECTORS.messageComposerTextView);
+  const composer = await byId.isExisting().catch(() => false) ? byId : legacyById;
+  if (await composer.isExisting().catch(() => false)) {
+    await composer.waitForDisplayed({ timeout });
+    await composer.click();
+    await composer.setValue(message);
     console.log('Typed message by accessibility id');
     return;
   }
@@ -106,12 +109,12 @@ async function runTest(driver, options = {}) {
 
   await scrollUntilConversationEntryVisible(driver);
 
-  const peoplePlus = await driver.$('~newConversationButton');
+  const peoplePlus = await driver.$(SELECTORS.newConversationButton);
   if (await peoplePlus.isDisplayed().catch(() => false)) {
     await peoplePlus.click();
     console.log('Opened Start Conversation via peoplePlusButton');
   } else {
-    const newConversationButton = await driver.$('~newConversationButton');
+    const newConversationButton = await driver.$(SELECTORS.newConversationButton);
     await newConversationButton.waitForDisplayed({ timeout: 20000 });
     await newConversationButton.click();
     console.log('Opened Start Conversation via newConversationButton');
@@ -120,7 +123,7 @@ async function runTest(driver, options = {}) {
   await driver.pause(700);
   await saveScreenshot(driver, TEST_NAME, '02_start_conversation.png');
 
-  const searchField = await driver.$('~searchUsersTextField');
+  const searchField = await driver.$(SELECTORS.searchUsersTextField);
   await searchField.waitForDisplayed({ timeout: 20000 });
   await searchField.click();
   await searchField.setValue(recipient);
@@ -139,7 +142,7 @@ async function runTest(driver, options = {}) {
   await driver.pause(500);
   await saveScreenshot(driver, TEST_NAME, '05_message_typed.png');
 
-  const sendBtn = await driver.$('~sendMessageButton');
+  const sendBtn = await driver.$(SELECTORS.sendMessageButton);
   await sendBtn.waitForEnabled({ timeout: 10000 });
   await sendBtn.click();
   console.log('Sent message');

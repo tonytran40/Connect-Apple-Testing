@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { A11Y } = require('../utils/selectors');
 
 const TEST_NAME = 'markAsRead';
 const CANDIDATES = (
@@ -88,7 +89,7 @@ async function waitForTargetRow(driver, names) {
 
 async function tapMarkAsUnreadBesideTitle(driver, roomTitle) {
   const q = esc(roomTitle);
-  const xp = `//XCUIElementTypeStaticText[@name="${q}" or @label="${q}"]/preceding::XCUIElementTypeButton[@name="markAsUnreadButton" or @label="message-dot"][1]`;
+  const xp = `//XCUIElementTypeStaticText[@name="${q}" or @label="${q}"]/preceding::XCUIElementTypeButton[@name="${A11Y.markAsUnreadButton}" or @label="message-dot"][1]`;
   const btn = await driver.$(xp);
   const exists = await btn.isExisting().catch(() => false);
   if (!exists) {

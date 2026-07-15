@@ -3,7 +3,7 @@ require('dotenv').config();
 const { performance } = require('perf_hooks');
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
-const { resetToHome } = require('../utils/testSession');
+const { ensureRoomsSectionReady } = require('../utils/testSession');
 const { createReportWriter, formatDurationMs } = require('../utils/reportWriter');
 
 function skipResetBetweenFirstAndRest() {
@@ -38,7 +38,6 @@ function buildSuiteOptionsLine() {
 }
 
 const tests = [
-  { name: 'newMessage', area: 'New direct message flow', run: require('./newMessage').run },
   { name: 'CreateRoom', area: 'Public and private room creation', run: require('./CreateRoom').run },
   {
     name: 'PinnedMessageEditFlow',
@@ -51,6 +50,7 @@ const tests = [
     area: 'User settings: each conversation layout and sort, close, verify list',
     run: require('./ConversationList').run,
   },
+  { name: 'newMessage', area: 'New direct message flow', run: require('./newMessage').run },
   { name: 'Login_Signout', area: 'Sign out via user settings', run: require('./Login_Signout').run },
 ];
 
@@ -91,7 +91,7 @@ async function run() {
       report.write(results, reportMeta());
 
       if (!(skipResetBetweenFirstAndRest() && index > 0)) {
-        await resetToHome(driver);
+        await ensureRoomsSectionReady(driver);
       }
       const testStart = performance.now();
       try {

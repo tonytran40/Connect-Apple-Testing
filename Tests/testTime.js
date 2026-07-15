@@ -10,6 +10,7 @@ const { performance } = require('node:perf_hooks');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
 const { runWithOptionalDriver } = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
 const { createPrivateRoom } = require('./CreateRoom');
 
 const DEFAULT_TIMEOUT = 25000;
@@ -309,7 +310,7 @@ async function runTest(driver, options = {}) {
   await driver.pause(1000);
   await saveScreenshot(driver, TEST_NAME, '03_after_add_members_save.png');
 
-  const alreadyInRoom = await driver.$('~sendMessageButton').isDisplayed().catch(() => false);
+  const alreadyInRoom = await driver.$(SELECTORS.sendMessageButton).isDisplayed().catch(() => false);
   if (!alreadyInRoom) {
     await openRoomFromList(driver, ROOM_NAME);
   }

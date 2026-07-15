@@ -88,7 +88,7 @@ Connect_password=yourpassword
 
 Other variables tune suite speed, room names, screenshots, etc. See `.env.example` for comments.
 
-**Login flow:** If the app is already logged in (`loginView` absent), tests skip login. With `appium:noReset: true`, session state persists across runs.
+**Login flow:** If the app is already logged in (`loginView` absent), tests skip login. With `appium:noReset: true`, session state persists across runs. After submitting login, the helper waits for the conversation list and fails fast if the app shows a login error like `There was an issue logging in`.
 
 ### 5. Start Appium (separate terminal)
 
@@ -120,11 +120,11 @@ npm run test:suite
 
 **Order in `runAll.js`:**
 
-1. `newMessage` — new direct message  
-2. `CreateRoom` — public and private room creation  
-3. `PinnedMessageEditFlow` — pin, edit, unpin  
-4. `markdowns` — markdown / emoji in composer  
-5. `ConversationList` — layout and sort in user settings  
+1. `CreateRoom` — public and private room creation  
+2. `PinnedMessageEditFlow` — pin, edit, unpin  
+3. `markdowns` — markdown / emoji in composer  
+4. `ConversationList` — layout and sort in user settings  
+5. `newMessage` — new direct message, intentionally late because it can leave the app in a DM  
 6. `Login_Signout` — sign out  
 
 Report: `reports/latest-suite-report.md` (pass/fail, durations, options).
@@ -136,6 +136,100 @@ npm run test:suite:fast
 ```
 
 Uses smoke room creation, one layout/sort, and a subset of markdown examples (see `package.json`).
+
+### Turbo suite (fast subset, no screenshots)
+
+```bash
+npm run test:suite:turbo
+```
+
+Uses the same subset as `test:suite:fast`, with `CONNECT_SCREENSHOTS=0` to skip screenshot capture overhead.
+
+### Parallel runner (experimental)
+
+```bash
+npm run test:parallel
+```
+
+By default this runner is conservative and uses one worker so it does not collide on a single simulator. To run true parallel lanes, boot multiple simulators, start Appium servers for each lane, then provide lane env:
+
+```bash
+PARALLEL_WORKERS=2 \
+PARALLEL_DEVICE_NAMES='iPhone 17 Pro,iPhone 17 Pro Max' \
+PARALLEL_UDIDS=sim-udid-1,sim-udid-2 \
+PARALLEL_APPIUM_PORTS=4723,4725 \
+npm run test:parallel
+```
+
+Useful knobs:
+
+| Variable | Effect |
+|----------|--------|
+| `PARALLEL_TESTS` | Comma-separated test names, or `all` for standalone candidates |
+| `PARALLEL_WORKERS` | Number of worker lanes to use |
+| `PARALLEL_DEVICE_NAMES` | Simulator names, one per lane |
+| `PARALLEL_UDIDS` | Simulator UDIDs, one per lane |
+| `PARALLEL_APPIUM_PORTS` | Appium server ports, one per lane |
+| `WDA_LOCAL_PORT` | Base WDA port; each worker increments from this |
+| `PARALLEL_RUN_ID` | Report/screenshot run folder name |
+| `PARALLEL_DRY_RUN=1` | Validate runner selection/reporting without launching tests |
+
+Reports are written under `reports/runs/{runId}/summary.md` and `reports/runs/{runId}/summary.json`; worker logs are under `reports/runs/{runId}/logs/`. Screenshots for parallel runs are namespaced under `screenshots/{runId}/`.
+
+The parallel report includes pass/fail status, completed count, a rerun command for failed tests, slowest tests, worker lane details, and links to each test's log, JSON result, and screenshot folder.
+
+### Split parallel shortcut
+
+Use this when you want the main suite and standalone tests running at the same time on two simulators.
+
+Recommended terminal layout:
+
+| Tab | Command | Purpose |
+|-----|---------|---------|
+| 1 | `appium --port 4723` | Appium server for the iPhone 17 Pro lane |
+| 2 | `appium --port 4725` | Appium server for the iPhone 17 Pro Max lane |
+| 3 | `npm run test:parallel:split` | Launch both test groups |
+
+The shortcut uses these default lanes:
+
+| Group | Simulator | UDID | Appium | WDA |
+|-------|-----------|------|--------|-----|
+| `main-suite` | iPhone 17 Pro | `A848480F-1933-47A5-B063-DB070BB3AC66` | `4723` | `8100` |
+| `standalones` | iPhone 17 Pro Max | `B5A3CFF9-F618-411B-91FC-92C8FDD0D069` | `4725` | `8200` |
+
+Run both groups with:
+
+```bash
+npm run test:parallel:split
+```
+
+This launches `main-suite` on the iPhone 17 Pro lane and `standalones` on the iPhone 17 Pro Max lane. The merged report is written to `reports/runs/split-combined/summary.md`, with the per-lane details still available at `reports/runs/main-suite/summary.md` and `reports/runs/standalones/summary.md`.
+
+Set `SPLIT_COMBINED_RUN_ID=some-name` if you want the merged report written to a different `reports/runs/{runId}/` folder.
+
+Important: each simulator has its own installed copy of the app. Appium launches the existing `com.powerhrg.connect.v3.debug` app because the driver uses `bundleId` with `noReset: true`; it does not automatically install the latest Xcode build. If one simulator looks like an older app version, update that simulator's installed app from a normal terminal tab, not from an Appium tab:
+
+```bash
+xcrun simctl install B5A3CFF9-F618-411B-91FC-92C8FDD0D069 \
+"/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app"
+```
+
+If it still looks stale, uninstall and reinstall:
+
+```bash
+xcrun simctl uninstall B5A3CFF9-F618-411B-91FC-92C8FDD0D069 com.powerhrg.connect.v3.debug
+
+xcrun simctl install B5A3CFF9-F618-411B-91FC-92C8FDD0D069 \
+"/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app"
+```
+
+You can verify which app bundle is installed on a simulator with:
+
+```bash
+xcrun simctl get_app_container B5A3CFF9-F618-411B-91FC-92C8FDD0D069 com.powerhrg.connect.v3.debug app
+```
+
+Each parallel test is launched through `Tests/runSingle.js`, which creates its own driver session, logs in if needed, resets back to the conversation list, and then runs the requested test. True simultaneous execution still needs separate simulator/Appium lanes; one simulator should only be driven by one worker at a time.
 
 ### Single test files
 
@@ -149,6 +243,7 @@ node Tests/markAsRead.js
 node Tests/membersRoom.js
 node Tests/notifications.js
 node Tests/removeRoom.js
+node Tests/removeAllrooms.js
 node Tests/newMessage.js
 ```
 
@@ -163,6 +258,7 @@ npm run test:suite:fast
 npm run test:notifications
 npm run test:members-room
 npm run test:attachments
+npm run test:remove-all-rooms
 ```
 
 ### Suite options (environment)
@@ -171,9 +267,11 @@ npm run test:attachments
 |----------|--------|
 | `CONNECT_SKIP_RESET_BETWEEN_TESTS=1` | Skip `resetToHome` before tests 2+ (faster; tests must tolerate shared state) |
 | `CREATE_ROOM_MODE=smoke` | `CreateRoom`: public room only |
+| `CREATE_ROOM_SEND_MESSAGES=1` | `CreateRoom`: send starter messages after room creation (off by default for speed) |
 | `MARKDOWN_EXAMPLE_IDS` | Comma-separated markdown example ids |
 | `CONVERSATION_LAYOUTS` / `CONVERSATION_SORTS` | Limit `ConversationList` matrix |
 | `CONNECT_SCREENSHOTS=0` or `SKIP_SCREENSHOTS=1` | Disable screenshots |
+| `USER_SETTINGS_DUMP_SOURCE=1` | Save User Settings page source XML while debugging |
 
 ---
 
@@ -203,6 +301,14 @@ These follow the same login + home pattern but are run individually today.
 - Screenshots under `screenshots/removeRoom/`.
 
 **Typical manual flow:** run `CreateRoom` (or have `A-Public` / `B-Private` rooms on screen) → `removeRoom` to clean up.
+
+### `removeAllrooms.js`
+
+- Cleanup utility for test data: removes every visible/scrolled room whose title starts with `A-`, `B-`, `M-`, or `E-`.
+- Override prefixes with `REMOVE_ALL_ROOMS_PREFIXES=A-,B-,M-,E-`.
+- Safety limits: `REMOVE_ALL_ROOMS_MAX_REMOVALS` and `REMOVE_ALL_ROOMS_MAX_SCROLLS`.
+- Set `REMOVE_ALL_ROOMS_SCREENSHOTS=1` if you want a screenshot after every removal.
+- Run with `npm run test:remove-all-rooms`.
 
 ### `editRoom.js`
 
@@ -239,6 +345,9 @@ Connect-Apple-Testing/
 │   └── Login_User.js        # ensureLoggedIn (localhost + .env credentials)
 ├── Tests/
 │   ├── runAll.js            # Suite runner + report
+│   ├── runParallel.js       # Parallel lane runner + per-run reports
+│   ├── runSplitParallel.js  # Two-simulator split runner + combined report
+│   ├── runSingle.js         # Runs one test inside a parallel worker
 │   ├── CreateRoom.js
 │   ├── newMessage.js
 │   ├── editRoom.js          # standalone room settings flow
@@ -247,6 +356,7 @@ Connect-Apple-Testing/
 │   ├── membersRoom.js       # standalone room members flow
 │   ├── notifications.js     # standalone simctl push flow
 │   ├── removeRoom.js        # standalone
+│   ├── removeAllrooms.js    # cleanup utility for generated test rooms
 │   ├── attachments.js       # standalone attachment entry flow
 │   ├── markdowns.js
 │   ├── PinnedMessageEditFlow.js
@@ -255,6 +365,8 @@ Connect-Apple-Testing/
 │   └── …                    # EditMessage, PinnedMessages, User_Settings, etc.
 ├── utils/
 │   ├── testSession.js       # resetToHome, scroll helpers, runWithOptionalDriver
+│   ├── selectors.js         # shared accessibility IDs and common predicates
+│   ├── attachmentPhotoPicker.js
 │   ├── screenshots.js
 │   ├── reportWriter.js
 │   └── cliTestTiming.js
@@ -270,6 +382,7 @@ Connect-Apple-Testing/
 ## Design notes
 
 - **Accessibility-first:** prefer `~accessibilityId`, then predicates, then XPath anchored to row titles.
+- **Shared selectors:** use `const { SELECTORS } = require('../utils/selectors')` and call `driver.$(SELECTORS.settingsButton)` instead of hardcoding `~settingsButton` in new tests.
 - **SwiftUI menus:** e.g. room creation—tap **Rooms +** before `createRoomButton` exists in the tree.
 - **Swipe actions:** favorite (right) and remove (left) buttons often sit off-screen until swiped; XPath is tied to the **full** `StaticText` title next to the action.
 - **Unique room names:** `CreateRoom` uses random suffixes to avoid collisions.
@@ -303,10 +416,14 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:suite` | Full `runAll.js` suite |
 | `npm run test:suite:full` | Alias for full `runAll.js` suite |
 | `npm run test:suite:fast` | Reduced suite |
+| `npm run test:suite:turbo` | Reduced suite with screenshots disabled |
+| `npm run test:parallel` | Parallel runner for one or more simulator lanes |
+| `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes |
 | `npm run test:time` | Timing helper test |
 | `npm run test:notifications` | Push simulator notification and verify app re-entry |
 | `npm run test:members-room` | Create room and exercise Members edit flow |
 | `npm run test:attachments` | Create room and validate attachment entry points |
+| `npm run test:remove-all-rooms` | Cleanup rooms starting with configured prefixes |
 
 ---
 

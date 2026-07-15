@@ -3,6 +3,7 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
+const { SELECTORS, PREDICATES } = require('../utils/selectors');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'EditMessage';
@@ -13,14 +14,14 @@ const SEARCH_AFTER_TYPE_MS = 500;
 
 async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
   await scrollUntilConversationEntryVisible(driver);
-  const peoplePlus = await driver.$('~peoplePlusButton');
+  const peoplePlus = await driver.$(SELECTORS.peoplePlusButton);
   if (await peoplePlus.isDisplayed().catch(() => false)) {
     await peoplePlus.click();
     console.log('Opened Start Conversation via peoplePlusButton');
     return;
   }
 
-  const newConversationButton = await driver.$('~newConversationButton');
+  const newConversationButton = await driver.$(SELECTORS.newConversationButton);
   await newConversationButton.waitForDisplayed({ timeout });
   await newConversationButton.click();
   console.log('Opened Start Conversation via newConversationButton');
@@ -124,9 +125,7 @@ async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGE
 
 /** Rooms row “+” — same as CreateRoom.openRoomsPlusMenu */
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
-  const roomsHeader = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND label CONTAINS "Rooms"`
-  );
+  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
   await roomsHeader.waitForDisplayed({ timeout });
 
   const roomsPlus = await driver.$(
@@ -148,7 +147,7 @@ async function tapByTextButtonOrStatic(driver, text, timeout = DEFAULT_TIMEOUT) 
 }
 
 async function createRoomFromSheet(driver, roomName, timeout = DEFAULT_TIMEOUT) {
-  const closeBtn = await driver.$('~closeButton');
+  const closeBtn = await driver.$(SELECTORS.closeButton);
   await closeBtn.waitForDisplayed({ timeout });
   await closeBtn.click();
   console.log('Closed new-message sheet (closeButton)');
@@ -156,11 +155,11 @@ async function createRoomFromSheet(driver, roomName, timeout = DEFAULT_TIMEOUT) 
 
   await openRoomsPlusMenu(driver, timeout);
 
-  const createRoomBtn = await driver.$('~createRoomButton');
+  const createRoomBtn = await driver.$(SELECTORS.createRoomButton);
   await createRoomBtn.waitForDisplayed({ timeout });
   await createRoomBtn.click();
 
-  const roomField = await driver.$('~roomNameText');
+  const roomField = await driver.$(SELECTORS.roomNameText);
   await roomField.waitForDisplayed({ timeout });
   await roomField.click();
   await roomField.setValue(roomName);
@@ -171,7 +170,7 @@ async function createRoomFromSheet(driver, roomName, timeout = DEFAULT_TIMEOUT) 
 }
 
 async function typeComposerMessage(driver, message, timeout = 20000) {
-  const byId = await driver.$('~messageComposerTextView');
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
@@ -241,7 +240,7 @@ async function tapEditFromContextMenu(driver, timeout = DEFAULT_TIMEOUT) {
 
 /** Replace composer contents while editing (composer may already show the original message). */
 async function replaceComposerText(driver, newText, timeout = DEFAULT_TIMEOUT) {
-  const byId = await driver.$('~messageComposerTextView');
+  const byId = await driver.$(SELECTORS.roomComposerTextView);
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
@@ -282,7 +281,7 @@ async function runTest(driver, options = {}) {
 
   await openNewConversation(driver, DEFAULT_TIMEOUT);
 
-  const searchField = await driver.$('~searchUsersTextField');
+  const searchField = await driver.$(SELECTORS.searchUsersTextField);
   await searchField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await searchField.click();
   await searchField.setValue(roomName);
@@ -304,7 +303,7 @@ async function runTest(driver, options = {}) {
 
   for (let i = 0; i < messages.length; i++) {
     await typeComposerMessage(driver, messages[i]);
-    const sendBtn = await driver.$('~sendMessageButton');
+    const sendBtn = await driver.$(SELECTORS.sendMessageButton);
     await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
     await sendBtn.click();
     await driver.pause(450);
@@ -324,7 +323,7 @@ async function runTest(driver, options = {}) {
     await driver.pause(400);
     await replaceComposerText(driver, editedBody, DEFAULT_TIMEOUT);
 
-    const saveOrSend = await driver.$('~sendMessageButton');
+    const saveOrSend = await driver.$(SELECTORS.sendMessageButton);
     await saveOrSend.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
     await saveOrSend.click();
 

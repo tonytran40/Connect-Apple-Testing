@@ -11,6 +11,7 @@ const {
   waitForAttachmentDraftInComposer,
   waitForPhotoPicker,
 } = require('../utils/attachmentPhotoPicker');
+const { SELECTORS } = require('../utils/selectors');
 const { createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'attachments';
@@ -43,7 +44,7 @@ async function pause(driver, ms) {
 }
 
 async function waitForInRoom(driver, timeout = DEFAULT_TIMEOUT) {
-  const header = await driver.$('~openRoomSettingsButton');
+  const header = await driver.$(SELECTORS.openRoomSettingsButton);
   await header.waitForDisplayed({ timeout });
 }
 
@@ -109,16 +110,16 @@ async function enterAttachmentRoom(driver) {
 }
 
 async function tapShareOptionsButton(driver, timeout = DEFAULT_TIMEOUT) {
-  const btn = await driver.$('~shareOptionsButton');
+  const btn = await driver.$(SELECTORS.shareOptionsButton);
   await btn.waitForDisplayed({ timeout });
   await btn.click();
-  console.log('attachments: tapped ~shareOptionsButton');
+  console.log(`attachments: tapped ${SELECTORS.shareOptionsButton}`);
 }
 
 async function waitForShareOptionsDialog(driver, timeout = DEFAULT_TIMEOUT) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    const sendGif = await driver.$('~Send GIF');
+    const sendGif = await driver.$(SELECTORS.sendGif);
     if (await sendGif.isExisting().catch(() => false) && (await sendGif.isDisplayed().catch(() => false))) {
       return 'Send GIF';
     }
@@ -140,10 +141,10 @@ async function waitForShareOptionsDialog(driver, timeout = DEFAULT_TIMEOUT) {
 
 async function tapShareOption(driver, label, timeout = DEFAULT_TIMEOUT) {
   if (label === 'Send GIF') {
-    const byId = await driver.$('~Send GIF');
+    const byId = await driver.$(SELECTORS.sendGif);
     await byId.waitForDisplayed({ timeout });
     await byId.click();
-    console.log('attachments: tapped Send GIF (~Send GIF)');
+    console.log(`attachments: tapped Send GIF (${SELECTORS.sendGif})`);
     return;
   }
 
