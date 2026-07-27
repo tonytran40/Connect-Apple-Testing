@@ -14,6 +14,7 @@
     "test:parallel": "node Tests/runParallel.js",
     "test:parallel:split": "node Tests/runSplitParallel.js",
     "test:parallel:split3": "SPLIT_THIRD_ENABLED=1 node Tests/runSplitParallel.js",
+    "test:parallel:split3:publish": "node scripts/runSplit3AndPublishReport.js",
     "test:time": "node Tests/testTime.js",
     "test:notifications": "node Tests/notifications.js",
     "test:members-room": "node Tests/membersRoom.js",

@@ -315,6 +315,14 @@ open index.html
 
 Use the homepage to open the latest report or jump back into older archived runs. The stable latest report still lives at `docs/generated/scribe/split3-combined/index.html`.
 
+To run the three-simulator split and publish the GitHub Pages report in one command:
+
+```bash
+npm run test:parallel:split3:publish
+```
+
+That command runs the tests, generates the latest report and archived copy, commits the Pages files, and pushes to GitHub. It still publishes the report when tests fail, so the shared page shows the failure details. Use `PUBLISH_REPORT_SKIP_PUSH=1 npm run test:parallel:split3:publish` if you want to test the publish flow locally without pushing.
+
 To share the report with coworkers through GitHub Pages, commit and push the generated `docs/` output. GitHub Pages can publish that folder directly from `main`.
 
 One-time GitHub setup:
@@ -540,6 +548,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:parallel` | Parallel runner for one or more simulator lanes |
 | `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes |
 | `npm run test:parallel:split3` | Run the experimental three-simulator split |
+| `npm run test:parallel:split3:publish` | Run the three-simulator split, generate the report archive, commit Pages files, and push |
 | `npm run test:time` | Timing helper test |
 | `npm run test:notifications` | Push simulator notification and verify app re-entry |
 | `npm run test:members-room` | Create room and exercise Members edit flow |
