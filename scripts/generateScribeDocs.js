@@ -59,6 +59,12 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '') || 'test';
 }
 
+function timestampSlug(value) {
+  const date = new Date(value || Date.now());
+  const iso = Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  return iso.replace(/\.\d{3}Z$/, 'Z').replace(/[:.]/g, '-');
+}
+
 function titleFromFileName(fileName) {
   return path
     .basename(fileName, path.extname(fileName))
@@ -192,6 +198,22 @@ function formatDate(value) {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+function countsForSummary(summary) {
+  const results = summary.results || [];
+  const counts = summary.counts || {};
+  const failed = counts.failed ?? results.filter(result => result.status === 'FAIL').length;
+  const passed = counts.passed ?? results.filter(result => result.status === 'PASS').length;
+  return {
+    passed,
+    failed,
+    total: counts.total ?? results.length,
+  };
+}
+
+function archiveRunId(runId, summary) {
+  return `${timestampSlug(summary.startedAt || summary.updatedAt)}-${safePathPart(runId)}`;
 }
 
 function writeTestDoc({ outDir, runId, result }) {
@@ -680,21 +702,311 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
   return file;
 }
 
+function writeReportMeta({ outDir, runId, summary, reportType }) {
+  const counts = countsForSummary(summary);
+  const meta = {
+    runId,
+    reportType,
+    source: summary.source,
+    status: summary.status || (counts.failed ? 'FAIL' : 'PASS'),
+    startedAt: summary.startedAt || '',
+    updatedAt: summary.updatedAt || '',
+    passed: counts.passed,
+    failed: counts.failed,
+    total: counts.total,
+  };
+  const file = path.join(outDir, '_report-meta.json');
+  fs.writeFileSync(file, `${JSON.stringify(meta, null, 2)}\n`, 'utf8');
+  return file;
+}
+
+function generateReportAt({ outputRoot, outputRunId, sourceRunId, summary, reportType }) {
+  const outDir = ensureDir(path.join(outputRoot, outputRunId));
+  const testDocs = {};
+
+  for (const result of summary.results) {
+    testDocs[result.name] = writeTestDoc({ outDir, runId: sourceRunId, result });
+  }
+
+  const indexPath = writeIndex({ outDir, runId: sourceRunId, summary, testDocs });
+  const htmlPath = writeHtmlReport({ outDir, runId: sourceRunId, summary, testDocs });
+  const metaPath = writeReportMeta({ outDir, runId: sourceRunId, summary, reportType });
+  return { outDir, indexPath, htmlPath, metaPath };
+}
+
+function discoverReports(outputRoot) {
+  if (!fs.existsSync(outputRoot)) return [];
+
+  const reports = [];
+  const stack = [outputRoot];
+  while (stack.length) {
+    const dir = stack.pop();
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const metaPath = path.join(dir, '_report-meta.json');
+    if (fs.existsSync(metaPath) && fs.existsSync(path.join(dir, 'index.html'))) {
+      const meta = readJsonIfExists(metaPath) || {};
+      reports.push({
+        ...meta,
+        dir,
+        href: path.relative(outputRoot, path.join(dir, 'index.html')).replace(/\\/g, '/'),
+      });
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (entry.isDirectory() && entry.name !== 'assets') {
+        stack.push(path.join(dir, entry.name));
+      }
+    }
+  }
+
+  return reports.sort((a, b) => Date.parse(b.startedAt || b.updatedAt || 0) - Date.parse(a.startedAt || a.updatedAt || 0));
+}
+
+function reportArchiveCards(reports, linkPrefix = '') {
+  if (!reports.length) {
+    return '<p class="empty">No generated reports found yet. Run <code>npm run docs:scribe -- --run split3-combined</code>.</p>';
+  }
+
+  return reports
+    .map(report => {
+      const status = report.status || 'UNKNOWN';
+      const typeLabel = report.reportType === 'archive' ? 'Archived run' : 'Latest report';
+      return `
+        <a class="run-card ${statusClass(status)}" href="${escapeHtml(linkPrefix + report.href)}">
+          <div class="run-card-top">
+            <span class="status-pill ${statusClass(status)}">${escapeHtml(status)}</span>
+            <span>${escapeHtml(typeLabel)}</span>
+          </div>
+          <h2>${escapeHtml(report.runId || 'Unknown run')}</h2>
+          <p>${escapeHtml(formatDate(report.startedAt) || report.startedAt || 'No start time')}</p>
+          <dl>
+            <div><dt>Passed</dt><dd>${escapeHtml(report.passed ?? 0)}</dd></div>
+            <div><dt>Failed</dt><dd>${escapeHtml(report.failed ?? 0)}</dd></div>
+            <div><dt>Total</dt><dd>${escapeHtml(report.total ?? 0)}</dd></div>
+          </dl>
+        </a>`;
+    })
+    .join('\n');
+}
+
+function writeArchivePage({ file, reports, linkPrefix = '' }) {
+  ensureDir(path.dirname(file));
+  const latest = reports.filter(report => report.reportType !== 'archive').slice(0, 1);
+  const archived = reports.filter(report => report.reportType === 'archive');
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connect Apple Test Reports</title>
+  <style>
+    :root {
+      --ink: #162033;
+      --muted: #6c7789;
+      --line: #dfe6ef;
+      --paper: #f7f9fc;
+      --panel: #ffffff;
+      --pass: #0f9f6e;
+      --fail: #d93f3f;
+      --unknown: #7c8798;
+      --navy: #090222;
+      --blue: #0e61d8;
+      --shadow: 0 18px 60px rgba(22, 32, 51, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(14, 97, 216, 0.16), transparent 32rem),
+        linear-gradient(180deg, #eef4fb 0%, var(--paper) 24rem);
+      font: 16px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .hero {
+      padding: 3rem clamp(1rem, 4vw, 4rem) 4.5rem;
+      color: white;
+      background: linear-gradient(135deg, rgba(9, 2, 34, 0.96), rgba(13, 45, 88, 0.94));
+    }
+    .hero h1 {
+      margin: 0 0 0.65rem;
+      font-size: clamp(2.4rem, 5vw, 5rem);
+      letter-spacing: -0.07em;
+      line-height: 0.95;
+    }
+    .hero p { margin: 0; color: rgba(255, 255, 255, 0.74); max-width: 52rem; }
+    main { padding: 0 clamp(1rem, 4vw, 4rem) 4rem; }
+    .section {
+      margin-top: 2rem;
+    }
+    .section:first-child {
+      margin-top: -2.5rem;
+    }
+    .section-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    h2 {
+      margin: 0;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      letter-spacing: -0.04em;
+    }
+    .section-heading p { margin: 0; color: var(--muted); }
+    .run-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+      gap: 1rem;
+    }
+    .run-card {
+      display: block;
+      padding: 1.1rem;
+      min-height: 13rem;
+      color: inherit;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(223, 230, 239, 0.9);
+      border-radius: 1.3rem;
+      box-shadow: var(--shadow);
+      transition: transform 160ms ease, border-color 160ms ease;
+    }
+    .run-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(14, 97, 216, 0.45);
+    }
+    .run-card.fail { border-color: rgba(217, 63, 63, 0.45); }
+    .run-card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .run-card h2 {
+      margin-top: 1rem;
+      overflow-wrap: anywhere;
+    }
+    .run-card p { color: var(--muted); }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0.25rem 0.65rem;
+      color: white;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+    .status-pill.pass { background: var(--pass); }
+    .status-pill.fail { background: var(--fail); }
+    .status-pill.unknown { background: var(--unknown); }
+    dl {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.65rem;
+      margin: 1rem 0 0;
+    }
+    dl div {
+      border: 1px solid var(--line);
+      border-radius: 0.8rem;
+      padding: 0.65rem;
+      background: #fbfdff;
+    }
+    dt { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    dd { margin: 0.15rem 0 0; font-size: 1.25rem; font-weight: 800; }
+    .empty {
+      padding: 1rem;
+      border: 1px dashed var(--line);
+      border-radius: 1rem;
+      color: var(--muted);
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <h1>Connect Apple Test Reports</h1>
+    <p>Browse the latest generated Appium report, or jump back into older archived runs.</p>
+  </header>
+  <main>
+    <section class="section">
+      <div class="section-heading">
+        <h2>Latest</h2>
+        <p>Stable URL for the newest generated report</p>
+      </div>
+      <div class="run-grid">${reportArchiveCards(latest.length ? latest : reports.slice(0, 1), linkPrefix)}</div>
+    </section>
+    <section class="section">
+      <div class="section-heading">
+        <h2>History</h2>
+        <p>${escapeHtml(archived.length)} archived run${archived.length === 1 ? '' : 's'}</p>
+      </div>
+      <div class="run-grid">${reportArchiveCards(archived, linkPrefix)}</div>
+    </section>
+  </main>
+</body>
+</html>
+`;
+  fs.writeFileSync(file, html, 'utf8');
+  return file;
+}
+
+function writeArchivePages(outputRoot) {
+  const reports = discoverReports(outputRoot);
+  const docsRoot = path.resolve(outputRoot, '..', '..');
+  const repoRootIndex = path.join(REPO_ROOT, 'index.html');
+  const docsIndex = path.join(docsRoot, 'index.html');
+  const scribeIndex = path.join(outputRoot, 'index.html');
+
+  writeArchivePage({
+    file: repoRootIndex,
+    reports,
+    linkPrefix: 'docs/generated/scribe/',
+  });
+  writeArchivePage({
+    file: docsIndex,
+    reports,
+    linkPrefix: 'generated/scribe/',
+  });
+  writeArchivePage({
+    file: scribeIndex,
+    reports,
+    linkPrefix: '',
+  });
+
+  return { repoRootIndex, docsIndex, scribeIndex, reportCount: reports.length };
+}
+
 function generate() {
   const runId = argValue('run', process.env.SCRIBE_DOC_RUN_ID || 'split3-combined');
   const outputRoot = path.resolve(argValue('out', process.env.SCRIBE_DOC_OUTPUT_DIR || DEFAULT_OUTPUT_ROOT));
   const summary = loadRunSummary(runId);
-  const outDir = ensureDir(path.join(outputRoot, runId));
-  const testDocs = {};
+  const archiveId = argValue('archive-id', process.env.SCRIBE_DOC_ARCHIVE_ID || archiveRunId(runId, summary));
+  const latest = generateReportAt({
+    outputRoot,
+    outputRunId: runId,
+    sourceRunId: runId,
+    summary,
+    reportType: 'latest',
+  });
+  const archive = generateReportAt({
+    outputRoot,
+    outputRunId: path.join('archive', archiveId),
+    sourceRunId: runId,
+    summary,
+    reportType: 'archive',
+  });
+  const archivePages = writeArchivePages(outputRoot);
 
-  for (const result of summary.results) {
-    testDocs[result.name] = writeTestDoc({ outDir, runId, result });
-  }
-
-  const indexPath = writeIndex({ outDir, runId, summary, testDocs });
-  const htmlPath = writeHtmlReport({ outDir, runId, summary, testDocs });
+  const indexPath = latest.indexPath;
+  const htmlPath = latest.htmlPath;
   console.log(`Scribe-style Markdown written to ${indexPath}`);
   console.log(`Scribe-style web report written to ${htmlPath}`);
+  console.log(`Archived copy written to ${archive.htmlPath}`);
+  console.log(`Report archive page updated at ${archivePages.repoRootIndex} (${archivePages.reportCount} reports)`);
 }
 
 if (require.main === module) {
