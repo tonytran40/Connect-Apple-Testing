@@ -298,7 +298,7 @@ The CI-friendly way to get Scribe-like docs is to generate a browser report and 
 npm run docs:scribe -- --run split3-combined
 ```
 
-This writes `index.html`, `index.md`, and one Markdown guide per test under `docs/generated/scribe/{runId}/`. It also saves a timestamped archive copy under `docs/generated/scribe/archive/` and refreshes the Pages homepage with a list of old reports. The web report includes status cards, search/filter controls, lane/device details, failure text when available, and step-by-step screenshots.
+This writes `index.html`, `index.md`, and one Markdown guide per test under `docs/generated/scribe/{runId}/`. It also saves a timestamped archive copy under `docs/generated/scribe/archive/`, makes the Pages homepage open the newest report, and adds a **Previous runs** dropdown inside the report. The web report includes status cards, search/filter controls, lane/device details, failure text when available, and step-by-step screenshots.
 
 For the normal three-simulator run:
 
@@ -313,7 +313,7 @@ Then open:
 open index.html
 ```
 
-Use the homepage to open the latest report or jump back into older archived runs. The stable latest report still lives at `docs/generated/scribe/split3-combined/index.html`.
+The homepage opens the latest report automatically. Use the **Previous runs** dropdown in the report header to jump back into older archived runs. The stable latest report still lives at `docs/generated/scribe/split3-combined/index.html`.
 
 To run the three-simulator split and publish the GitHub Pages report in one command:
 

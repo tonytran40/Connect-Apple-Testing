@@ -298,7 +298,26 @@ function writeIndex({ outDir, runId, summary, testDocs }) {
   return file;
 }
 
-function writeHtmlReport({ outDir, runId, summary, testDocs }) {
+function reportNavLabel(report) {
+  const typeLabel = report.reportType === 'archive' ? 'Archived' : 'Latest';
+  const dateLabel = formatDate(report.startedAt) || report.startedAt || 'No start time';
+  const statusLabel = report.status || 'UNKNOWN';
+  return `${typeLabel} - ${dateLabel} - ${statusLabel}`;
+}
+
+function buildReportNav(reports, currentFile) {
+  const current = path.resolve(currentFile);
+  return reports.map(report => {
+    const reportFile = path.join(report.dir, 'index.html');
+    return {
+      href: relativeLink(currentFile, reportFile),
+      label: reportNavLabel(report),
+      selected: path.resolve(reportFile) === current,
+    };
+  });
+}
+
+function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [] }) {
   const file = path.join(outDir, 'index.html');
   const counts = summary.counts || {};
   const results = summary.results || [];
@@ -310,6 +329,19 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
   const status = summary.status || (failed ? 'FAIL' : 'PASS');
   const started = formatDate(summary.startedAt);
   const updated = formatDate(summary.updatedAt);
+  const reportSwitcher = reportNav.length
+    ? `
+      <label class="report-switcher">
+        <span>Previous runs</span>
+        <select id="reportSwitcher" aria-label="Open another report run">
+          ${reportNav
+            .map(
+              report => `<option value="${escapeHtml(report.href)}"${report.selected ? ' selected' : ''}>${escapeHtml(report.label)}</option>`
+            )
+            .join('\n')}
+        </select>
+      </label>`
+    : '';
 
   const testCards = results
     .map(result => {
@@ -433,6 +465,12 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
         linear-gradient(135deg, rgba(9, 2, 34, 0.96), rgba(13, 45, 88, 0.94)),
         radial-gradient(circle at 70% 10%, rgba(255, 255, 255, 0.2), transparent 20rem);
     }
+    .hero-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 25rem);
+      gap: 1.5rem;
+      align-items: start;
+    }
     .hero h1 {
       margin: 0 0 0.5rem;
       font-size: clamp(2.2rem, 5vw, 4.7rem);
@@ -452,6 +490,25 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
       padding: 0.45rem 0.75rem;
       background: rgba(255, 255, 255, 0.08);
       color: rgba(255, 255, 255, 0.86);
+    }
+    .report-switcher {
+      display: grid;
+      gap: 0.45rem;
+      padding: 0.85rem;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.78);
+      font-weight: 800;
+    }
+    .report-switcher span {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .report-switcher select {
+      border-color: rgba(255, 255, 255, 0.24);
+      background: rgba(255, 255, 255, 0.94);
     }
     main { padding: 2rem clamp(1rem, 4vw, 4rem) 4rem; }
     .stats {
@@ -622,6 +679,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
     [hidden] { display: none !important; }
     @media (max-width: 780px) {
       .stats, .toolbar { grid-template-columns: 1fr; }
+      .hero-layout { grid-template-columns: 1fr; }
       .hero { padding-top: 2rem; }
       .section-heading { display: block; }
       .markdown-link { display: inline-block; margin-top: 1rem; }
@@ -630,13 +688,18 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
 </head>
 <body>
   <header class="hero">
-    <h1>Test Run Report</h1>
-    <p>Scribe-style browser report generated from Appium screenshots and runner results.</p>
-    <div class="hero-meta">
-      <span>Run: ${escapeHtml(runId)}</span>
-      <span>Source: ${escapeHtml(summary.source)}</span>
-      <span>Started: ${escapeHtml(started || summary.startedAt || '')}</span>
-      <span>Updated: ${escapeHtml(updated || summary.updatedAt || '')}</span>
+    <div class="hero-layout">
+      <div>
+        <h1>Test Run Report</h1>
+        <p>Scribe-style browser report generated from Appium screenshots and runner results.</p>
+        <div class="hero-meta">
+          <span>Run: ${escapeHtml(runId)}</span>
+          <span>Source: ${escapeHtml(summary.source)}</span>
+          <span>Started: ${escapeHtml(started || summary.startedAt || '')}</span>
+          <span>Updated: ${escapeHtml(updated || summary.updatedAt || '')}</span>
+        </div>
+      </div>
+      ${reportSwitcher}
     </div>
   </header>
 
@@ -675,6 +738,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
     const search = document.querySelector('#search');
     const statusFilter = document.querySelector('#statusFilter');
     const laneFilter = document.querySelector('#laneFilter');
+    const reportSwitcher = document.querySelector('#reportSwitcher');
     const cards = [...document.querySelectorAll('[data-test-card]')];
     const sections = [...document.querySelectorAll('[data-test-section]')];
 
@@ -693,6 +757,11 @@ function writeHtmlReport({ outDir, runId, summary, testDocs }) {
     }
 
     [search, statusFilter, laneFilter].forEach(input => input.addEventListener('input', applyFilters));
+    if (reportSwitcher) {
+      reportSwitcher.addEventListener('change', () => {
+        if (reportSwitcher.value) window.location.href = reportSwitcher.value;
+      });
+    }
   </script>
 </body>
 </html>
@@ -731,7 +800,7 @@ function generateReportAt({ outputRoot, outputRunId, sourceRunId, summary, repor
   const indexPath = writeIndex({ outDir, runId: sourceRunId, summary, testDocs });
   const htmlPath = writeHtmlReport({ outDir, runId: sourceRunId, summary, testDocs });
   const metaPath = writeReportMeta({ outDir, runId: sourceRunId, summary, reportType });
-  return { outDir, indexPath, htmlPath, metaPath };
+  return { outDir, indexPath, htmlPath, metaPath, testDocs };
 }
 
 function discoverReports(outputRoot) {
@@ -954,23 +1023,78 @@ function writeArchivePage({ file, reports, linkPrefix = '' }) {
   return file;
 }
 
-function writeArchivePages(outputRoot) {
-  const reports = discoverReports(outputRoot);
+function writeRedirectPage({ file, targetHref }) {
+  ensureDir(path.dirname(file));
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=${escapeHtml(targetHref)}">
+  <title>Connect Apple Test Report</title>
+  <style>
+    body {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      margin: 0;
+      background: #f7f9fc;
+      color: #162033;
+      font: 16px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 42rem;
+      padding: 2rem;
+      text-align: center;
+    }
+    a {
+      color: #0e61d8;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Connect Apple Test Report</h1>
+    <p>Opening the latest generated report.</p>
+    <p><a href="${escapeHtml(targetHref)}">Open the latest report</a></p>
+  </main>
+</body>
+</html>
+`;
+  fs.writeFileSync(file, html, 'utf8');
+  return file;
+}
+
+function writeArchivePages(outputRoot, reports = discoverReports(outputRoot)) {
   const docsRoot = path.resolve(outputRoot, '..', '..');
   const repoRootIndex = path.join(REPO_ROOT, 'index.html');
   const docsIndex = path.join(docsRoot, 'index.html');
   const scribeIndex = path.join(outputRoot, 'index.html');
+  const latest = reports.find(report => report.reportType !== 'archive') || reports[0];
 
-  writeArchivePage({
-    file: repoRootIndex,
-    reports,
-    linkPrefix: 'docs/generated/scribe/',
-  });
-  writeArchivePage({
-    file: docsIndex,
-    reports,
-    linkPrefix: 'generated/scribe/',
-  });
+  if (latest) {
+    writeRedirectPage({
+      file: repoRootIndex,
+      targetHref: `docs/generated/scribe/${latest.href}`,
+    });
+    writeRedirectPage({
+      file: docsIndex,
+      targetHref: `generated/scribe/${latest.href}`,
+    });
+  } else {
+    writeArchivePage({
+      file: repoRootIndex,
+      reports,
+      linkPrefix: 'docs/generated/scribe/',
+    });
+    writeArchivePage({
+      file: docsIndex,
+      reports,
+      linkPrefix: 'generated/scribe/',
+    });
+  }
+
   writeArchivePage({
     file: scribeIndex,
     reports,
@@ -999,7 +1123,22 @@ function generate() {
     summary,
     reportType: 'archive',
   });
-  const archivePages = writeArchivePages(outputRoot);
+  const reports = discoverReports(outputRoot);
+  writeHtmlReport({
+    outDir: latest.outDir,
+    runId,
+    summary,
+    testDocs: latest.testDocs,
+    reportNav: buildReportNav(reports, latest.htmlPath),
+  });
+  writeHtmlReport({
+    outDir: archive.outDir,
+    runId,
+    summary,
+    testDocs: archive.testDocs,
+    reportNav: buildReportNav(reports, archive.htmlPath),
+  });
+  const archivePages = writeArchivePages(outputRoot, reports);
 
   const indexPath = latest.indexPath;
   const htmlPath = latest.htmlPath;

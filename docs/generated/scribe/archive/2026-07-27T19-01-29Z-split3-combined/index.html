@@ -35,6 +35,12 @@
         linear-gradient(135deg, rgba(9, 2, 34, 0.96), rgba(13, 45, 88, 0.94)),
         radial-gradient(circle at 70% 10%, rgba(255, 255, 255, 0.2), transparent 20rem);
     }
+    .hero-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 25rem);
+      gap: 1.5rem;
+      align-items: start;
+    }
     .hero h1 {
       margin: 0 0 0.5rem;
       font-size: clamp(2.2rem, 5vw, 4.7rem);
@@ -54,6 +60,25 @@
       padding: 0.45rem 0.75rem;
       background: rgba(255, 255, 255, 0.08);
       color: rgba(255, 255, 255, 0.86);
+    }
+    .report-switcher {
+      display: grid;
+      gap: 0.45rem;
+      padding: 0.85rem;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.78);
+      font-weight: 800;
+    }
+    .report-switcher span {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .report-switcher select {
+      border-color: rgba(255, 255, 255, 0.24);
+      background: rgba(255, 255, 255, 0.94);
     }
     main { padding: 2rem clamp(1rem, 4vw, 4rem) 4rem; }
     .stats {
@@ -224,6 +249,7 @@
     [hidden] { display: none !important; }
     @media (max-width: 780px) {
       .stats, .toolbar { grid-template-columns: 1fr; }
+      .hero-layout { grid-template-columns: 1fr; }
       .hero { padding-top: 2rem; }
       .section-heading { display: block; }
       .markdown-link { display: inline-block; margin-top: 1rem; }
@@ -232,13 +258,26 @@
 </head>
 <body>
   <header class="hero">
-    <h1>Test Run Report</h1>
-    <p>Scribe-style browser report generated from Appium screenshots and runner results.</p>
-    <div class="hero-meta">
-      <span>Run: split3-combined</span>
-      <span>Source: combined summary.md</span>
-      <span>Started: Jul 27, 3:01 PM</span>
-      <span>Updated: Jul 27, 3:06 PM</span>
+    <div class="hero-layout">
+      <div>
+        <h1>Test Run Report</h1>
+        <p>Scribe-style browser report generated from Appium screenshots and runner results.</p>
+        <div class="hero-meta">
+          <span>Run: split3-combined</span>
+          <span>Source: combined summary.md</span>
+          <span>Started: Jul 27, 3:01 PM</span>
+          <span>Updated: Jul 27, 3:12 PM</span>
+        </div>
+      </div>
+      
+      <label class="report-switcher">
+        <span>Previous runs</span>
+        <select id="reportSwitcher" aria-label="Open another report run">
+          <option value="../../split3-combined/index.html">Latest - Jul 27, 3:01 PM - PASS</option>
+<option value="index.html" selected>Archived - Jul 27, 3:01 PM - PASS</option>
+<option value="../2026-07-27T18-21-19Z-split3-combined/index.html">Archived - Jul 27, 2:21 PM - PASS</option>
+        </select>
+      </label>
     </div>
   </header>
 
@@ -1206,6 +1245,7 @@
     const search = document.querySelector('#search');
     const statusFilter = document.querySelector('#statusFilter');
     const laneFilter = document.querySelector('#laneFilter');
+    const reportSwitcher = document.querySelector('#reportSwitcher');
     const cards = [...document.querySelectorAll('[data-test-card]')];
     const sections = [...document.querySelectorAll('[data-test-section]')];
 
@@ -1224,6 +1264,11 @@
     }
 
     [search, statusFilter, laneFilter].forEach(input => input.addEventListener('input', applyFilters));
+    if (reportSwitcher) {
+      reportSwitcher.addEventListener('change', () => {
+        if (reportSwitcher.value) window.location.href = reportSwitcher.value;
+      });
+    }
   </script>
 </body>
 </html>
