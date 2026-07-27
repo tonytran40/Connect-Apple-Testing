@@ -326,8 +326,10 @@ One-time GitHub setup:
 After GitHub Pages rebuilds, the three-simulator report URL should be:
 
 ```text
-https://tonytran40.github.io/Connect-Apple-Testing/generated/scribe/split3-combined/
+https://tonytran40.github.io/Connect-Apple-Testing/
 ```
+
+If Pages is set to `main` / `/docs`, the direct report URL is `https://tonytran40.github.io/Connect-Apple-Testing/generated/scribe/split3-combined/`. If Pages is set to `main` / `/(root)`, the direct report URL is `https://tonytran40.github.io/Connect-Apple-Testing/docs/generated/scribe/split3-combined/`.
 
 If the repo is private, coworkers may need access to the repo or your organization's Pages access policy before they can view it.
 
