@@ -290,6 +290,53 @@ xcrun simctl get_app_container B5A3CFF9-F618-411B-91FC-92C8FDD0D069 com.powerhrg
 
 Each parallel test is launched through `Tests/runSingle.js`, which creates its own driver session, logs in if needed, resets back to the conversation list, and then runs the requested test. True simultaneous execution still needs separate simulator/Appium lanes; one simulator should only be driven by one worker at a time.
 
+### Scribe-style documentation
+
+The CI-friendly way to get Scribe-like docs is to generate a browser report and Markdown from the runner reports and screenshots after a test run:
+
+```bash
+npm run docs:scribe -- --run split3-combined
+```
+
+This writes `index.html`, `index.md`, and one Markdown guide per test under `docs/generated/scribe/{runId}/`. The web report includes status cards, search/filter controls, lane/device details, failure text when available, and step-by-step screenshots.
+
+For the normal three-simulator run:
+
+```bash
+npm run test:parallel:split3
+npm run docs:scribe -- --run split3-combined
+```
+
+Then open:
+
+```bash
+open docs/generated/scribe/split3-combined/index.html
+```
+
+To share the report with coworkers through GitHub Pages, commit and push the generated `docs/` output. This repo includes a GitHub Pages workflow that publishes the `docs/` folder whenever docs change on `main`.
+
+One-time GitHub setup:
+
+1. Open the repo on GitHub.
+2. Go to **Settings** > **Pages**.
+3. Set **Source** to **GitHub Actions**.
+
+After the workflow finishes, the three-simulator report URL should be:
+
+```text
+https://tonytran40.github.io/Connect-Apple-Testing/generated/scribe/split3-combined/
+```
+
+If the repo is private, coworkers may need access to the repo or your organization's Pages access policy before they can view it.
+
+For a single lane, pass that lane's run ID instead, such as `ConversationView`:
+
+```bash
+npm run docs:scribe -- --run ConversationView
+```
+
+Real Scribe Desktop capture is not part of this repo anymore. Appium/XCUITest taps are injected into the simulator instead of coming from the mouse, so Desktop capture was unreliable without an official Scribe API.
+
 ### Single test files
 
 Any test that exports `{ run }` can be run directly (creates its own session unless you pass a driver):
@@ -492,6 +539,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:members-room` | Create room and exercise Members edit flow |
 | `npm run test:attachments` | Create room and validate attachment entry points |
 | `npm run test:remove-all-rooms` | Cleanup rooms starting with configured prefixes |
+| `npm run docs:scribe` | Generate Scribe-style web and Markdown docs from reports and screenshots |
 
 ---
 

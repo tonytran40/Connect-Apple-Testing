@@ -18,7 +18,8 @@
     "test:notifications": "node Tests/notifications.js",
     "test:members-room": "node Tests/membersRoom.js",
     "test:attachments": "node Tests/attachments.js",
-    "test:remove-all-rooms": "node Tests/removeAllrooms.js"
+    "test:remove-all-rooms": "node Tests/removeAllrooms.js",
+    "docs:scribe": "node scripts/generateScribeDocs.js"
   },
   "repository": {
     "type": "git",
