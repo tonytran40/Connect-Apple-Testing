@@ -173,6 +173,7 @@ Useful knobs:
 | `WDA_LOCAL_PORT` | Base WDA port; each worker increments from this |
 | `PARALLEL_RUN_ID` | Report/screenshot run folder name |
 | `PARALLEL_DRY_RUN=1` | Validate runner selection/reporting without launching tests |
+| `PARALLEL_LOGIN_ONCE_PER_WORKER=1` | First test per worker checks login; later tests skip it |
 
 Reports are written under `reports/runs/{runId}/summary.md` and `reports/runs/{runId}/summary.json`; worker logs are under `reports/runs/{runId}/logs/`. Screenshots for parallel runs are namespaced under `screenshots/{runId}/`.
 
@@ -206,6 +207,64 @@ npm run test:parallel:split
 This launches `main-suite` on the iPhone 17 Pro lane and `standalones` on the iPhone 17 Pro Max lane. The merged report is written to `reports/runs/split-combined/summary.md`, with the per-lane details still available at `reports/runs/main-suite/summary.md` and `reports/runs/standalones/summary.md`.
 
 Set `SPLIT_COMBINED_RUN_ID=some-name` if you want the merged report written to a different `reports/runs/{runId}/` folder.
+
+Split parallel defaults to one login check per lane: the first test on each simulator runs `ensureLoggedIn`, then later tests on that same lane skip the login check and go straight to the conversation list reset. If you want the older behavior, run with `SPLIT_LOGIN_ONCE_PER_LANE=0`.
+
+### Three-simulator split experiment
+
+Use this when you want to spread the suite across three simulators. The grouping separates conversation list tests from conversation view tests so each lane has a clearer purpose.
+
+Recommended terminal layout:
+
+| Tab | Command | Purpose |
+|-----|---------|---------|
+| 1 | `appium --port 4723` | Appium server for `main-suite` |
+| 2 | `appium --port 4725` | Appium server for `Conversation-List` |
+| 3 | `appium --port 4727` | Appium server for `ConversationView` |
+| 4 | `npm run test:parallel:split3` | Launch all three test groups |
+
+Default three-lane split:
+
+| Group | Simulator | UDID | Appium | WDA | Tests |
+|-------|-----------|------|--------|-----|-------|
+| `main-suite` | iPhone 17 Pro | `A848480F-1933-47A5-B063-DB070BB3AC66` | `4723` | `8100` | `CreateRoom`, `newMessage` |
+| `Conversation-List` | iPhone 17 Pro Max | `B5A3CFF9-F618-411B-91FC-92C8FDD0D069` | `4725` | `8200` | `ConversationList`, `favoriteRoom`, `markAsRead`, `notifications`, `removeRoom` |
+| `ConversationView` | iPhone 17 | `0244243B-055B-4FAE-8AF8-61FC1486248C` | `4727` | `8300` | `PinnedMessageEditFlow`, `markdowns`, `attachments`, `editRoom`, `membersRoom` |
+
+Run all three groups with:
+
+```bash
+npm run test:parallel:split3
+```
+
+Raw Node equivalent:
+
+```bash
+SPLIT_THIRD_ENABLED=1 node Tests/runSplitParallel.js
+```
+
+Before running either command, keep these three Appium servers open in separate terminal tabs:
+
+```bash
+appium --port 4723
+appium --port 4725
+appium --port 4727
+```
+
+If the third simulator was just created or has an older app build, install the same debug app on it before running:
+
+```bash
+xcrun simctl install 0244243B-055B-4FAE-8AF8-61FC1486248C \
+"/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app"
+```
+
+For fresh simulators or CI, you can have the split runner install the app on every lane before tests start:
+
+```bash
+SPLIT_INSTALL_APP=1 \
+CONNECT_APP_PATH="/path/to/Connect iOS.app" \
+npm run test:parallel:split3
+```
 
 Important: each simulator has its own installed copy of the app. Appium launches the existing `com.powerhrg.connect.v3.debug` app because the driver uses `bundleId` with `noReset: true`; it does not automatically install the latest Xcode build. If one simulator looks like an older app version, update that simulator's installed app from a normal terminal tab, not from an Appium tab:
 
@@ -328,6 +387,14 @@ These follow the same login + home pattern but are run individually today.
 - Payload comes from `Tests/fixtures/connect-notification.apns` by default, or can be generated from env values.
 - Screenshots under `screenshots/notifications/`.
 
+### Shared permission prompts
+
+- Fresh simulators and CI runs can show iOS permission prompts, especially notifications after login and Photos when the attachment picker opens.
+- Notification permission is handled in the shared login flow, not in `notifications.js`, because the prompt can appear before any test.
+- Photos permission is handled through the same shared helper and called from the attachment photo picker.
+- The default behavior taps **Allow** / **Allow Full Access** when the prompt is visible, then skips future checks after the first no-prompt miss.
+- Set `IOS_NOTIFICATION_PERMISSION_CHECKS=0` or `IOS_PHOTO_PERMISSION_CHECKS=0` only if your CI pre-grants those permissions another way.
+
 ### `attachments.js`
 
 - Creates a public attachment room, opens the share options sheet, enters **Attach Photos**, selects the first visible row’s first 3 photos, confirms they appear in the composer, and sends them.
@@ -419,6 +486,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:suite:turbo` | Reduced suite with screenshots disabled |
 | `npm run test:parallel` | Parallel runner for one or more simulator lanes |
 | `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes |
+| `npm run test:parallel:split3` | Run the experimental three-simulator split |
 | `npm run test:time` | Timing helper test |
 | `npm run test:notifications` | Push simulator notification and verify app re-entry |
 | `npm run test:members-room` | Create room and exercise Members edit flow |

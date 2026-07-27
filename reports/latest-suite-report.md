@@ -1,18 +1,19 @@
 # iOS Automation Suite Report
 
-- Started: 2026-04-29T16:55:27.897Z
-- Last Updated: 2026-04-29T16:58:14.514Z
-- Passed: 3
+- Started: 2026-07-15T19:11:54.821Z
+- Last Updated: 2026-07-15T19:15:31.713Z
+- Passed: 6
 - Failed: 0
-- Running: 1
-- Login + driver setup: 19s
+- Running: 0
+- Login + driver setup: 7s
+- **Total suite duration:** 3m 37s
 - Suite options: default (unset env = full behavior)
 
 | Test | Coverage Area | Status | Duration | Notes |
 | --- | --- | --- | --- | --- |
-| newMessage | New direct message flow | PASS | 28s | Completed successfully |
-| CreateRoom | Public and private room creation | PASS | 35s | Completed successfully |
-| PinnedMessageEditFlow | Pin message, verify sheet, edit, verify pin, unpin, verify cleared | PASS | 1m 6s | Completed successfully |
-| markdowns | Markdown and emoji rendering | RUNNING |  | In progress |
-| ConversationList | User settings: each conversation layout and sort, close, verify list | PENDING |  | Waiting to run |
-| Login_Signout | Sign out via user settings | PENDING |  | Waiting to run |
+| CreateRoom | Public and private room creation | PASS | 21s | Completed successfully |
+| PinnedMessageEditFlow | Pin message, verify sheet, edit, verify pin, unpin, verify cleared | PASS | 43s | Completed successfully |
+| markdowns | Markdown and emoji rendering | PASS | 1m 4s | Completed successfully |
+| ConversationList | User settings: each conversation layout and sort, close, verify list | PASS | 37s | Completed successfully |
+| newMessage | New direct message flow | PASS | 17s | Completed successfully |
+| Login_Signout | Sign out via user settings | PASS | 4s | Completed successfully |

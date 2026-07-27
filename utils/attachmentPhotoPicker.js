@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { SELECTORS } = require('./selectors');
+const { allowPhotoLibraryPromptIfNeeded } = require('./permissions');
 
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_ROOM_TIMEOUT_MS, 10) || 20000;
 const PHOTO_PICKER_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_PHOTO_PICKER_TIMEOUT_MS, 10) || 20000;
@@ -9,6 +10,8 @@ const PHOTO_TAP_PAUSE_MS = Number.parseInt(process.env.ATTACHMENT_PHOTO_TAP_PAUS
 const PHOTO_TARGET_COUNT = Number.parseInt(process.env.ATTACHMENT_PHOTO_TARGET_COUNT, 10) || 3;
 const PHOTO_SELECT_WAIT_MS = Number.parseInt(process.env.ATTACHMENT_PHOTO_SELECT_WAIT_MS, 10) || 900;
 const PHOTO_ROW_Y_TOLERANCE = Number.parseInt(process.env.ATTACHMENT_PHOTO_ROW_Y_TOLERANCE, 10) || 12;
+const PHOTO_FAST_TAP = process.env.ATTACHMENT_PHOTO_FAST_TAP !== '0';
+const PHOTO_FAST_TAP_PAUSE_MS = Number.parseInt(process.env.ATTACHMENT_PHOTO_FAST_TAP_PAUSE_MS, 10) || 80;
 
 const DEBUG_LOG_PATH = path.join(__dirname, '..', '.cursor', 'debug-b54b4c.log');
 
@@ -40,31 +43,10 @@ async function pause(driver, ms) {
   if (ms > 0) await driver.pause(ms);
 }
 
-async function dismissPhotoLibraryPermissionIfNeeded(driver) {
-  for (const label of [
-    'Allow Full Access',
-    'Allow Access to All Photos',
-    'Allow Access to Photos',
-    'Select Photos',
-    'OK',
-  ]) {
-    const safe = esc(label);
-    const btn = await driver.$(
-      `-ios predicate string:type == "XCUIElementTypeButton" AND (name == "${safe}" OR label == "${safe}")`
-    );
-    if (await btn.isExisting().catch(() => false) && (await btn.isDisplayed().catch(() => false))) {
-      await btn.click();
-      console.log(`attachments: dismissed photo permission ("${label}")`);
-      await pause(driver, 400);
-      return;
-    }
-  }
-}
-
 async function waitForPhotoPicker(driver, timeout = PHOTO_PICKER_TIMEOUT) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    await dismissPhotoLibraryPermissionIfNeeded(driver);
+    await allowPhotoLibraryPromptIfNeeded(driver);
 
     const signals = [
       '-ios predicate string:(type == "XCUIElementTypeStaticText") AND (name CONTAINS "Select up to" OR label CONTAINS "Select up to")',
@@ -424,6 +406,19 @@ async function tapPhotoAt(driver, x, y) {
   return false;
 }
 
+async function tapFirstRowGridFast(driver, limit) {
+  const bounds = await getPickerGridBounds(driver);
+  const points = gridTapPoints(bounds).slice(0, limit);
+
+  for (const point of points) {
+    await driver.execute('mobile: tap', point);
+    await pause(driver, PHOTO_FAST_TAP_PAUSE_MS);
+  }
+
+  console.log(`attachments: fast tapped ${points.length} photo grid point(s)`);
+  return points.length;
+}
+
 async function tapPhotoCandidate(driver, item, expectedSelectedCount) {
   const tapPoints = [
     item.center,
@@ -536,13 +531,22 @@ async function scrollPhotoGridDown(driver) {
 }
 
 async function tapAllPhotosInPicker(driver) {
-  await dismissPhotoLibraryPermissionIfNeeded(driver);
-  const tappedKeys = new Set();
-  let totalTapped = 0;
+  await allowPhotoLibraryPromptIfNeeded(driver);
   const maxItems = Math.min(
     Number.parseInt(process.env.ATTACHMENT_PHOTO_MAX_ITEMS, 10) || PHOTO_TARGET_COUNT,
     PHOTO_TARGET_COUNT
   );
+
+  if (PHOTO_FAST_TAP) {
+    const totalTapped = await tapFirstRowGridFast(driver, maxItems);
+    if (totalTapped === 0) {
+      throw new Error('attachments: no photo grid points available for fast tap');
+    }
+    return;
+  }
+
+  const tappedKeys = new Set();
+  let totalTapped = 0;
 
   for (let scroll = 0; scroll <= PHOTO_MAX_SCROLLS; scroll += 1) {
     const remaining = maxItems - totalTapped;

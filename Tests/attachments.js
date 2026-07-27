@@ -18,6 +18,10 @@ const TEST_NAME = 'attachments';
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_ROOM_TIMEOUT_MS, 10) || 20000;
 const COMPOSER_ATTACHMENT_SETTLE_MS =
   Number.parseInt(process.env.ATTACHMENT_COMPOSER_SETTLE_MS, 10) || 5000;
+const GIF_PICKER_SETTLE_MS = Number.parseInt(process.env.ATTACHMENT_GIF_PICKER_SETTLE_MS, 10) || 800;
+const GIF_SEND_SETTLE_MS = Number.parseInt(process.env.ATTACHMENT_GIF_SEND_SETTLE_MS, 10) || 1500;
+const GIF_TAP_X_RATIO = Number.parseFloat(process.env.ATTACHMENT_GIF_TAP_X_RATIO) || 0.19;
+const GIF_TAP_Y_RATIO = Number.parseFloat(process.env.ATTACHMENT_GIF_TAP_Y_RATIO) || 0.33;
 const DEBUG_PICKER = process.env.ATTACHMENT_DEBUG_PICKER === '1';
 const USE_EXISTING_ROOM = process.env.ATTACHMENT_USE_EXISTING_ROOM === '1';
 const SHARE_OPTIONS = ['Attach Photos', 'Attach Files', 'Send GIF'];
@@ -157,6 +161,16 @@ async function tapShareOption(driver, label, timeout = DEFAULT_TIMEOUT) {
   console.log(`attachments: tapped "${label}"`);
 }
 
+async function tapFirstGif(driver) {
+  const win = await driver.getWindowRect();
+  const point = {
+    x: Math.round(win.width * GIF_TAP_X_RATIO),
+    y: Math.round(win.height * GIF_TAP_Y_RATIO),
+  };
+  await driver.execute('mobile: tap', point);
+  console.log(`attachments: tapped first GIF at (${point.x}, ${point.y})`);
+}
+
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
 
@@ -197,6 +211,19 @@ async function runTest(driver, options = {}) {
   await sendComposerDraft(driver);
   await pause(driver, 500);
   await saveScreenshot(driver, TEST_NAME, '06_after_send_attachment.png');
+
+  await tapShareOptionsButton(driver);
+  await pause(driver, 400);
+  await waitForShareOptionsDialog(driver);
+  await saveScreenshot(driver, TEST_NAME, '07_share_options_dialog_for_gif.png');
+
+  await tapShareOption(driver, 'Send GIF');
+  await pause(driver, GIF_PICKER_SETTLE_MS);
+  await saveScreenshot(driver, TEST_NAME, '08_gif_picker_open.png');
+
+  await tapFirstGif(driver);
+  await pause(driver, GIF_SEND_SETTLE_MS);
+  await saveScreenshot(driver, TEST_NAME, '09_after_send_gif.png');
 }
 
 async function run(driver, options = {}) {

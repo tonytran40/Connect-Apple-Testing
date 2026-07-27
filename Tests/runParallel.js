@@ -257,7 +257,7 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
   );
 }
 
-function runOneTest({ testName, lane, runId, resultDir, logDir }) {
+function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck = false }) {
   return new Promise(resolve => {
     const testPath = path.resolve(__dirname, `${testName}.js`);
     const startedAt = new Date().toISOString();
@@ -288,6 +288,7 @@ function runOneTest({ testName, lane, runId, resultDir, logDir }) {
       APPIUM_PORT: String(lane.appiumPort),
       WDA_LOCAL_PORT: String(lane.wdaLocalPort),
       WDA_DERIVED_DATA_PATH: lane.derivedDataPath,
+      RUN_SINGLE_SKIP_LOGIN_CHECK: skipLoginCheck ? '1' : '0',
       WDIO_LOG_LEVEL: process.env.WDIO_LOG_LEVEL || 'error',
     };
 
@@ -324,6 +325,7 @@ function runOneTest({ testName, lane, runId, resultDir, logDir }) {
         deviceName: lane.deviceName,
         wdaLocalPort: lane.wdaLocalPort,
         derivedDataPath: lane.derivedDataPath,
+        loginCheckSkipped: skipLoginCheck,
         startedAt,
         finishedAt: new Date().toISOString(),
         logPath,
@@ -366,10 +368,19 @@ async function run() {
   }
 
   async function worker(lane) {
+    const loginOncePerWorker = process.env.PARALLEL_LOGIN_ONCE_PER_WORKER === '1';
+    let hasCompletedLoginCheck = false;
+
     while (pending.length) {
       const testName = pending.shift();
-      console.log(`runParallel: worker #${lane.index} starting ${testName}`);
-      const result = await runOneTest({ testName, lane, runId, resultDir, logDir });
+      const skipLoginCheck = loginOncePerWorker && hasCompletedLoginCheck;
+      console.log(
+        `runParallel: worker #${lane.index} starting ${testName}${skipLoginCheck ? ' (login check skipped)' : ''}`
+      );
+      const result = await runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck });
+      if (loginOncePerWorker && result.status === 'PASS' && !skipLoginCheck) {
+        hasCompletedLoginCheck = true;
+      }
       results.push(result);
       console.log(
         `runParallel: worker #${lane.index} ${result.status} ${testName} in ${formatDurationMs(result.durationMs)}`

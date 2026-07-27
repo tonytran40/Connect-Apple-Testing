@@ -25,10 +25,15 @@ function loadTestModule(testName) {
 
 async function runOne(testName) {
   let driver;
+  const skipLoginCheck = process.env.RUN_SINGLE_SKIP_LOGIN_CHECK === '1';
 
   try {
     driver = await createDriver();
-    await ensureLoggedIn(driver);
+    if (skipLoginCheck) {
+      console.log('runSingle: skipping login check for this worker test');
+    } else {
+      await ensureLoggedIn(driver);
+    }
     await ensureRoomsSectionReady(driver);
 
     const test = loadTestModule(testName);

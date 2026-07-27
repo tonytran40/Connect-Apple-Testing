@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const { SELECTORS, PREDICATES } = require('../utils/selectors');
+const { allowNotificationPromptIfNeeded } = require('../utils/permissions');
 
 function intEnv(name, fallback, min, max) {
   const n = Number.parseInt(process.env[name], 10);
@@ -140,6 +141,7 @@ async function ensureLoggedIn(driver) {
 
   if (!onLogin) {
     console.log('Already logged in (loginView not present). Skipping login flow.');
+    await allowNotificationPromptIfNeeded(driver);
     return;
   }
 
@@ -176,6 +178,7 @@ async function ensureLoggedIn(driver) {
 
   console.log('✅ Login submitted');
   await waitForLoginSuccess(driver);
+  await allowNotificationPromptIfNeeded(driver);
 }
 
 module.exports = { ensureLoggedIn };
