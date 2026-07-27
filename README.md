@@ -313,15 +313,17 @@ Then open:
 open docs/generated/scribe/split3-combined/index.html
 ```
 
-To share the report with coworkers through GitHub Pages, commit and push the generated `docs/` output. This repo includes a GitHub Pages workflow that publishes the `docs/` folder whenever docs change on `main`.
+To share the report with coworkers through GitHub Pages, commit and push the generated `docs/` output. GitHub Pages can publish that folder directly from `main`.
 
 One-time GitHub setup:
 
 1. Open the repo on GitHub.
 2. Go to **Settings** > **Pages**.
-3. Set **Source** to **GitHub Actions**.
+3. Set **Source** to **Deploy from a branch**.
+4. Set **Branch** to `main` and the folder to `/docs`.
+5. Click **Save**.
 
-After the workflow finishes, the three-simulator report URL should be:
+After GitHub Pages rebuilds, the three-simulator report URL should be:
 
 ```text
 https://tonytran40.github.io/Connect-Apple-Testing/generated/scribe/split3-combined/
