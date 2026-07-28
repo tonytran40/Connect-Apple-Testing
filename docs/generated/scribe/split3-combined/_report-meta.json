@@ -2,10 +2,10 @@
   "runId": "split3-combined",
   "reportType": "latest",
   "source": "combined summary.md",
-  "status": "PASS",
-  "startedAt": "2026-07-27T19:01:29.528Z",
-  "updatedAt": "2026-07-27T19:12:21.301Z",
-  "passed": 12,
-  "failed": 0,
+  "status": "FAIL",
+  "startedAt": "2026-07-28T13:06:15.342Z",
+  "updatedAt": "2026-07-28T13:12:44.138Z",
+  "passed": 10,
+  "failed": 2,
   "total": 12
 }

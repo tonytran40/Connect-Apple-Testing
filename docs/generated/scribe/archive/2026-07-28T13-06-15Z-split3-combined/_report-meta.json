@@ -1,0 +1,11 @@
+{
+  "runId": "split3-combined",
+  "reportType": "archive",
+  "source": "combined summary.md",
+  "status": "FAIL",
+  "startedAt": "2026-07-28T13:06:15.342Z",
+  "updatedAt": "2026-07-28T13:12:44.138Z",
+  "passed": 10,
+  "failed": 2,
+  "total": 12
+}

@@ -166,19 +166,59 @@
       white-space: nowrap;
     }
     .test-section {
-      padding: clamp(1rem, 3vw, 1.6rem);
       margin-top: 1.5rem;
+      overflow: hidden;
     }
-    .section-heading {
+    .section-summary {
       display: flex;
       align-items: start;
       justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 1rem;
+      padding: clamp(1rem, 3vw, 1.6rem);
+      cursor: pointer;
+      list-style: none;
     }
-    .section-heading h2 { margin: 0.5rem 0 0; font-size: clamp(1.7rem, 3vw, 2.6rem); letter-spacing: -0.04em; }
+    .section-summary::-webkit-details-marker { display: none; }
+    .section-summary h2 {
+      margin: 0.5rem 0 0;
+      font-size: clamp(1.5rem, 3vw, 2.35rem);
+      letter-spacing: -0.04em;
+    }
+    .section-summary p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .summary-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: end;
+      gap: 0.55rem;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .summary-meta span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.35rem 0.65rem;
+      background: #fbfdff;
+    }
+    .collapse-label {
+      color: var(--blue);
+    }
+    .collapse-label::before {
+      content: 'Open ';
+    }
+    .test-section[open] .collapse-label::before {
+      content: 'Close ';
+    }
+    .test-section-body {
+      padding: 0 clamp(1rem, 3vw, 1.6rem) clamp(1rem, 3vw, 1.6rem);
+      border-top: 1px solid var(--line);
+    }
     .markdown-link {
-      flex: 0 0 auto;
+      display: inline-flex;
+      margin: 1rem 0;
       border-radius: 999px;
       padding: 0.55rem 0.8rem;
       background: #edf4ff;
@@ -226,6 +266,27 @@
       overflow: hidden;
       background: white;
     }
+    .failed-step {
+      border: 3px solid var(--fail);
+      box-shadow: 0 18px 50px rgba(217, 63, 63, 0.24);
+      position: relative;
+    }
+    .failed-step::before {
+      content: 'Failed here';
+      position: absolute;
+      z-index: 1;
+      top: 0.8rem;
+      left: 0.8rem;
+      border-radius: 999px;
+      padding: 0.35rem 0.7rem;
+      background: var(--fail);
+      color: white;
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 28px rgba(217, 63, 63, 0.3);
+    }
     .step img {
       display: block;
       width: 100%;
@@ -246,12 +307,24 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+    .step-error {
+      margin-top: 0.65rem;
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      background: #fff5f5;
+      color: #7a2020;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+    }
     [hidden] { display: none !important; }
     @media (max-width: 780px) {
       .stats, .toolbar { grid-template-columns: 1fr; }
       .hero-layout { grid-template-columns: 1fr; }
       .hero { padding-top: 2rem; }
-      .section-heading { display: block; }
+      .section-summary { display: block; }
+      .summary-meta { justify-content: start; margin-top: 1rem; }
       .markdown-link { display: inline-block; margin-top: 1rem; }
     }
   </style>
@@ -266,7 +339,7 @@
           <span>Run: split3-combined</span>
           <span>Source: combined summary.md</span>
           <span>Started: Jul 27, 3:01 PM</span>
-          <span>Updated: Jul 27, 3:12 PM</span>
+          <span>Updated: Jul 28, 8:56 AM</span>
         </div>
       </div>
       
@@ -431,814 +504,1242 @@
     
 
     
-        <section class="test-section" id="createroom" data-test-section data-name="createroom" data-status="PASS" data-lane="main-suite">
-          <div class="section-heading">
+        <details class="test-section" id="createroom" data-test-section data-name="createroom" data-status="PASS" data-lane="main-suite">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>CreateRoom</h2>
+              <p>main-suite / iPhone 17 Pro</p>
             </div>
+            <div class="summary-meta">
+              <span>55s</span>
+              <span>5 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="CreateRoom.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>55s</dd></div>
-            <div><dt>Lane</dt><dd>main-suite</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
-            <div><dt>Appium port</dt><dd>4723</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:01 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>55s</dd></div>
+              <div><dt>Lane</dt><dd>main-suite</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+              <div><dt>Appium port</dt><dd>4723</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:01 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/main-suite/CreateRoom/private_create_room.png">
                     <img src="assets/main-suite/CreateRoom/private_create_room.png" alt="Private Create Room" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Private Create Room</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Private Create Room
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/main-suite/CreateRoom/private_room_toggle.png">
                     <img src="assets/main-suite/CreateRoom/private_room_toggle.png" alt="Private Room Toggle" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Private Room Toggle</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Private Room Toggle
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/main-suite/CreateRoom/public_create_room.png">
                     <img src="assets/main-suite/CreateRoom/public_create_room.png" alt="Public Create Room" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>Public Create Room</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    Public Create Room
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/main-suite/CreateRoom/public_room_name.png">
                     <img src="assets/main-suite/CreateRoom/public_room_name.png" alt="Public Room Name" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>Public Room Name</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    Public Room Name
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/main-suite/CreateRoom/rooms_list_after_public.png">
                     <img src="assets/main-suite/CreateRoom/rooms_list_after_public.png" alt="Rooms List After Public" loading="lazy">
                   </a>
-                  <figcaption><span>Step 5</span>Rooms List After Public</figcaption>
+                  <figcaption>
+                    <span>Step 5</span>
+                    Rooms List After Public
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="newmessage" data-test-section data-name="newmessage" data-status="PASS" data-lane="main-suite">
-          <div class="section-heading">
+        <details class="test-section" id="newmessage" data-test-section data-name="newmessage" data-status="PASS" data-lane="main-suite">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>newMessage</h2>
+              <p>main-suite / iPhone 17 Pro</p>
             </div>
+            <div class="summary-meta">
+              <span>34s</span>
+              <span>4 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="newMessage.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>34s</dd></div>
-            <div><dt>Lane</dt><dd>main-suite</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
-            <div><dt>Appium port</dt><dd>4723</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>34s</dd></div>
+              <div><dt>Lane</dt><dd>main-suite</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+              <div><dt>Appium port</dt><dd>4723</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/main-suite/newMessage/02_start_conversation.png">
                     <img src="assets/main-suite/newMessage/02_start_conversation.png" alt="Start Conversation" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Start Conversation</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Start Conversation
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/main-suite/newMessage/03_typed_recipient.png">
                     <img src="assets/main-suite/newMessage/03_typed_recipient.png" alt="Typed Recipient" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Typed Recipient</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Typed Recipient
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/main-suite/newMessage/04_selected_recipient.png">
                     <img src="assets/main-suite/newMessage/04_selected_recipient.png" alt="Selected Recipient" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>Selected Recipient</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    Selected Recipient
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/main-suite/newMessage/05_message_typed.png">
                     <img src="assets/main-suite/newMessage/05_message_typed.png" alt="Message Typed" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>Message Typed</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    Message Typed
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="conversationlist" data-test-section data-name="conversationlist" data-status="PASS" data-lane="Conversation-List">
-          <div class="section-heading">
+        <details class="test-section" id="conversationlist" data-test-section data-name="conversationlist" data-status="PASS" data-lane="Conversation-List">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>ConversationList</h2>
+              <p>Conversation-List / iPhone 17 Pro Max</p>
             </div>
+            <div class="summary-meta">
+              <span>53s</span>
+              <span>15 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="ConversationList.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>53s</dd></div>
-            <div><dt>Lane</dt><dd>Conversation-List</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
-            <div><dt>Appium port</dt><dd>4725</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:01 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>53s</dd></div>
+              <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+              <div><dt>Appium port</dt><dd>4725</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:01 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/layout_classic_after_switch_in_menu.png">
                     <img src="assets/Conversation-List/ConversationList/layout_classic_after_switch_in_menu.png" alt="Layout Classic After Switch In Menu" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Layout Classic After Switch In Menu</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Layout Classic After Switch In Menu
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/layout_classic_conversation_list.png">
                     <img src="assets/Conversation-List/ConversationList/layout_classic_conversation_list.png" alt="Layout Classic Conversation List" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Layout Classic Conversation List</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Layout Classic Conversation List
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/layout_classic_menu_open.png">
                     <img src="assets/Conversation-List/ConversationList/layout_classic_menu_open.png" alt="Layout Classic Menu Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>Layout Classic Menu Open</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    Layout Classic Menu Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/layout_cozy_after_switch_in_menu.png">
                     <img src="assets/Conversation-List/ConversationList/layout_cozy_after_switch_in_menu.png" alt="Layout Cozy After Switch In Menu" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>Layout Cozy After Switch In Menu</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    Layout Cozy After Switch In Menu
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/layout_cozy_conversation_list.png">
                     <img src="assets/Conversation-List/ConversationList/layout_cozy_conversation_list.png" alt="Layout Cozy Conversation List" loading="lazy">
                   </a>
-                  <figcaption><span>Step 5</span>Layout Cozy Conversation List</figcaption>
+                  <figcaption>
+                    <span>Step 5</span>
+                    Layout Cozy Conversation List
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/layout_cozy_menu_open.png">
                     <img src="assets/Conversation-List/ConversationList/layout_cozy_menu_open.png" alt="Layout Cozy Menu Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 6</span>Layout Cozy Menu Open</figcaption>
+                  <figcaption>
+                    <span>Step 6</span>
+                    Layout Cozy Menu Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_alphabetically_after_switch_in_menu.png">
                     <img src="assets/Conversation-List/ConversationList/sort_alphabetically_after_switch_in_menu.png" alt="Sort Alphabetically After Switch In Menu" loading="lazy">
                   </a>
-                  <figcaption><span>Step 7</span>Sort Alphabetically After Switch In Menu</figcaption>
+                  <figcaption>
+                    <span>Step 7</span>
+                    Sort Alphabetically After Switch In Menu
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_alphabetically_conversation_list.png">
                     <img src="assets/Conversation-List/ConversationList/sort_alphabetically_conversation_list.png" alt="Sort Alphabetically Conversation List" loading="lazy">
                   </a>
-                  <figcaption><span>Step 8</span>Sort Alphabetically Conversation List</figcaption>
+                  <figcaption>
+                    <span>Step 8</span>
+                    Sort Alphabetically Conversation List
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_alphabetically_menu_open.png">
                     <img src="assets/Conversation-List/ConversationList/sort_alphabetically_menu_open.png" alt="Sort Alphabetically Menu Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 9</span>Sort Alphabetically Menu Open</figcaption>
+                  <figcaption>
+                    <span>Step 9</span>
+                    Sort Alphabetically Menu Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_recent_activity_after_switch_in_menu.png">
                     <img src="assets/Conversation-List/ConversationList/sort_recent_activity_after_switch_in_menu.png" alt="Sort Recent Activity After Switch In Menu" loading="lazy">
                   </a>
-                  <figcaption><span>Step 10</span>Sort Recent Activity After Switch In Menu</figcaption>
+                  <figcaption>
+                    <span>Step 10</span>
+                    Sort Recent Activity After Switch In Menu
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_recent_activity_conversation_list.png">
                     <img src="assets/Conversation-List/ConversationList/sort_recent_activity_conversation_list.png" alt="Sort Recent Activity Conversation List" loading="lazy">
                   </a>
-                  <figcaption><span>Step 11</span>Sort Recent Activity Conversation List</figcaption>
+                  <figcaption>
+                    <span>Step 11</span>
+                    Sort Recent Activity Conversation List
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_recent_activity_menu_open.png">
                     <img src="assets/Conversation-List/ConversationList/sort_recent_activity_menu_open.png" alt="Sort Recent Activity Menu Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 12</span>Sort Recent Activity Menu Open</figcaption>
+                  <figcaption>
+                    <span>Step 12</span>
+                    Sort Recent Activity Menu Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_self_managed_after_switch_in_menu.png">
                     <img src="assets/Conversation-List/ConversationList/sort_self_managed_after_switch_in_menu.png" alt="Sort Self Managed After Switch In Menu" loading="lazy">
                   </a>
-                  <figcaption><span>Step 13</span>Sort Self Managed After Switch In Menu</figcaption>
+                  <figcaption>
+                    <span>Step 13</span>
+                    Sort Self Managed After Switch In Menu
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_self_managed_conversation_list.png">
                     <img src="assets/Conversation-List/ConversationList/sort_self_managed_conversation_list.png" alt="Sort Self Managed Conversation List" loading="lazy">
                   </a>
-                  <figcaption><span>Step 14</span>Sort Self Managed Conversation List</figcaption>
+                  <figcaption>
+                    <span>Step 14</span>
+                    Sort Self Managed Conversation List
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/ConversationList/sort_self_managed_menu_open.png">
                     <img src="assets/Conversation-List/ConversationList/sort_self_managed_menu_open.png" alt="Sort Self Managed Menu Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 15</span>Sort Self Managed Menu Open</figcaption>
+                  <figcaption>
+                    <span>Step 15</span>
+                    Sort Self Managed Menu Open
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="favoriteroom" data-test-section data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List">
-          <div class="section-heading">
+        <details class="test-section" id="favoriteroom" data-test-section data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>favoriteRoom</h2>
+              <p>Conversation-List / iPhone 17 Pro Max</p>
             </div>
+            <div class="summary-meta">
+              <span>14s</span>
+              <span>4 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="favoriteRoom.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>14s</dd></div>
-            <div><dt>Lane</dt><dd>Conversation-List</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
-            <div><dt>Appium port</dt><dd>4725</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>14s</dd></div>
+              <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+              <div><dt>Appium port</dt><dd>4725</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/Conversation-List/favoriteRoom/01_before_swipe.png">
                     <img src="assets/Conversation-List/favoriteRoom/01_before_swipe.png" alt="Before Swipe" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Before Swipe</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Before Swipe
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/favoriteRoom/02_after_swipe_right.png">
                     <img src="assets/Conversation-List/favoriteRoom/02_after_swipe_right.png" alt="After Swipe Right" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>After Swipe Right</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    After Swipe Right
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/favoriteRoom/03_after_click_favorites.png">
                     <img src="assets/Conversation-List/favoriteRoom/03_after_click_favorites.png" alt="After Click Favorites" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>After Click Favorites</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    After Click Favorites
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/favoriteRoom/04_after_unfavorite.png">
                     <img src="assets/Conversation-List/favoriteRoom/04_after_unfavorite.png" alt="After Unfavorite" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>After Unfavorite</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    After Unfavorite
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="markasread" data-test-section data-name="markasread" data-status="PASS" data-lane="Conversation-List">
-          <div class="section-heading">
+        <details class="test-section" id="markasread" data-test-section data-name="markasread" data-status="PASS" data-lane="Conversation-List">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>markAsRead</h2>
+              <p>Conversation-List / iPhone 17 Pro Max</p>
             </div>
+            <div class="summary-meta">
+              <span>14s</span>
+              <span>4 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="markAsRead.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>14s</dd></div>
-            <div><dt>Lane</dt><dd>Conversation-List</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
-            <div><dt>Appium port</dt><dd>4725</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>14s</dd></div>
+              <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+              <div><dt>Appium port</dt><dd>4725</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/Conversation-List/markAsRead/01_before_swipe_right.png">
                     <img src="assets/Conversation-List/markAsRead/01_before_swipe_right.png" alt="Before Swipe Right" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Before Swipe Right</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Before Swipe Right
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/markAsRead/02_after_swipe_right.png">
                     <img src="assets/Conversation-List/markAsRead/02_after_swipe_right.png" alt="After Swipe Right" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>After Swipe Right</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    After Swipe Right
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/markAsRead/03_after_mark_unread.png">
                     <img src="assets/Conversation-List/markAsRead/03_after_mark_unread.png" alt="After Mark Unread" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>After Mark Unread</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    After Mark Unread
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/markAsRead/04_after_mark_read.png">
                     <img src="assets/Conversation-List/markAsRead/04_after_mark_read.png" alt="After Mark Read" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>After Mark Read</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    After Mark Read
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="notifications" data-test-section data-name="notifications" data-status="PASS" data-lane="Conversation-List">
-          <div class="section-heading">
+        <details class="test-section" id="notifications" data-test-section data-name="notifications" data-status="PASS" data-lane="Conversation-List">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>notifications</h2>
+              <p>Conversation-List / iPhone 17 Pro Max</p>
             </div>
+            <div class="summary-meta">
+              <span>16s</span>
+              <span>4 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="notifications.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>16s</dd></div>
-            <div><dt>Lane</dt><dd>Conversation-List</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
-            <div><dt>Appium port</dt><dd>4725</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:03 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>16s</dd></div>
+              <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+              <div><dt>Appium port</dt><dd>4725</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:03 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/Conversation-List/notifications/01_before_push.png">
                     <img src="assets/Conversation-List/notifications/01_before_push.png" alt="Before Push" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Before Push</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Before Push
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/notifications/02_after_push.png">
                     <img src="assets/Conversation-List/notifications/02_after_push.png" alt="After Push" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>After Push</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    After Push
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/notifications/03_after_tap_notification.png">
                     <img src="assets/Conversation-List/notifications/03_after_tap_notification.png" alt="After Tap Notification" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>After Tap Notification</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    After Tap Notification
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/notifications/04_in_app_after_notification.png">
                     <img src="assets/Conversation-List/notifications/04_in_app_after_notification.png" alt="In App After Notification" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>In App After Notification</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    In App After Notification
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="removeroom" data-test-section data-name="removeroom" data-status="PASS" data-lane="Conversation-List">
-          <div class="section-heading">
+        <details class="test-section" id="removeroom" data-test-section data-name="removeroom" data-status="PASS" data-lane="Conversation-List">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>removeRoom</h2>
+              <p>Conversation-List / iPhone 17 Pro Max</p>
             </div>
+            <div class="summary-meta">
+              <span>9s</span>
+              <span>4 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="removeRoom.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>9s</dd></div>
-            <div><dt>Lane</dt><dd>Conversation-List</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
-            <div><dt>Appium port</dt><dd>4725</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:03 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:03 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>9s</dd></div>
+              <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+              <div><dt>Appium port</dt><dd>4725</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:03 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:03 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/Conversation-List/removeRoom/01_before_swipe_left.png">
                     <img src="assets/Conversation-List/removeRoom/01_before_swipe_left.png" alt="Before Swipe Left" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Before Swipe Left</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Before Swipe Left
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/removeRoom/02_after_swipe_left.png">
                     <img src="assets/Conversation-List/removeRoom/02_after_swipe_left.png" alt="After Swipe Left" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>After Swipe Left</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    After Swipe Left
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/removeRoom/03_after_tap_remove.png">
                     <img src="assets/Conversation-List/removeRoom/03_after_tap_remove.png" alt="After Tap Remove" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>After Tap Remove</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    After Tap Remove
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/Conversation-List/removeRoom/04_after_room_removed.png">
                     <img src="assets/Conversation-List/removeRoom/04_after_room_removed.png" alt="After Room Removed" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>After Room Removed</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    After Room Removed
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="pinnedmessageeditflow" data-test-section data-name="pinnedmessageeditflow" data-status="PASS" data-lane="ConversationView">
-          <div class="section-heading">
+        <details class="test-section" id="pinnedmessageeditflow" data-test-section data-name="pinnedmessageeditflow" data-status="PASS" data-lane="ConversationView">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>PinnedMessageEditFlow</h2>
+              <p>ConversationView / iPhone 17</p>
             </div>
+            <div class="summary-meta">
+              <span>59s</span>
+              <span>4 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="PinnedMessageEditFlow.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>59s</dd></div>
-            <div><dt>Lane</dt><dd>ConversationView</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17</dd></div>
-            <div><dt>Appium port</dt><dd>4727</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:01 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>59s</dd></div>
+              <div><dt>Lane</dt><dd>ConversationView</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17</dd></div>
+              <div><dt>Appium port</dt><dd>4727</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:01 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:02 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/ConversationView/PinnedMessageEditFlow/01_room_opened.png">
                     <img src="assets/ConversationView/PinnedMessageEditFlow/01_room_opened.png" alt="Room Opened" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Room Opened</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Room Opened
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/PinnedMessageEditFlow/03_pin_shows_original.png">
                     <img src="assets/ConversationView/PinnedMessageEditFlow/03_pin_shows_original.png" alt="Pin Shows Original" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Pin Shows Original</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Pin Shows Original
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/PinnedMessageEditFlow/06_pin_shows_edited.png">
                     <img src="assets/ConversationView/PinnedMessageEditFlow/06_pin_shows_edited.png" alt="Pin Shows Edited" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>Pin Shows Edited</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    Pin Shows Edited
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/PinnedMessageEditFlow/08_unpinned_drawer_closed.png">
                     <img src="assets/ConversationView/PinnedMessageEditFlow/08_unpinned_drawer_closed.png" alt="Unpinned Drawer Closed" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>Unpinned Drawer Closed</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    Unpinned Drawer Closed
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="markdowns" data-test-section data-name="markdowns" data-status="PASS" data-lane="ConversationView">
-          <div class="section-heading">
+        <details class="test-section" id="markdowns" data-test-section data-name="markdowns" data-status="PASS" data-lane="ConversationView">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>markdowns</h2>
+              <p>ConversationView / iPhone 17</p>
             </div>
+            <div class="summary-meta">
+              <span>1m 22s</span>
+              <span>11 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="markdowns.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>1m 22s</dd></div>
-            <div><dt>Lane</dt><dd>ConversationView</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17</dd></div>
-            <div><dt>Appium port</dt><dd>4727</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:03 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>1m 22s</dd></div>
+              <div><dt>Lane</dt><dd>ConversationView</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17</dd></div>
+              <div><dt>Appium port</dt><dd>4727</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:02 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:03 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/01_headings.png">
                     <img src="assets/ConversationView/markdowns/01_headings.png" alt="Headings" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>Headings</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    Headings
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/01_room_opened.png">
                     <img src="assets/ConversationView/markdowns/01_room_opened.png" alt="Room Opened" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Room Opened</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Room Opened
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/02_emphasis.png">
                     <img src="assets/ConversationView/markdowns/02_emphasis.png" alt="Emphasis" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>Emphasis</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    Emphasis
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/03_links.png">
                     <img src="assets/ConversationView/markdowns/03_links.png" alt="Links" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>Links</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    Links
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/04_inline_code.png">
                     <img src="assets/ConversationView/markdowns/04_inline_code.png" alt="Inline Code" loading="lazy">
                   </a>
-                  <figcaption><span>Step 5</span>Inline Code</figcaption>
+                  <figcaption>
+                    <span>Step 5</span>
+                    Inline Code
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/05_code_block.png">
                     <img src="assets/ConversationView/markdowns/05_code_block.png" alt="Code Block" loading="lazy">
                   </a>
-                  <figcaption><span>Step 6</span>Code Block</figcaption>
+                  <figcaption>
+                    <span>Step 6</span>
+                    Code Block
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/06_lists.png">
                     <img src="assets/ConversationView/markdowns/06_lists.png" alt="Lists" loading="lazy">
                   </a>
-                  <figcaption><span>Step 7</span>Lists</figcaption>
+                  <figcaption>
+                    <span>Step 7</span>
+                    Lists
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/07_blockquote.png">
                     <img src="assets/ConversationView/markdowns/07_blockquote.png" alt="Blockquote" loading="lazy">
                   </a>
-                  <figcaption><span>Step 8</span>Blockquote</figcaption>
+                  <figcaption>
+                    <span>Step 8</span>
+                    Blockquote
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/08_mixed.png">
                     <img src="assets/ConversationView/markdowns/08_mixed.png" alt="Mixed" loading="lazy">
                   </a>
-                  <figcaption><span>Step 9</span>Mixed</figcaption>
+                  <figcaption>
+                    <span>Step 9</span>
+                    Mixed
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/09_emojis.png">
                     <img src="assets/ConversationView/markdowns/09_emojis.png" alt="Emojis" loading="lazy">
                   </a>
-                  <figcaption><span>Step 10</span>Emojis</figcaption>
+                  <figcaption>
+                    <span>Step 10</span>
+                    Emojis
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/markdowns/10_appointments.png">
                     <img src="assets/ConversationView/markdowns/10_appointments.png" alt="Appointments" loading="lazy">
                   </a>
-                  <figcaption><span>Step 11</span>Appointments</figcaption>
+                  <figcaption>
+                    <span>Step 11</span>
+                    Appointments
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="attachments" data-test-section data-name="attachments" data-status="PASS" data-lane="ConversationView">
-          <div class="section-heading">
+        <details class="test-section" id="attachments" data-test-section data-name="attachments" data-status="PASS" data-lane="ConversationView">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>attachments</h2>
+              <p>ConversationView / iPhone 17</p>
             </div>
+            <div class="summary-meta">
+              <span>1m 8s</span>
+              <span>9 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="attachments.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>1m 8s</dd></div>
-            <div><dt>Lane</dt><dd>ConversationView</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17</dd></div>
-            <div><dt>Appium port</dt><dd>4727</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:03 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:05 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>1m 8s</dd></div>
+              <div><dt>Lane</dt><dd>ConversationView</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17</dd></div>
+              <div><dt>Appium port</dt><dd>4727</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:03 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:05 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/01_in_room.png">
                     <img src="assets/ConversationView/attachments/01_in_room.png" alt="In Room" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>In Room</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    In Room
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/02_share_options_dialog.png">
                     <img src="assets/ConversationView/attachments/02_share_options_dialog.png" alt="Share Options Dialog" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Share Options Dialog</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Share Options Dialog
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/03_photo_picker_open.png">
                     <img src="assets/ConversationView/attachments/03_photo_picker_open.png" alt="Photo Picker Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>Photo Picker Open</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    Photo Picker Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/04_after_tap_all_photos.png">
                     <img src="assets/ConversationView/attachments/04_after_tap_all_photos.png" alt="After Tap All Photos" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>After Tap All Photos</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    After Tap All Photos
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/05_attachment_in_composer.png">
                     <img src="assets/ConversationView/attachments/05_attachment_in_composer.png" alt="Attachment In Composer" loading="lazy">
                   </a>
-                  <figcaption><span>Step 5</span>Attachment In Composer</figcaption>
+                  <figcaption>
+                    <span>Step 5</span>
+                    Attachment In Composer
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/06_after_send_attachment.png">
                     <img src="assets/ConversationView/attachments/06_after_send_attachment.png" alt="After Send Attachment" loading="lazy">
                   </a>
-                  <figcaption><span>Step 6</span>After Send Attachment</figcaption>
+                  <figcaption>
+                    <span>Step 6</span>
+                    After Send Attachment
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/07_share_options_dialog_for_gif.png">
                     <img src="assets/ConversationView/attachments/07_share_options_dialog_for_gif.png" alt="Share Options Dialog For Gif" loading="lazy">
                   </a>
-                  <figcaption><span>Step 7</span>Share Options Dialog For Gif</figcaption>
+                  <figcaption>
+                    <span>Step 7</span>
+                    Share Options Dialog For Gif
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/08_gif_picker_open.png">
                     <img src="assets/ConversationView/attachments/08_gif_picker_open.png" alt="Gif Picker Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 8</span>Gif Picker Open</figcaption>
+                  <figcaption>
+                    <span>Step 8</span>
+                    Gif Picker Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/attachments/09_after_send_gif.png">
                     <img src="assets/ConversationView/attachments/09_after_send_gif.png" alt="After Send Gif" loading="lazy">
                   </a>
-                  <figcaption><span>Step 9</span>After Send Gif</figcaption>
+                  <figcaption>
+                    <span>Step 9</span>
+                    After Send Gif
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="editroom" data-test-section data-name="editroom" data-status="PASS" data-lane="ConversationView">
-          <div class="section-heading">
+        <details class="test-section" id="editroom" data-test-section data-name="editroom" data-status="PASS" data-lane="ConversationView">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>editRoom</h2>
+              <p>ConversationView / iPhone 17</p>
             </div>
+            <div class="summary-meta">
+              <span>44s</span>
+              <span>8 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="editRoom.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>44s</dd></div>
-            <div><dt>Lane</dt><dd>ConversationView</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17</dd></div>
-            <div><dt>Appium port</dt><dd>4727</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:05 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:05 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>44s</dd></div>
+              <div><dt>Lane</dt><dd>ConversationView</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17</dd></div>
+              <div><dt>Appium port</dt><dd>4727</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:05 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:05 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/01_in_room.png">
                     <img src="assets/ConversationView/editRoom/01_in_room.png" alt="In Room" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>In Room</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    In Room
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/02_edit_modal_open.png">
                     <img src="assets/ConversationView/editRoom/02_edit_modal_open.png" alt="Edit Modal Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Edit Modal Open</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Edit Modal Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/03_after_toggle_private.png">
                     <img src="assets/ConversationView/editRoom/03_after_toggle_private.png" alt="After Toggle Private" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>After Toggle Private</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    After Toggle Private
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/04_after_name_edited.png">
                     <img src="assets/ConversationView/editRoom/04_after_name_edited.png" alt="After Name Edited" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>After Name Edited</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    After Name Edited
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/05_after_topic_filled.png">
                     <img src="assets/ConversationView/editRoom/05_after_topic_filled.png" alt="After Topic Filled" loading="lazy">
                   </a>
-                  <figcaption><span>Step 5</span>After Topic Filled</figcaption>
+                  <figcaption>
+                    <span>Step 5</span>
+                    After Topic Filled
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/06_after_save.png">
                     <img src="assets/ConversationView/editRoom/06_after_save.png" alt="After Save" loading="lazy">
                   </a>
-                  <figcaption><span>Step 6</span>After Save</figcaption>
+                  <figcaption>
+                    <span>Step 6</span>
+                    After Save
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/07_after_close.png">
                     <img src="assets/ConversationView/editRoom/07_after_close.png" alt="After Close" loading="lazy">
                   </a>
-                  <figcaption><span>Step 7</span>After Close</figcaption>
+                  <figcaption>
+                    <span>Step 7</span>
+                    After Close
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/editRoom/08_reopened_saved_settings.png">
                     <img src="assets/ConversationView/editRoom/08_reopened_saved_settings.png" alt="Reopened Saved Settings" loading="lazy">
                   </a>
-                  <figcaption><span>Step 8</span>Reopened Saved Settings</figcaption>
+                  <figcaption>
+                    <span>Step 8</span>
+                    Reopened Saved Settings
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
 
-        <section class="test-section" id="membersroom" data-test-section data-name="membersroom" data-status="PASS" data-lane="ConversationView">
-          <div class="section-heading">
+        <details class="test-section" id="membersroom" data-test-section data-name="membersroom" data-status="PASS" data-lane="ConversationView">
+          <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
               <h2>membersRoom</h2>
+              <p>ConversationView / iPhone 17</p>
             </div>
+            <div class="summary-meta">
+              <span>57s</span>
+              <span>11 screenshots</span>
+              <span class="collapse-label">Details</span>
+            </div>
+          </summary>
+          <div class="test-section-body">
             <a class="markdown-link" href="membersRoom.md">Markdown guide</a>
-          </div>
-          <dl class="meta-grid">
-            <div><dt>Duration</dt><dd>57s</dd></div>
-            <div><dt>Lane</dt><dd>ConversationView</dd></div>
-            <div><dt>Device</dt><dd>iPhone 17</dd></div>
-            <div><dt>Appium port</dt><dd>4727</dd></div>
-            <div><dt>Started</dt><dd>Jul 27, 3:05 PM</dd></div>
-            <div><dt>Finished</dt><dd>Jul 27, 3:06 PM</dd></div>
-          </dl>
-          
-          <div class="steps-grid">
+            <dl class="meta-grid">
+              <div><dt>Duration</dt><dd>57s</dd></div>
+              <div><dt>Lane</dt><dd>ConversationView</dd></div>
+              <div><dt>Device</dt><dd>iPhone 17</dd></div>
+              <div><dt>Appium port</dt><dd>4727</dd></div>
+              <div><dt>Started</dt><dd>Jul 27, 3:05 PM</dd></div>
+              <div><dt>Finished</dt><dd>Jul 27, 3:06 PM</dd></div>
+            </dl>
+            
+            <div class="steps-grid">
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/01_in_room.png">
                     <img src="assets/ConversationView/membersRoom/01_in_room.png" alt="In Room" loading="lazy">
                   </a>
-                  <figcaption><span>Step 1</span>In Room</figcaption>
+                  <figcaption>
+                    <span>Step 1</span>
+                    In Room
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/02_edit_modal_open.png">
                     <img src="assets/ConversationView/membersRoom/02_edit_modal_open.png" alt="Edit Modal Open" loading="lazy">
                   </a>
-                  <figcaption><span>Step 2</span>Edit Modal Open</figcaption>
+                  <figcaption>
+                    <span>Step 2</span>
+                    Edit Modal Open
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/03_members_screen.png">
                     <img src="assets/ConversationView/membersRoom/03_members_screen.png" alt="Members Screen" loading="lazy">
                   </a>
-                  <figcaption><span>Step 3</span>Members Screen</figcaption>
+                  <figcaption>
+                    <span>Step 3</span>
+                    Members Screen
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/04_edit_members.png">
                     <img src="assets/ConversationView/membersRoom/04_edit_members.png" alt="Edit Members" loading="lazy">
                   </a>
-                  <figcaption><span>Step 4</span>Edit Members</figcaption>
+                  <figcaption>
+                    <span>Step 4</span>
+                    Edit Members
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/05_after_remove_x.png">
                     <img src="assets/ConversationView/membersRoom/05_after_remove_x.png" alt="After Remove X" loading="lazy">
                   </a>
-                  <figcaption><span>Step 5</span>After Remove X</figcaption>
+                  <figcaption>
+                    <span>Step 5</span>
+                    After Remove X
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/06_after_type_invitee.png">
                     <img src="assets/ConversationView/membersRoom/06_after_type_invitee.png" alt="After Type Invitee" loading="lazy">
                   </a>
-                  <figcaption><span>Step 6</span>After Type Invitee</figcaption>
+                  <figcaption>
+                    <span>Step 6</span>
+                    After Type Invitee
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/07_after_select_invitee.png">
                     <img src="assets/ConversationView/membersRoom/07_after_select_invitee.png" alt="After Select Invitee" loading="lazy">
                   </a>
-                  <figcaption><span>Step 7</span>After Select Invitee</figcaption>
+                  <figcaption>
+                    <span>Step 7</span>
+                    After Select Invitee
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/08_after_cancel.png">
                     <img src="assets/ConversationView/membersRoom/08_after_cancel.png" alt="After Cancel" loading="lazy">
                   </a>
-                  <figcaption><span>Step 8</span>After Cancel</figcaption>
+                  <figcaption>
+                    <span>Step 8</span>
+                    After Cancel
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/09_after_back.png">
                     <img src="assets/ConversationView/membersRoom/09_after_back.png" alt="After Back" loading="lazy">
                   </a>
-                  <figcaption><span>Step 9</span>After Back</figcaption>
+                  <figcaption>
+                    <span>Step 9</span>
+                    After Back
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/10_after_close.png">
                     <img src="assets/ConversationView/membersRoom/10_after_close.png" alt="After Close" loading="lazy">
                   </a>
-                  <figcaption><span>Step 10</span>After Close</figcaption>
+                  <figcaption>
+                    <span>Step 10</span>
+                    After Close
+                    
+                  </figcaption>
                 </figure>
 
                 <figure class="step">
                   <a href="assets/ConversationView/membersRoom/11_after_back_to_list.png">
                     <img src="assets/ConversationView/membersRoom/11_after_back_to_list.png" alt="After Back To List" loading="lazy">
                   </a>
-                  <figcaption><span>Step 11</span>After Back To List</figcaption>
+                  <figcaption>
+                    <span>Step 11</span>
+                    After Back To List
+                    
+                  </figcaption>
                 </figure></div>
-        </section>
+          </div>
+        </details>
   </main>
 
   <script>
@@ -1248,6 +1749,12 @@
     const reportSwitcher = document.querySelector('#reportSwitcher');
     const cards = [...document.querySelectorAll('[data-test-card]')];
     const sections = [...document.querySelectorAll('[data-test-section]')];
+
+    function openSection(section) {
+      if (!section) return;
+      section.open = true;
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     function shouldShow(element) {
       const term = search.value.trim().toLowerCase();
@@ -1264,6 +1771,17 @@
     }
 
     [search, statusFilter, laneFilter].forEach(input => input.addEventListener('input', applyFilters));
+    cards.forEach(card => {
+      card.addEventListener('click', event => {
+        const section = document.querySelector(card.getAttribute('href'));
+        if (!section) return;
+        event.preventDefault();
+        openSection(section);
+        history.replaceState(null, '', card.getAttribute('href'));
+      });
+    });
+    window.addEventListener('hashchange', () => openSection(document.querySelector(window.location.hash)));
+    if (window.location.hash) openSection(document.querySelector(window.location.hash));
     if (reportSwitcher) {
       reportSwitcher.addEventListener('change', () => {
         if (reportSwitcher.value) window.location.href = reportSwitcher.value;
