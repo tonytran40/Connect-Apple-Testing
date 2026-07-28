@@ -320,9 +320,8 @@ async function runTest(driver, options = {}) {
   await maybeSendStarterMessage(driver, 'public_room_sent.png');
 
   await tapBackButton(driver);
-  await saveCreateRoomScreenshot(driver, 'rooms_list_after_public.png');
-
   await waitForRoomsListReady(driver);
+  await saveCreateRoomScreenshot(driver, 'rooms_list_after_public.png');
 
   if (CREATE_ROOM_SMOKE) {
     console.log('CreateRoom: CREATE_ROOM_MODE=smoke — skipping private room flow');

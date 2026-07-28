@@ -298,7 +298,7 @@ The CI-friendly way to get Scribe-like docs is to generate a browser report and 
 npm run docs:scribe -- --run split3-combined
 ```
 
-This writes `index.html`, `index.md`, and one Markdown guide per test under `docs/generated/scribe/{runId}/`. It also saves a timestamped archive copy under `docs/generated/scribe/archive/`, makes the Pages homepage open the newest report, and adds a **Previous runs** dropdown inside the report. The web report includes status cards, search/filter controls, lane/device details, failure text when available, and step-by-step screenshots.
+This writes `index.html`, `index.md`, and one Markdown guide per test under `docs/generated/scribe/{runId}/`. It also saves a timestamped archive copy under `docs/generated/scribe/archive/`, makes the Pages homepage open the newest report, and adds a **Previous runs** dropdown inside the report. The web report includes status cards, search/filter controls, lane/device health, slow-test callouts, rerun commands, copyable share links, local notes, run environment details, per-test history, failure timelines, screenshot compare panels, failure snippets, and step-by-step screenshots.
 
 For the normal three-simulator run:
 
@@ -314,6 +314,29 @@ open index.html
 ```
 
 The homepage opens the latest report automatically. Use the **Previous runs** dropdown in the report header to jump back into older archived runs. The stable latest report still lives at `docs/generated/scribe/split3-combined/index.html`.
+
+For local live preview without pushing to GitHub Pages, run this in a separate terminal:
+
+```bash
+npm run docs:serve
+```
+
+Then open:
+
+```text
+http://localhost:5500/
+```
+
+In VS Code, you can do the same thing with the **Live Server** extension: right-click `index.html`, choose **Open with Live Server**, and leave that browser tab open. After each test run, rerun `npm run docs:scribe -- --run split3-combined`; the local page will show the regenerated report without needing a push.
+
+To preview failure highlighting without publishing fake failures, generate a local-only report in `/tmp`:
+
+```bash
+npm run docs:scribe -- --run split3-combined --preview-failures=2 --out /tmp/connect-report-preview
+open /tmp/connect-report-preview/split3-combined/index.html
+```
+
+That marks the first two passing tests as preview failures and highlights the likely failed step. Real failed tests highlight `ERROR.png` when it exists; otherwise the report highlights the final screenshot captured for that test.
 
 To run the three-simulator split and publish the GitHub Pages report in one command:
 
@@ -515,6 +538,7 @@ Connect-Apple-Testing/
 - **Swipe actions:** favorite (right) and remove (left) buttons often sit off-screen until swiped; XPath is tied to the **full** `StaticText` title next to the action.
 - **Unique room names:** `CreateRoom` uses random suffixes to avoid collisions.
 - **Screenshots:** saved per test under `screenshots/<testName>/`; disable with env when iterating quickly.
+- **Screenshot timing:** if a report image catches a transition too early, add a targeted delay with `SCREENSHOT_DELAYS_MS='CreateRoom/rooms_list_after_public.png=2000'` instead of slowing the whole test.
 
 ### Debugging
 
@@ -555,6 +579,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:attachments` | Create room and validate attachment entry points |
 | `npm run test:remove-all-rooms` | Cleanup rooms starting with configured prefixes |
 | `npm run docs:scribe` | Generate Scribe-style web and Markdown docs from reports and screenshots |
+| `npm run docs:serve` | Serve the local report at `http://localhost:5500/` |
 
 ---
 
