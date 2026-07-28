@@ -94,6 +94,19 @@
       overflow-wrap: anywhere;
     }
     .run-card p { color: var(--muted); }
+    .run-branch {
+      display: inline-flex;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-radius: 999px;
+      padding: 0.25rem 0.6rem;
+      background: #edf4ff;
+      color: #0e61d8;
+      font-size: 0.78rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
     .status-pill {
       display: inline-flex;
       align-items: center;
@@ -142,16 +155,17 @@
         <p>Stable URL for the newest generated report</p>
       </div>
       <div class="run-grid">
-        <a class="run-card fail" href="split3-combined/index.html">
+        <a class="run-card pass" href="split3-combined/index.html">
           <div class="run-card-top">
-            <span class="status-pill fail">FAIL</span>
+            <span class="status-pill pass">PASS</span>
             <span>Latest report</span>
           </div>
           <h2>split3-combined</h2>
-          <p>Jul 28, 9:56 AM</p>
+          <span class="run-branch">main · ee10076</span>
+          <p>Jul 28, 1:16 PM</p>
           <dl>
-            <div><dt>Passed</dt><dd>11</dd></div>
-            <div><dt>Failed</dt><dd>1</dd></div>
+            <div><dt>Passed</dt><dd>12</dd></div>
+            <div><dt>Failed</dt><dd>0</dd></div>
             <div><dt>Total</dt><dd>12</dd></div>
           </dl>
         </a></div>
@@ -159,15 +173,61 @@
     <section class="section">
       <div class="section-heading">
         <h2>History</h2>
-        <p>5 archived runs</p>
+        <p>8 archived runs</p>
       </div>
       <div class="run-grid">
+        <a class="run-card pass" href="archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="run-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span>Archived run</span>
+          </div>
+          <h2>split3-combined</h2>
+          <span class="run-branch">main · ee10076</span>
+          <p>Jul 28, 1:16 PM</p>
+          <dl>
+            <div><dt>Passed</dt><dd>12</dd></div>
+            <div><dt>Failed</dt><dd>0</dd></div>
+            <div><dt>Total</dt><dd>12</dd></div>
+          </dl>
+        </a>
+
+        <a class="run-card pass" href="archive/2026-07-28T16-58-43Z-favoriteRoom-single/index.html">
+          <div class="run-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span>Archived run</span>
+          </div>
+          <h2>favoriteRoom-single</h2>
+          <span class="run-branch">main · ee10076</span>
+          <p>Jul 28, 12:58 PM</p>
+          <dl>
+            <div><dt>Passed</dt><dd>1</dd></div>
+            <div><dt>Failed</dt><dd>0</dd></div>
+            <div><dt>Total</dt><dd>1</dd></div>
+          </dl>
+        </a>
+
+        <a class="run-card pass" href="archive/2026-07-28T16-48-10Z-split3-combined/index.html">
+          <div class="run-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span>Archived run</span>
+          </div>
+          <h2>split3-combined</h2>
+          <span class="run-branch">main · ee10076</span>
+          <p>Jul 28, 12:48 PM</p>
+          <dl>
+            <div><dt>Passed</dt><dd>12</dd></div>
+            <div><dt>Failed</dt><dd>0</dd></div>
+            <div><dt>Total</dt><dd>12</dd></div>
+          </dl>
+        </a>
+
         <a class="run-card fail" href="archive/2026-07-28T13-56-27Z-split3-combined/index.html">
           <div class="run-card-top">
             <span class="status-pill fail">FAIL</span>
             <span>Archived run</span>
           </div>
           <h2>split3-combined</h2>
+          <span class="run-branch">main · 7b85fd0</span>
           <p>Jul 28, 9:56 AM</p>
           <dl>
             <div><dt>Passed</dt><dd>11</dd></div>
@@ -182,6 +242,7 @@
             <span>Archived run</span>
           </div>
           <h2>split3-combined</h2>
+          <span class="run-branch">main · 3115c98</span>
           <p>Jul 28, 9:43 AM</p>
           <dl>
             <div><dt>Passed</dt><dd>12</dd></div>
@@ -196,6 +257,7 @@
             <span>Archived run</span>
           </div>
           <h2>split3-combined</h2>
+          <span class="run-branch">main · 3115c98</span>
           <p>Jul 28, 9:06 AM</p>
           <dl>
             <div><dt>Passed</dt><dd>10</dd></div>
@@ -210,6 +272,7 @@
             <span>Archived run</span>
           </div>
           <h2>split3-combined</h2>
+          
           <p>Jul 27, 3:01 PM</p>
           <dl>
             <div><dt>Passed</dt><dd>12</dd></div>
@@ -224,6 +287,7 @@
             <span>Archived run</span>
           </div>
           <h2>split3-combined</h2>
+          
           <p>Jul 27, 2:21 PM</p>
           <dl>
             <div><dt>Passed</dt><dd>12</dd></div>

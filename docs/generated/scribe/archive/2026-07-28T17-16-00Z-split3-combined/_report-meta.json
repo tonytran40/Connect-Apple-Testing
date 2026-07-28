@@ -1,0 +1,168 @@
+{
+  "runId": "split3-combined",
+  "reportType": "archive",
+  "source": "combined summary.md",
+  "status": "PASS",
+  "startedAt": "2026-07-28T17:16:00.896Z",
+  "updatedAt": "2026-07-28T17:21:23.130Z",
+  "durationMs": 504872,
+  "passed": 12,
+  "failed": 0,
+  "total": 12,
+  "environment": {
+    "branch": "main",
+    "commit": "ee10076",
+    "node": "v24.14.0",
+    "bundleId": "",
+    "source": "combined summary.md",
+    "devices": [
+      "iPhone 17 Pro",
+      "iPhone 17 Pro Max",
+      "iPhone 17"
+    ],
+    "appiumPorts": [
+      4723,
+      4725,
+      4727
+    ],
+    "wdaPorts": [
+      8100,
+      8200,
+      8300
+    ]
+  },
+  "results": [
+    {
+      "name": "CreateRoom",
+      "status": "PASS",
+      "duration": "41s",
+      "durationMs": 41004,
+      "laneRunId": "main-suite",
+      "deviceName": "iPhone 17 Pro",
+      "appiumPort": 4723,
+      "startedAt": "2026-07-28T17:16:01.430Z",
+      "finishedAt": "2026-07-28T17:16:42.434Z"
+    },
+    {
+      "name": "newMessage",
+      "status": "PASS",
+      "duration": "28s",
+      "durationMs": 28205,
+      "laneRunId": "main-suite",
+      "deviceName": "iPhone 17 Pro",
+      "appiumPort": 4723,
+      "startedAt": "2026-07-28T17:16:42.822Z",
+      "finishedAt": "2026-07-28T17:17:11.027Z"
+    },
+    {
+      "name": "ConversationList",
+      "status": "PASS",
+      "duration": "54s",
+      "durationMs": 53924,
+      "laneRunId": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": 4725,
+      "startedAt": "2026-07-28T17:16:01.772Z",
+      "finishedAt": "2026-07-28T17:16:55.696Z"
+    },
+    {
+      "name": "favoriteRoom",
+      "status": "PASS",
+      "duration": "14s",
+      "durationMs": 14377,
+      "laneRunId": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": 4725,
+      "startedAt": "2026-07-28T17:16:55.990Z",
+      "finishedAt": "2026-07-28T17:17:10.366Z"
+    },
+    {
+      "name": "markAsRead",
+      "status": "PASS",
+      "duration": "13s",
+      "durationMs": 13289,
+      "laneRunId": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": 4725,
+      "startedAt": "2026-07-28T17:17:10.639Z",
+      "finishedAt": "2026-07-28T17:17:23.927Z"
+    },
+    {
+      "name": "notifications",
+      "status": "PASS",
+      "duration": "25s",
+      "durationMs": 24546,
+      "laneRunId": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": 4725,
+      "startedAt": "2026-07-28T17:17:24.207Z",
+      "finishedAt": "2026-07-28T17:17:48.755Z"
+    },
+    {
+      "name": "removeRoom",
+      "status": "PASS",
+      "duration": "10s",
+      "durationMs": 10276,
+      "laneRunId": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": 4725,
+      "startedAt": "2026-07-28T17:17:49.121Z",
+      "finishedAt": "2026-07-28T17:17:59.397Z"
+    },
+    {
+      "name": "PinnedMessageEditFlow",
+      "status": "PASS",
+      "duration": "1m 2s",
+      "durationMs": 62393,
+      "laneRunId": "ConversationView",
+      "deviceName": "iPhone 17",
+      "appiumPort": 4727,
+      "startedAt": "2026-07-28T17:16:01.594Z",
+      "finishedAt": "2026-07-28T17:17:03.987Z"
+    },
+    {
+      "name": "markdowns",
+      "status": "PASS",
+      "duration": "1m 24s",
+      "durationMs": 84148,
+      "laneRunId": "ConversationView",
+      "deviceName": "iPhone 17",
+      "appiumPort": 4727,
+      "startedAt": "2026-07-28T17:17:04.257Z",
+      "finishedAt": "2026-07-28T17:18:28.406Z"
+    },
+    {
+      "name": "attachments",
+      "status": "PASS",
+      "duration": "1m 9s",
+      "durationMs": 68694,
+      "laneRunId": "ConversationView",
+      "deviceName": "iPhone 17",
+      "appiumPort": 4727,
+      "startedAt": "2026-07-28T17:18:28.702Z",
+      "finishedAt": "2026-07-28T17:19:37.397Z"
+    },
+    {
+      "name": "editRoom",
+      "status": "PASS",
+      "duration": "48s",
+      "durationMs": 47681,
+      "laneRunId": "ConversationView",
+      "deviceName": "iPhone 17",
+      "appiumPort": 4727,
+      "startedAt": "2026-07-28T17:19:37.749Z",
+      "finishedAt": "2026-07-28T17:20:25.431Z"
+    },
+    {
+      "name": "membersRoom",
+      "status": "PASS",
+      "duration": "56s",
+      "durationMs": 56335,
+      "laneRunId": "ConversationView",
+      "deviceName": "iPhone 17",
+      "appiumPort": 4727,
+      "startedAt": "2026-07-28T17:20:25.766Z",
+      "finishedAt": "2026-07-28T17:21:22.101Z"
+    }
+  ]
+}
