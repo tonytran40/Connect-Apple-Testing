@@ -4,7 +4,7 @@
 - Source: combined summary.md
 - Status: FAIL
 - Started: 2026-07-28T13:56:27.130Z
-- Updated: 2026-07-28T14:02:20.528Z
+- Updated: 2026-07-28T15:47:33.636Z
 - Passed: 11
 - Failed: 1
 - Total tests: 12

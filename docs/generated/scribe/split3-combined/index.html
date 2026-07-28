@@ -213,20 +213,121 @@
       font-weight: 700;
       text-align: right;
     }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 0.8rem;
+    }
+    .comparison-grid div {
+      border: 1px solid var(--line);
+      border-radius: 0.8rem;
+      padding: 0.65rem;
+      background: #fbfdff;
+    }
+    .comparison-list {
+      display: grid;
+      gap: 0.55rem;
+    }
+    .comparison-list a {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 0.8rem;
+      padding: 0.65rem;
+      background: #fbfdff;
+      text-decoration: none;
+    }
+    .comparison-list a.fail { border-color: rgba(217, 63, 63, 0.42); background: #fff7f7; }
+    .comparison-list a.pass { border-color: rgba(15, 159, 110, 0.32); background: #f2fbf7; }
+    .comparison-list a.slow { border-color: rgba(245, 158, 11, 0.42); background: #fffbeb; }
+    .comparison-list span {
+      color: var(--muted);
+      font-weight: 800;
+      text-align: right;
+    }
+    .category-list {
+      display: grid;
+      gap: 0.65rem;
+    }
+    .category-row {
+      display: grid;
+      grid-template-columns: 7rem minmax(4rem, 1fr) 2rem;
+      gap: 0.75rem;
+      align-items: center;
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .category-row div {
+      height: 0.7rem;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #edf2f7;
+    }
+    .category-row i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--fail);
+    }
+    .trend-chart {
+      display: flex;
+      align-items: end;
+      gap: 0.65rem;
+      min-height: 12rem;
+      padding: 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      background: #fbfdff;
+    }
+    .trend-run {
+      display: grid;
+      gap: 0.35rem;
+      min-width: 2rem;
+      flex: 1;
+      align-items: end;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .trend-bars {
+      display: flex;
+      justify-content: center;
+      gap: 0.25rem;
+      height: 9rem;
+      align-items: end;
+    }
+    .trend-bars span {
+      display: block;
+      width: 0.65rem;
+      min-height: 0.5rem;
+      border-radius: 999px 999px 0 0;
+    }
+    .pass-rate { background: var(--pass); }
+    .runtime { background: var(--blue); }
+    .trend-run.fail .pass-rate { background: var(--fail); }
+    .trend-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .trend-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .trend-legend i {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 999px;
+    }
     .compact {
       grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
       margin-bottom: 0;
-    }
-    textarea {
-      width: 100%;
-      min-height: 9rem;
-      resize: vertical;
-      border: 1px solid var(--line);
-      border-radius: 0.9rem;
-      padding: 0.85rem 1rem;
-      background: white;
-      color: var(--ink);
-      font: inherit;
     }
     .toolbar {
       display: grid;
@@ -327,6 +428,18 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .failures em {
+      justify-self: start;
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+      background: #fff5f5;
+      color: #a32929;
+      font-size: 0.75rem;
+      font-style: normal;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
     .test-section {
       margin-top: 1.5rem;
@@ -588,7 +701,7 @@
           <span>Run: split3-combined</span>
           <span>Source: combined summary.md</span>
           <span>Started: Jul 28, 9:56 AM</span>
-          <span>Updated: Jul 28, 10:02 AM</span>
+          <span>Updated: Jul 28, 11:47 AM</span>
         </div>
       </div>
       
@@ -699,25 +812,135 @@
               <span>1m 4s · ConversationView</span>
             </a></div>
       </div>
+      <div class="panel comparison-panel">
+        <div class="panel-heading">
+          <h2>Run Comparison</h2>
+          <p>Compared with Jul 28, 9:43 AM</p>
+        </div>
+        
+      <div class="comparison-grid">
+        <div><dt>New failures</dt><dd>1</dd></div>
+        <div><dt>New fixes</dt><dd>0</dd></div>
+        <div><dt>Slower</dt><dd>4</dd></div>
+        <div><dt>Faster</dt><dd>5</dd></div>
+      </div>
+      <div class="comparison-list">
+        
+              <a class="fail" href="#notifications">
+                <strong>notifications</strong>
+                <span>New failure</span>
+              </a>
+
+              <a class="slow" href="#notifications">
+                <strong>notifications</strong>
+                <span>17s slower</span>
+              </a>
+
+              <a class="slow" href="#attachments">
+                <strong>attachments</strong>
+                <span>12s slower</span>
+              </a>
+
+              <a class="slow" href="#editroom">
+                <strong>editRoom</strong>
+                <span>11s slower</span>
+              </a>
+
+              <a class="slow" href="#membersroom">
+                <strong>membersRoom</strong>
+                <span>7s slower</span>
+              </a>
+
+              <a class="pass" href="#pinnedmessageeditflow">
+                <strong>PinnedMessageEditFlow</strong>
+                <span>34s faster</span>
+              </a>
+
+              <a class="pass" href="#conversationlist">
+                <strong>ConversationList</strong>
+                <span>33s faster</span>
+              </a>
+
+              <a class="pass" href="#createroom">
+                <strong>CreateRoom</strong>
+                <span>18s faster</span>
+              </a>
+      </div>
+      </div>
+      <div class="panel trend-panel">
+        <div class="panel-heading">
+          <h2>Trends</h2>
+          <p>Pass rate and runtime</p>
+        </div>
+        <div class="trend-chart">
+            <div class="trend-run pass" title="Jul 27, 2:21 PM">
+              <div class="trend-bars">
+                <span class="pass-rate" style="height: 100%"></span>
+                <span class="runtime" style="height: 8%"></span>
+              </div>
+              <small>100%</small>
+            </div>
+
+            <div class="trend-run pass" title="Jul 27, 3:01 PM">
+              <div class="trend-bars">
+                <span class="pass-rate" style="height: 100%"></span>
+                <span class="runtime" style="height: 8%"></span>
+              </div>
+              <small>100%</small>
+            </div>
+
+            <div class="trend-run fail" title="Jul 28, 9:06 AM">
+              <div class="trend-bars">
+                <span class="pass-rate" style="height: 83%"></span>
+                <span class="runtime" style="height: 100%"></span>
+              </div>
+              <small>83%</small>
+            </div>
+
+            <div class="trend-run pass" title="Jul 28, 9:43 AM">
+              <div class="trend-bars">
+                <span class="pass-rate" style="height: 100%"></span>
+                <span class="runtime" style="height: 94%"></span>
+              </div>
+              <small>100%</small>
+            </div>
+
+            <div class="trend-run fail" title="Jul 28, 9:56 AM">
+              <div class="trend-bars">
+                <span class="pass-rate" style="height: 92%"></span>
+                <span class="runtime" style="height: 86%"></span>
+              </div>
+              <small>92%</small>
+            </div></div>
+        <div class="trend-legend">
+          <span><i class="pass-rate"></i>Pass rate</span>
+          <span><i class="runtime"></i>Runtime</span>
+        </div>
+      </div>
+      <div class="panel category-panel">
+        <div class="panel-heading">
+          <h2>Failure Categories</h2>
+          <p>1 failed test</p>
+        </div>
+        <div class="category-list">
+            <div class="category-row">
+              <span>Permission</span>
+              <div><i style="width: 100%"></i></div>
+              <strong>1</strong>
+            </div></div>
+      </div>
       <div class="panel environment-panel">
         <div class="panel-heading">
           <h2>Environment</h2>
           <p>Run context</p>
         </div>
         <dl class="meta-grid compact"><div><dt>Branch</dt><dd>main</dd></div>
-<div><dt>Commit</dt><dd>3115c98</dd></div>
+<div><dt>Commit</dt><dd>7b85fd0</dd></div>
 <div><dt>Node</dt><dd>v24.14.0</dd></div>
 <div><dt>Devices</dt><dd>iPhone 17 Pro, iPhone 17 Pro Max, iPhone 17</dd></div>
 <div><dt>Appium ports</dt><dd>4723, 4725, 4727</dd></div>
 <div><dt>WDA ports</dt><dd>8100, 8200, 8300</dd></div>
 <div><dt>Source</dt><dd>combined summary.md</dd></div></dl>
-      </div>
-      <div class="panel annotations-panel">
-        <div class="panel-heading">
-          <h2>Notes</h2>
-          <p>Saved in this browser</p>
-        </div>
-        <textarea id="reportNotes" placeholder="Add triage notes, suspected app bugs, or follow-up items for this run."></textarea>
       </div>
     </section>
 
@@ -917,6 +1140,7 @@
         
               <a href="#notifications">
                 <strong>notifications</strong>
+                <em>Permission</em>
                 <span>notifications: expected in-app UI after tapping notification within 15000ms</span>
               </a>
       </section>
@@ -954,6 +1178,7 @@
               <div><dt>Started</dt><dd>Jul 28, 9:56 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
 [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
@@ -1098,6 +1323,7 @@ Returned to Rooms list after private room
               <div><dt>Started</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:58 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
 [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
@@ -1226,6 +1452,7 @@ Sent message
               <div><dt>Started</dt><dd>Jul 28, 9:56 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates &amp; machines: https://dotenvx.com/ops
 [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
@@ -1487,6 +1714,7 @@ Sort: Self-Managed
               <div><dt>Started</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>History</dt><dd>Flaky in recent runs</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
 [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
@@ -1611,6 +1839,7 @@ favoriteRoom: found &quot;Favorite Room&quot;
               <div><dt>Started</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:58 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
 [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: &#39;/custom/path/.env&#39; }
@@ -1735,8 +1964,9 @@ markAsRead: &quot;Message Room&quot;
               <div><dt>Started</dt><dd>Jul 28, 9:58 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:58 AM</dd></div>
               <div><dt>History</dt><dd>Flaky in recent runs</dd></div>
+              <div><dt>Failure category</dt><dd>Permission</dd></div>
             </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>notifications: expected in-app UI after tapping notification within 15000ms</pre></section>
+            <section class="failure-box"><h4>Error snippet · Permission</h4><pre>notifications: expected in-app UI after tapping notification within 15000ms</pre></section>
             
             <section class="failure-timeline">
               <div>
@@ -1872,6 +2102,7 @@ markAsRead: &quot;Message Room&quot;
               <div><dt>Started</dt><dd>Jul 28, 9:58 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:58 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
 [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
@@ -1996,6 +2227,7 @@ removeRoom: &quot;A-Public Room-cgosm8p8&quot;
               <div><dt>Started</dt><dd>Jul 28, 9:56 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
 [dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
@@ -2121,6 +2353,7 @@ PinnedMessageEditFlow: creating isolated room &quot;A-Pinned Edit Flow-i3z4b0ns&
               <div><dt>Started</dt><dd>Jul 28, 9:57 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 9:59 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
 [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
@@ -2328,6 +2561,7 @@ runSingle: skipping login check for this worker test
               <div><dt>Started</dt><dd>Jul 28, 9:59 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 10:00 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>runSingle: skipping login check for this worker test
 [dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
@@ -2523,6 +2757,7 @@ attachments: tapped first GIF at (76, 288)
               <div><dt>Started</dt><dd>Jul 28, 10:00 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 10:01 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates &amp; machines: https://dotenvx.com/ops
 [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
@@ -2705,6 +2940,7 @@ editRoom: tapped ~openRoomSettingsButton
               <div><dt>Started</dt><dd>Jul 28, 10:01 AM</dd></div>
               <div><dt>Finished</dt><dd>Jul 28, 10:02 AM</dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
+              
             </dl>
             <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
 membersRoom: creating &quot;M-Public Room-d4vasybd&quot;
@@ -2898,11 +3134,9 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
     const failedOnly = document.querySelector('#failedOnly');
     const slowOnly = document.querySelector('#slowOnly');
     const screenshotsOnly = document.querySelector('#screenshotsOnly');
-    const reportNotes = document.querySelector('#reportNotes');
     const reportSwitcher = document.querySelector('#reportSwitcher');
     const cards = [...document.querySelectorAll('[data-test-card]')];
     const sections = [...document.querySelectorAll('[data-test-section]')];
-    const notesKey = "connect-report-notes:split3-combined:2026-07-28T13:56:27.130Z";
 
     function openSection(section) {
       if (!section) return;
@@ -2983,12 +3217,6 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
         setTimeout(() => { button.textContent = original; }, 1200);
       });
     });
-    if (reportNotes) {
-      reportNotes.value = localStorage.getItem(notesKey) || '';
-      reportNotes.addEventListener('input', () => {
-        localStorage.setItem(notesKey, reportNotes.value);
-      });
-    }
   </script>
 </body>
 </html>
