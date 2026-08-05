@@ -5,8 +5,6 @@
 - Lane: main-suite
 - Device: iPhone 17 Pro
 - Appium port: 4723
-- Started: 2026-07-28T17:16:42.822Z
-- Finished: 2026-07-28T17:17:11.027Z
 
 ## Steps
 

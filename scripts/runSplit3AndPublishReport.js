@@ -5,10 +5,10 @@ const { spawnSync } = require('child_process');
 const REPO_ROOT = path.resolve(__dirname, '..');
 const RUN_ID = process.env.PUBLISH_REPORT_RUN_ID || 'split3-combined';
 
-function run(command, args, { allowFailure = false, capture = false } = {}) {
+function run(command, args, { allowFailure = false, capture = false, env = process.env } = {}) {
   const result = spawnSync(command, args, {
     cwd: REPO_ROOT,
-    env: process.env,
+    env,
     encoding: 'utf8',
     stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
   });
@@ -37,7 +37,14 @@ function gitHasStagedChanges() {
 
 function main() {
   console.log(`[publish-report] Running three-simulator split test for ${RUN_ID}`);
-  const test = run('npm', ['run', 'test:parallel:split3'], { allowFailure: true });
+  const test = run('node', ['Tests/runSplitParallel.js'], {
+    allowFailure: true,
+    env: {
+      ...process.env,
+      SPLIT_THIRD_ENABLED: '1',
+      SPLIT_COMBINED_RUN_ID: RUN_ID,
+    },
+  });
 
   console.log('[publish-report] Generating Scribe-style web report');
   run('npm', ['run', 'docs:scribe', '--', '--run', RUN_ID]);

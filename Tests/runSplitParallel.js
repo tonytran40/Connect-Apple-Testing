@@ -151,11 +151,12 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
     .sort((a, b) => b.durationMs - a.durationMs)
     .slice(0, 8);
   const finishedAt = new Date().toISOString();
-  const status = failed || unknown
+  const statusCode = failed || unknown ? 'FAIL' : dryRun === total ? 'DRY_RUN' : 'PASS';
+  const status = statusCode === 'FAIL'
     ? `**Status: FAIL** (${failed} failing, ${unknown} unknown)`
-    : dryRun === total
+    : statusCode === 'DRY_RUN'
       ? '**Status: DRY RUN**'
-    : '**Status: PASS**';
+      : '**Status: PASS**';
 
   const lines = [
     '# Split Parallel iOS Automation Report',
@@ -222,6 +223,27 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
   });
 
   fs.writeFileSync(reportPath, `${lines.join('\n')}\n`, 'utf8');
+  fs.writeFileSync(
+    reportPath.replace(/\.md$/, '.json'),
+    `${JSON.stringify({
+      runId,
+      status: statusCode,
+      startedAt,
+      updatedAt: finishedAt,
+      durationMs,
+      counts: { total, passed, failed, unknown, dryRun },
+      lanes: lanes.map(lane => ({
+        label: lane.label,
+        runId: lane.runId,
+        deviceName: lane.deviceName,
+        appiumPort: lane.appiumPort,
+        wdaPort: lane.wdaPort,
+        tests: listCsv(lane.tests),
+      })),
+      results,
+    }, null, 2)}\n`,
+    'utf8'
+  );
   return { passed, failed, unknown, dryRun, total };
 }
 

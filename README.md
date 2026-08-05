@@ -177,7 +177,7 @@ Useful knobs:
 
 Reports are written under `reports/runs/{runId}/summary.md` and `reports/runs/{runId}/summary.json`; worker logs are under `reports/runs/{runId}/logs/`. Screenshots for parallel runs are namespaced under `screenshots/{runId}/`.
 
-The parallel report includes pass/fail status, completed count, a rerun command for failed tests, slowest tests, worker lane details, and links to each test's log, JSON result, and screenshot folder.
+The parallel runner also generates the Scribe-style browser report automatically at `docs/generated/scribe/parallel-latest/`. It includes pass/fail status, completed count, a rerun command for failed tests, slowest tests, worker lane details, and links to each test's log, JSON result, and screenshot folder.
 
 ### Split parallel shortcut
 
@@ -204,7 +204,7 @@ Run both groups with:
 npm run test:parallel:split
 ```
 
-This launches `main-suite` on the iPhone 17 Pro lane and `standalones` on the iPhone 17 Pro Max lane. The merged report is written to `reports/runs/split-combined/summary.md`, with the per-lane details still available at `reports/runs/main-suite/summary.md` and `reports/runs/standalones/summary.md`.
+This launches `main-suite` on the iPhone 17 Pro lane and `standalones` on the iPhone 17 Pro Max lane. The merged report is written to `reports/runs/split-combined/summary.md`, and its browser report is generated automatically at `docs/generated/scribe/split-combined/`. Per-lane details remain available at `reports/runs/main-suite/summary.md` and `reports/runs/standalones/summary.md`.
 
 Set `SPLIT_COMBINED_RUN_ID=some-name` if you want the merged report written to a different `reports/runs/{runId}/` folder.
 
@@ -292,25 +292,24 @@ Each parallel test is launched through `Tests/runSingle.js`, which creates its o
 
 ### Scribe-style documentation
 
-The CI-friendly way to get Scribe-like docs is to generate a browser report and Markdown from the runner reports and screenshots after a test run:
+Every report-aware test command now generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Each run also archives a timestamped copy for report history.
+
+Use one command for any individual test:
 
 ```bash
-npm run docs:scribe -- --run split3-combined
+npm run test:one -- favoriteRoom
 ```
 
-This writes `index.html`, `index.md`, and one Markdown guide per test under `docs/generated/scribe/{runId}/`. It also saves a timestamped archive copy under `docs/generated/scribe/archive/`, makes the Pages homepage open the newest report, and adds a **Previous runs** dropdown inside the report. The web report includes status cards, search/filter controls, lane/device health, slow-test callouts, rerun commands, copyable share links, local notes, run environment details, per-test history, failure timelines, screenshot compare panels, failure snippets, and step-by-step screenshots.
+That writes the latest report to `docs/generated/scribe/favoriteRoom-latest/`. Existing shortcuts such as `npm run test:attachments` and `npm run test:members-room` use the same behavior.
 
-For the normal three-simulator run:
+The report contains status cards, search/filter controls, lane/device health, slow-test callouts, latest-vs-previous run comparison, failure categories, rerun commands, copyable share links, Connect build metadata, run environment details, per-test history, failure timelines, screenshot compare panels, failure snippets, and step-by-step screenshots.
+
+The report shows the current git branch and commit in the header and report history cards. If the Connect app build came from a different branch than this automation repo, set `TEST_REPORT_BRANCH=feature/my-branch` and optionally `TEST_REPORT_COMMIT=abc1234` before running `npm run docs:scribe`.
+
+For the normal three-simulator run, one command runs the tests and creates the report:
 
 ```bash
 npm run test:parallel:split3
-npm run docs:scribe -- --run split3-combined
-```
-
-Then open:
-
-```bash
-open index.html
 ```
 
 The homepage opens the latest report automatically. Use the **Previous runs** dropdown in the report header to jump back into older archived runs. The stable latest report still lives at `docs/generated/scribe/split3-combined/index.html`.
@@ -327,7 +326,9 @@ Then open:
 http://localhost:5500/
 ```
 
-In VS Code, you can do the same thing with the **Live Server** extension: right-click `index.html`, choose **Open with Live Server**, and leave that browser tab open. After each test run, rerun `npm run docs:scribe -- --run split3-combined`; the local page will show the regenerated report without needing a push.
+In VS Code, you can do the same thing with the **Live Server** extension: right-click `index.html`, choose **Open with Live Server**, and leave that browser tab open. After each report-aware test finishes, the local page will show the regenerated report without needing a push.
+
+Use `npm run docs:scribe -- --run <runId>` only when you want to regenerate an older report without rerunning its tests.
 
 To preview failure highlighting without publishing fake failures, generate a local-only report in `/tmp`:
 
@@ -391,6 +392,14 @@ node Tests/newMessage.js
 ```
 
 Wall-clock time is printed via `utils/cliTestTiming.js`.
+
+For a shareable browser report, prefer the one-command wrapper instead:
+
+```bash
+npm run test:one -- CreateRoom
+npm run test:one -- favoriteRoom
+npm run test:one -- attachments
+```
 
 ### Handy npm scripts
 
@@ -569,15 +578,16 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:suite:full` | Alias for full `runAll.js` suite |
 | `npm run test:suite:fast` | Reduced suite |
 | `npm run test:suite:turbo` | Reduced suite with screenshots disabled |
-| `npm run test:parallel` | Parallel runner for one or more simulator lanes |
-| `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes |
-| `npm run test:parallel:split3` | Run the experimental three-simulator split |
+| `npm run test:one -- <testName>` | Run one test and generate its browser report |
+| `npm run test:parallel` | Parallel runner for one or more simulator lanes, then generate its report |
+| `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes, then generate its report |
+| `npm run test:parallel:split3` | Run the three-simulator split, then generate its report |
 | `npm run test:parallel:split3:publish` | Run the three-simulator split, generate the report archive, commit Pages files, and push |
 | `npm run test:time` | Timing helper test |
-| `npm run test:notifications` | Push simulator notification and verify app re-entry |
-| `npm run test:members-room` | Create room and exercise Members edit flow |
-| `npm run test:attachments` | Create room and validate attachment entry points |
-| `npm run test:remove-all-rooms` | Cleanup rooms starting with configured prefixes |
+| `npm run test:notifications` | Push simulator notification, verify app re-entry, and generate a report |
+| `npm run test:members-room` | Create room, exercise Members edit flow, and generate a report |
+| `npm run test:attachments` | Create room, validate attachment entry points, and generate a report |
+| `npm run test:remove-all-rooms` | Clean up matching rooms and generate a report |
 | `npm run docs:scribe` | Generate Scribe-style web and Markdown docs from reports and screenshots |
 | `npm run docs:serve` | Serve the local report at `http://localhost:5500/` |
 

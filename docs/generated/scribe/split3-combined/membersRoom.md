@@ -5,8 +5,6 @@
 - Lane: ConversationView
 - Device: iPhone 17
 - Appium port: 4727
-- Started: 2026-07-28T17:20:25.766Z
-- Finished: 2026-07-28T17:21:22.101Z
 
 ## Steps
 

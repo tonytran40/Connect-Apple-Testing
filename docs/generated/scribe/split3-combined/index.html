@@ -61,6 +61,11 @@
       background: rgba(255, 255, 255, 0.08);
       color: rgba(255, 255, 255, 0.86);
     }
+    .hero-meta .stale-report {
+      border-color: rgba(251, 191, 36, 0.7);
+      background: rgba(146, 64, 14, 0.42);
+      color: #fef3c7;
+    }
     .report-switcher {
       display: grid;
       gap: 0.45rem;
@@ -271,59 +276,20 @@
       border-radius: inherit;
       background: var(--fail);
     }
-    .trend-chart {
-      display: flex;
-      align-items: end;
-      gap: 0.65rem;
-      min-height: 12rem;
-      padding: 0.75rem;
-      border: 1px solid var(--line);
-      border-radius: 1rem;
-      background: #fbfdff;
+    .report-insights {
+      margin-bottom: 1.5rem;
     }
-    .trend-run {
-      display: grid;
-      gap: 0.35rem;
-      min-width: 2rem;
-      flex: 1;
-      align-items: end;
-      text-align: center;
-      color: var(--muted);
+    .report-insights > summary {
+      cursor: pointer;
+      color: var(--ink);
       font-weight: 900;
+      letter-spacing: -0.02em;
     }
-    .trend-bars {
-      display: flex;
-      justify-content: center;
-      gap: 0.25rem;
-      height: 9rem;
-      align-items: end;
-    }
-    .trend-bars span {
-      display: block;
-      width: 0.65rem;
-      min-height: 0.5rem;
-      border-radius: 999px 999px 0 0;
-    }
-    .pass-rate { background: var(--pass); }
-    .runtime { background: var(--blue); }
-    .trend-run.fail .pass-rate { background: var(--fail); }
-    .trend-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-top: 0.75rem;
-      color: var(--muted);
-      font-weight: 800;
-    }
-    .trend-legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .trend-legend i {
-      width: 0.75rem;
-      height: 0.75rem;
-      border-radius: 999px;
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.25rem;
     }
     .compact {
       grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
@@ -700,20 +666,19 @@
         <div class="hero-meta">
           <span>Run: split3-combined</span>
           <span>Branch: main</span>
-          <span>Commit: ee10076</span>
+          <span>Commit: c5420ba</span>
           <span>Source: combined summary.md</span>
           <span>Started: Jul 28, 1:16 PM</span>
           <span>Updated: Jul 28, 1:21 PM</span>
+          <span class="stale-report">Report age: 8d ago</span>
         </div>
       </div>
-      
+
       <label class="report-switcher">
         <span>Previous runs</span>
         <select id="reportSwitcher" aria-label="Open another report run">
           <option value="index.html" selected>Latest - Jul 28, 1:16 PM - PASS</option>
-<option value="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">Archived - Jul 28, 1:16 PM - PASS</option>
 <option value="../favoriteRoom-single/index.html">Latest - Jul 28, 12:58 PM - PASS</option>
-<option value="../archive/2026-07-28T16-58-43Z-favoriteRoom-single/index.html">Archived - Jul 28, 12:58 PM - PASS</option>
 <option value="../archive/2026-07-28T16-48-10Z-split3-combined/index.html">Archived - Jul 28, 12:48 PM - PASS</option>
 <option value="../archive/2026-07-28T13-56-27Z-split3-combined/index.html">Archived - Jul 28, 9:56 AM - FAIL</option>
 <option value="../archive/2026-07-28T13-43-01Z-split3-combined/index.html">Archived - Jul 28, 9:43 AM - PASS</option>
@@ -735,10 +700,201 @@
 
     <section class="sticky-summary" aria-label="Sticky run summary">
       <strong>PASS</strong>
-      <span>12 passed</span>
-      <span>0 failed</span>
-      <span>8m 25s total test time</span>
+      <span>5m 22s elapsed</span>
+      <span>8m 24s aggregate test time</span>
       <button type="button" data-copy-link="">Copy report link</button>
+    </section>
+
+
+
+    <section class="toolbar" aria-label="Report filters">
+      <input id="search" type="search" placeholder="Search tests">
+      <select id="statusFilter">
+        <option value="">All statuses</option>
+        <option value="PASS">Pass</option>
+        <option value="FAIL">Fail</option>
+        <option value="UNKNOWN">Unknown</option>
+      </select>
+      <select id="laneFilter">
+        <option value="">All lanes</option>
+        <option value="main-suite">main-suite</option>
+<option value="Conversation-List">Conversation-List</option>
+<option value="ConversationView">ConversationView</option>
+      </select>
+      <label class="check-filter"><input id="failedOnly" type="checkbox"> Failed only</label>
+      <label class="check-filter"><input id="slowOnly" type="checkbox"> Slow only</label>
+      <label class="check-filter"><input id="screenshotsOnly" type="checkbox"> Has screenshots</label>
+    </section>
+
+    <section class="test-grid" aria-label="Tests">
+
+        <a class="test-card pass" href="#createroom" data-test-card data-name="createroom" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">41s</span>
+          </div>
+          <h3>CreateRoom</h3>
+          <p>main-suite / iPhone 17 Pro</p>
+          <div class="card-tags">
+            <span>5 screenshots</span>
+
+
+          </div>
+        </a>
+
+        <a class="test-card pass" href="#newmessage" data-test-card data-name="newmessage" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">28s</span>
+          </div>
+          <h3>newMessage</h3>
+          <p>main-suite / iPhone 17 Pro</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+
+
+          </div>
+        </a>
+
+        <a class="test-card pass slow" href="#conversationlist" data-test-card data-name="conversationlist" data-status="PASS" data-lane="Conversation-List" data-slow="1" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">54s</span>
+          </div>
+          <h3>ConversationList</h3>
+          <p>Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>15 screenshots</span>
+            <span>Slow</span>
+
+          </div>
+        </a>
+
+        <a class="test-card pass" href="#favoriteroom" data-test-card data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">14s</span>
+          </div>
+          <h3>favoriteRoom</h3>
+          <p>Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+
+
+          </div>
+        </a>
+
+        <a class="test-card pass" href="#markasread" data-test-card data-name="markasread" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">13s</span>
+          </div>
+          <h3>markAsRead</h3>
+          <p>Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+
+
+          </div>
+        </a>
+
+        <a class="test-card pass" href="#notifications" data-test-card data-name="notifications" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="1">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">25s</span>
+          </div>
+          <h3>notifications</h3>
+          <p>Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+
+            <span>Flaky: 2/5 failed in last 5 runs</span>
+          </div>
+        </a>
+
+        <a class="test-card pass" href="#removeroom" data-test-card data-name="removeroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">10s</span>
+          </div>
+          <h3>removeRoom</h3>
+          <p>Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+
+
+          </div>
+        </a>
+
+        <a class="test-card pass slow" href="#pinnedmessageeditflow" data-test-card data-name="pinnedmessageeditflow" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">1m 2s</span>
+          </div>
+          <h3>PinnedMessageEditFlow</h3>
+          <p>ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+            <span>Slow</span>
+
+          </div>
+        </a>
+
+        <a class="test-card pass slow" href="#markdowns" data-test-card data-name="markdowns" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">1m 24s</span>
+          </div>
+          <h3>markdowns</h3>
+          <p>ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>11 screenshots</span>
+            <span>Slow</span>
+
+          </div>
+        </a>
+
+        <a class="test-card pass slow" href="#attachments" data-test-card data-name="attachments" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">1m 9s</span>
+          </div>
+          <h3>attachments</h3>
+          <p>ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>9 screenshots</span>
+            <span>Slow</span>
+
+          </div>
+        </a>
+
+        <a class="test-card pass" href="#editroom" data-test-card data-name="editroom" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">48s</span>
+          </div>
+          <h3>editRoom</h3>
+          <p>ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>8 screenshots</span>
+
+
+          </div>
+        </a>
+
+        <a class="test-card pass slow" href="#membersroom" data-test-card data-name="membersroom" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">56s</span>
+          </div>
+          <h3>membersRoom</h3>
+          <p>ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>11 screenshots</span>
+            <span>Slow</span>
+
+          </div>
+        </a>
     </section>
 
     <section class="overview-grid">
@@ -757,7 +913,7 @@
             <div><dt>Port</dt><dd>4723</dd></div>
             <div><dt>Passed</dt><dd>2</dd></div>
             <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Runtime</dt><dd>1m 9s</dd></div>
+            <div><dt>Test time</dt><dd>1m 9s</dd></div>
           </dl>
         </article>
 
@@ -770,7 +926,7 @@
             <div><dt>Port</dt><dd>4725</dd></div>
             <div><dt>Passed</dt><dd>5</dd></div>
             <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Runtime</dt><dd>1m 56s</dd></div>
+            <div><dt>Test time</dt><dd>1m 56s</dd></div>
           </dl>
         </article>
 
@@ -783,7 +939,7 @@
             <div><dt>Port</dt><dd>4727</dd></div>
             <div><dt>Passed</dt><dd>5</dd></div>
             <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Runtime</dt><dd>5m 19s</dd></div>
+            <div><dt>Test time</dt><dd>5m 19s</dd></div>
           </dl>
         </article></div>
       </div>
@@ -818,12 +974,17 @@
               <span>54s · Conversation-List</span>
             </a></div>
       </div>
-      <div class="panel comparison-panel">
-        <div class="panel-heading">
-          <h2>Run Comparison</h2>
-          <p>Compared with Jul 28, 12:58 PM</p>
-        </div>
-        
+    </section>
+
+    <details class="report-insights panel">
+      <summary>Run context and analysis</summary>
+      <div class="insight-grid">
+        <div class="comparison-panel">
+          <div class="panel-heading">
+            <h2>Run Comparison</h2>
+            <p>Compared with Jul 28, 12:58 PM</p>
+          </div>
+
       <div class="comparison-grid">
         <div><dt>New failures</dt><dd>0</dd></div>
         <div><dt>New fixes</dt><dd>0</dd></div>
@@ -833,301 +994,35 @@
       <div class="comparison-list">
         <p class="muted">No major changes from the previous comparable run.</p>
       </div>
-      </div>
-      <div class="panel trend-panel">
-        <div class="panel-heading">
-          <h2>Trends</h2>
-          <p>Pass rate and runtime</p>
         </div>
-        <div class="trend-chart">
-            <div class="trend-run pass" title="Jul 27, 2:21 PM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 100%"></span>
-                <span class="runtime" style="height: 8%"></span>
-              </div>
-              <small>100%</small>
-            </div>
-
-            <div class="trend-run pass" title="Jul 27, 3:01 PM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 100%"></span>
-                <span class="runtime" style="height: 8%"></span>
-              </div>
-              <small>100%</small>
-            </div>
-
-            <div class="trend-run fail" title="Jul 28, 9:06 AM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 83%"></span>
-                <span class="runtime" style="height: 100%"></span>
-              </div>
-              <small>83%</small>
-            </div>
-
-            <div class="trend-run pass" title="Jul 28, 9:43 AM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 100%"></span>
-                <span class="runtime" style="height: 94%"></span>
-              </div>
-              <small>100%</small>
-            </div>
-
-            <div class="trend-run fail" title="Jul 28, 9:56 AM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 92%"></span>
-                <span class="runtime" style="height: 86%"></span>
-              </div>
-              <small>92%</small>
-            </div>
-
-            <div class="trend-run pass" title="Jul 28, 12:48 PM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 100%"></span>
-                <span class="runtime" style="height: 78%"></span>
-              </div>
-              <small>100%</small>
-            </div>
-
-            <div class="trend-run pass" title="Jul 28, 12:58 PM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 100%"></span>
-                <span class="runtime" style="height: 8%"></span>
-              </div>
-              <small>100%</small>
-            </div>
-
-            <div class="trend-run pass" title="Jul 28, 1:16 PM">
-              <div class="trend-bars">
-                <span class="pass-rate" style="height: 100%"></span>
-                <span class="runtime" style="height: 73%"></span>
-              </div>
-              <small>100%</small>
-            </div></div>
-        <div class="trend-legend">
-          <span><i class="pass-rate"></i>Pass rate</span>
-          <span><i class="runtime"></i>Runtime</span>
+        <div class="category-panel">
+          <div class="panel-heading">
+            <h2>Failure Categories</h2>
+            <p>0 failed tests</p>
+          </div>
+          <div class="category-list"><p class="muted">No failures to categorize.</p></div>
         </div>
-      </div>
-      <div class="panel category-panel">
-        <div class="panel-heading">
-          <h2>Failure Categories</h2>
-          <p>0 failed tests</p>
-        </div>
-        <div class="category-list"><p class="muted">No failures to categorize.</p></div>
-      </div>
-      <div class="panel environment-panel">
-        <div class="panel-heading">
-          <h2>Environment</h2>
-          <p>Run context</p>
-        </div>
-        <dl class="meta-grid compact"><div><dt>Branch</dt><dd>main</dd></div>
-<div><dt>Commit</dt><dd>ee10076</dd></div>
+        <div class="environment-panel">
+          <div class="panel-heading">
+            <h2>Environment</h2>
+            <p>Run context</p>
+          </div>
+          <dl class="meta-grid compact"><div><dt>Branch</dt><dd>main</dd></div>
+<div><dt>Commit</dt><dd>c5420ba</dd></div>
 <div><dt>Node</dt><dd>v24.14.0</dd></div>
 <div><dt>Devices</dt><dd>iPhone 17 Pro, iPhone 17 Pro Max, iPhone 17</dd></div>
 <div><dt>Appium ports</dt><dd>4723, 4725, 4727</dd></div>
-<div><dt>WDA ports</dt><dd>8100, 8200, 8300</dd></div>
 <div><dt>Source</dt><dd>combined summary.md</dd></div></dl>
+        </div>
       </div>
-    </section>
+    </details>
 
-    <section class="toolbar" aria-label="Report filters">
-      <input id="search" type="search" placeholder="Search tests">
-      <select id="statusFilter">
-        <option value="">All statuses</option>
-        <option value="PASS">Pass</option>
-        <option value="FAIL">Fail</option>
-        <option value="UNKNOWN">Unknown</option>
-      </select>
-      <select id="laneFilter">
-        <option value="">All lanes</option>
-        <option value="main-suite">main-suite</option>
-<option value="Conversation-List">Conversation-List</option>
-<option value="ConversationView">ConversationView</option>
-      </select>
-      <label class="check-filter"><input id="failedOnly" type="checkbox"> Failed only</label>
-      <label class="check-filter"><input id="slowOnly" type="checkbox"> Slow only</label>
-      <label class="check-filter"><input id="screenshotsOnly" type="checkbox"> Has screenshots</label>
-    </section>
 
-    <section class="test-grid" aria-label="Tests">
-      
-        <a class="test-card pass" href="#createroom" data-test-card data-name="createroom" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">41s</span>
-          </div>
-          <h3>CreateRoom</h3>
-          <p>main-suite / iPhone 17 Pro</p>
-          <div class="card-tags">
-            <span>5 screenshots</span>
-            
-            
-          </div>
-        </a>
-
-        <a class="test-card pass" href="#newmessage" data-test-card data-name="newmessage" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">28s</span>
-          </div>
-          <h3>newMessage</h3>
-          <p>main-suite / iPhone 17 Pro</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-            
-            
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="#conversationlist" data-test-card data-name="conversationlist" data-status="PASS" data-lane="Conversation-List" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">54s</span>
-          </div>
-          <h3>ConversationList</h3>
-          <p>Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>15 screenshots</span>
-            <span>Slow</span>
-            
-          </div>
-        </a>
-
-        <a class="test-card pass" href="#favoriteroom" data-test-card data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="1">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">14s</span>
-          </div>
-          <h3>favoriteRoom</h3>
-          <p>Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-            
-            <span>Flaky</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="#markasread" data-test-card data-name="markasread" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">13s</span>
-          </div>
-          <h3>markAsRead</h3>
-          <p>Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-            
-            
-          </div>
-        </a>
-
-        <a class="test-card pass" href="#notifications" data-test-card data-name="notifications" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="1">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">25s</span>
-          </div>
-          <h3>notifications</h3>
-          <p>Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-            
-            <span>Flaky</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="#removeroom" data-test-card data-name="removeroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">10s</span>
-          </div>
-          <h3>removeRoom</h3>
-          <p>Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-            
-            
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="#pinnedmessageeditflow" data-test-card data-name="pinnedmessageeditflow" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 2s</span>
-          </div>
-          <h3>PinnedMessageEditFlow</h3>
-          <p>ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-            <span>Slow</span>
-            
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="#markdowns" data-test-card data-name="markdowns" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 24s</span>
-          </div>
-          <h3>markdowns</h3>
-          <p>ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>11 screenshots</span>
-            <span>Slow</span>
-            
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="#attachments" data-test-card data-name="attachments" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 9s</span>
-          </div>
-          <h3>attachments</h3>
-          <p>ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>9 screenshots</span>
-            <span>Slow</span>
-            
-          </div>
-        </a>
-
-        <a class="test-card pass" href="#editroom" data-test-card data-name="editroom" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">48s</span>
-          </div>
-          <h3>editRoom</h3>
-          <p>ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>8 screenshots</span>
-            
-            
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="#membersroom" data-test-card data-name="membersroom" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">56s</span>
-          </div>
-          <h3>membersRoom</h3>
-          <p>ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>11 screenshots</span>
-            <span>Slow</span>
-            
-          </div>
-        </a>
-    </section>
-
-    
-
-    
         <details class="test-section" id="createroom" data-test-section data-name="createroom" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
           <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
-              
+
               <h2>CreateRoom</h2>
               <p>main-suite / iPhone 17 Pro · Stable recently</p>
             </div>
@@ -1140,58 +1035,32 @@
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="CreateRoom.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4723 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js">Copy rerun command</button>
               <button type="button" data-copy-link="#createroom">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js</code>
+              <code>APPIUM_PORT=4723 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>41s</dd></div>
               <div><dt>Lane</dt><dd>main-suite</dd></div>
               <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
               <div><dt>Appium port</dt><dd>4723</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:16 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:16 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
-Already logged in (loginView not present). Skipping login flow.
-permissions: no notification prompt found; skipping future notification checks
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-Clicked Rooms plus
-Opened Create a Room screen
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/CreateRoom/public_create_room.png
-Public room name: A-Public Room-bic7vrhx
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/CreateRoom/public_room_name.png
-Screenshot delay 1200ms: CreateRoom/rooms_list_after_public.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/CreateRoom/rooms_list_after_public.png
-Clicked Rooms plus
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/CreateRoom/private_create_room.png
-Private room name: B-Private Room-m2os6e0n
-Toggled private room
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/CreateRoom/private_room_toggle.png
-Returned to Rooms list after private room
 
-✓ CreateRoom finished in 41s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for CreateRoom</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>41s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>41s</small>
@@ -1230,7 +1099,7 @@ Returned to Rooms list after private room
                   <figcaption>
                     <span>Step 1</span>
                     Private Create Room
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1241,7 +1110,7 @@ Returned to Rooms list after private room
                   <figcaption>
                     <span>Step 2</span>
                     Private Room Toggle
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1252,7 +1121,7 @@ Returned to Rooms list after private room
                   <figcaption>
                     <span>Step 3</span>
                     Public Create Room
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1263,7 +1132,7 @@ Returned to Rooms list after private room
                   <figcaption>
                     <span>Step 4</span>
                     Public Room Name
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1274,7 +1143,7 @@ Returned to Rooms list after private room
                   <figcaption>
                     <span>Step 5</span>
                     Rooms List After Public
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -1284,7 +1153,7 @@ Returned to Rooms list after private room
           <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
-              
+
               <h2>newMessage</h2>
               <p>main-suite / iPhone 17 Pro · Stable recently</p>
             </div>
@@ -1297,53 +1166,32 @@ Returned to Rooms list after private room
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="newMessage.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4723 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js">Copy rerun command</button>
               <button type="button" data-copy-link="#newmessage">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js</code>
+              <code>APPIUM_PORT=4723 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>28s</dd></div>
               <div><dt>Lane</dt><dd>main-suite</dd></div>
               <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
               <div><dt>Appium port</dt><dd>4723</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:16 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:17 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
-runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
-Opened Start Conversation via peoplePlusButton
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/newMessage/02_start_conversation.png
-Typed recipient: greg.blake
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/newMessage/03_typed_recipient.png
-Selected recipient
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/newMessage/04_selected_recipient.png
-Typed message by accessibility id
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/main-suite/newMessage/05_message_typed.png
-Sent message
 
-✓ newMessage finished in 28s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for newMessage</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>28s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>28s</small>
@@ -1382,7 +1230,7 @@ Sent message
                   <figcaption>
                     <span>Step 1</span>
                     Start Conversation
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1393,7 +1241,7 @@ Sent message
                   <figcaption>
                     <span>Step 2</span>
                     Typed Recipient
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1404,7 +1252,7 @@ Sent message
                   <figcaption>
                     <span>Step 3</span>
                     Selected Recipient
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1415,7 +1263,7 @@ Sent message
                   <figcaption>
                     <span>Step 4</span>
                     Message Typed
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -1438,65 +1286,32 @@ Sent message
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="ConversationList.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js">Copy rerun command</button>
               <button type="button" data-copy-link="#conversationlist">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js</code>
+              <code>APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>54s</dd></div>
               <div><dt>Lane</dt><dd>Conversation-List</dd></div>
               <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
               <div><dt>Appium port</dt><dd>4725</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:16 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:16 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: &#39;/custom/path/.env&#39; }
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
-Already logged in (loginView not present). Skipping login flow.
-permissions: no notification prompt found; skipping future notification checks
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
-Layout: Classic
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/layout_classic_menu_open.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/layout_classic_after_switch_in_menu.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/layout_classic_conversation_list.png
-Layout: Cozy
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/layout_cozy_menu_open.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/layout_cozy_after_switch_in_menu.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/layout_cozy_conversation_list.png
-Sort: Recent Activity
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_recent_activity_menu_open.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_recent_activity_after_switch_in_menu.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_recent_activity_conversation_list.png
-Sort: Alphabetically
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_alphabetically_menu_open.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_alphabetically_after_switch_in_menu.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_alphabetically_conversation_list.png
-Sort: Self-Managed
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_self_managed_menu_open.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_self_managed_after_switch_in_menu.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/ConversationList/sort_self_managed_conversation_list.png
 
-✓ ConversationList finished in 54s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for ConversationList</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>54s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>54s</small>
@@ -1535,7 +1350,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 1</span>
                     Layout Classic After Switch In Menu
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1546,7 +1361,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 2</span>
                     Layout Classic Conversation List
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1557,7 +1372,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 3</span>
                     Layout Classic Menu Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1568,7 +1383,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 4</span>
                     Layout Cozy After Switch In Menu
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1579,7 +1394,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 5</span>
                     Layout Cozy Conversation List
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1590,7 +1405,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 6</span>
                     Layout Cozy Menu Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1601,7 +1416,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 7</span>
                     Sort Alphabetically After Switch In Menu
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1612,7 +1427,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 8</span>
                     Sort Alphabetically Conversation List
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1623,7 +1438,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 9</span>
                     Sort Alphabetically Menu Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1634,7 +1449,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 10</span>
                     Sort Recent Activity After Switch In Menu
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1645,7 +1460,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 11</span>
                     Sort Recent Activity Conversation List
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1656,7 +1471,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 12</span>
                     Sort Recent Activity Menu Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1667,7 +1482,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 13</span>
                     Sort Self Managed After Switch In Menu
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1678,7 +1493,7 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 14</span>
                     Sort Self Managed Conversation List
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1689,19 +1504,19 @@ Sort: Self-Managed
                   <figcaption>
                     <span>Step 15</span>
                     Sort Self Managed Menu Open
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
         </details>
 
-        <details class="test-section" id="favoriteroom" data-test-section data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="1">
+        <details class="test-section" id="favoriteroom" data-test-section data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
           <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
-              
+
               <h2>favoriteRoom</h2>
-              <p>Conversation-List / iPhone 17 Pro Max · Flaky in recent runs</p>
+              <p>Conversation-List / iPhone 17 Pro Max · Stable recently</p>
             </div>
             <div class="summary-meta">
               <span>14s</span>
@@ -1712,61 +1527,38 @@ Sort: Self-Managed
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="favoriteRoom.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js">Copy rerun command</button>
               <button type="button" data-copy-link="#favoriteroom">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js</code>
+              <code>APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>14s</dd></div>
               <div><dt>Lane</dt><dd>Conversation-List</dd></div>
               <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
               <div><dt>Appium port</dt><dd>4725</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:16 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:17 PM</dd></div>
-              <div><dt>History</dt><dd>Flaky in recent runs</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: &#39;/custom/path/.env&#39; }
-runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: [&#39;.env.local&#39;, &#39;.env&#39;] }
-favoriteRoom: found &quot;Favorite Room&quot;
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/favoriteRoom/01_before_swipe.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/favoriteRoom/02_after_swipe_right.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/favoriteRoom/03_after_click_favorites.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/favoriteRoom/04_after_unfavorite.png
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
+              <div><dt>History</dt><dd>Stable recently</dd></div>
 
-✓ favoriteRoom finished in 14s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for favoriteRoom</h4>
-              
+
           <div class="history-list">
-            
+
                   <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>14s</small>
                   </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>14s</small>
-                  </a>
-
                   <a href="../favoriteRoom-single/index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 12:58 PM</strong>
-                    <small>15s</small>
-                  </a>
-
-                  <a href="../archive/2026-07-28T16-58-43Z-favoriteRoom-single/index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 12:58 PM</strong>
                     <small>15s</small>
@@ -1805,7 +1597,7 @@ favoriteRoom: found &quot;Favorite Room&quot;
                   <figcaption>
                     <span>Step 1</span>
                     Before Swipe
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1816,7 +1608,7 @@ favoriteRoom: found &quot;Favorite Room&quot;
                   <figcaption>
                     <span>Step 2</span>
                     After Swipe Right
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1827,7 +1619,7 @@ favoriteRoom: found &quot;Favorite Room&quot;
                   <figcaption>
                     <span>Step 3</span>
                     After Click Favorites
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1838,7 +1630,7 @@ favoriteRoom: found &quot;Favorite Room&quot;
                   <figcaption>
                     <span>Step 4</span>
                     After Unfavorite
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -1848,7 +1640,7 @@ favoriteRoom: found &quot;Favorite Room&quot;
           <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
-              
+
               <h2>markAsRead</h2>
               <p>Conversation-List / iPhone 17 Pro Max · Stable recently</p>
             </div>
@@ -1861,49 +1653,32 @@ favoriteRoom: found &quot;Favorite Room&quot;
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="markAsRead.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js">Copy rerun command</button>
               <button type="button" data-copy-link="#markasread">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js</code>
+              <code>APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>13s</dd></div>
               <div><dt>Lane</dt><dd>Conversation-List</dd></div>
               <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
               <div><dt>Appium port</dt><dd>4725</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:17 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:17 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
-runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
-markAsRead: &quot;Message Room&quot;
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/markAsRead/01_before_swipe_right.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/markAsRead/02_after_swipe_right.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/markAsRead/03_after_mark_unread.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/markAsRead/04_after_mark_read.png
 
-✓ markAsRead finished in 13s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for markAsRead</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>13s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>13s</small>
@@ -1942,7 +1717,7 @@ markAsRead: &quot;Message Room&quot;
                   <figcaption>
                     <span>Step 1</span>
                     Before Swipe Right
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1953,7 +1728,7 @@ markAsRead: &quot;Message Room&quot;
                   <figcaption>
                     <span>Step 2</span>
                     After Swipe Right
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1964,7 +1739,7 @@ markAsRead: &quot;Message Room&quot;
                   <figcaption>
                     <span>Step 3</span>
                     After Mark Unread
-                    
+
                   </figcaption>
                 </figure>
 
@@ -1975,7 +1750,7 @@ markAsRead: &quot;Message Room&quot;
                   <figcaption>
                     <span>Step 4</span>
                     After Mark Read
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -1985,9 +1760,9 @@ markAsRead: &quot;Message Room&quot;
           <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
-              
+
               <h2>notifications</h2>
-              <p>Conversation-List / iPhone 17 Pro Max · Flaky in recent runs</p>
+              <p>Conversation-List / iPhone 17 Pro Max · 2/5 failed in last 5 runs</p>
             </div>
             <div class="summary-meta">
               <span>25s</span>
@@ -1998,53 +1773,32 @@ markAsRead: &quot;Message Room&quot;
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="notifications.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/notifications.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/notifications.js">Copy rerun command</button>
               <button type="button" data-copy-link="#notifications">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/notifications.js</code>
+              <code>APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/notifications.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>25s</dd></div>
               <div><dt>Lane</dt><dd>Conversation-List</dd></div>
               <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
               <div><dt>Appium port</dt><dd>4725</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:17 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:17 PM</dd></div>
-              <div><dt>History</dt><dd>Flaky in recent runs</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
-runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/notifications/01_before_push.png
-notifications: sent app to background (Home)
-notifications: pushed via simctl → /var/folders/2x/c_y33jsd2mv_fl1nhrrcbykc0000gp/T/connect-notification-1785259062013.apns
-notifications: title=&quot;Connect&quot; body=&quot;New message in Message Room&quot;
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/notifications/02_after_push.png
-notifications: tapped notification banner by text
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/notifications/03_after_tap_notification.png
-notifications: in-app UI visible (~peoplePlusButton)
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/notifications/04_in_app_after_notification.png
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
+              <div><dt>History</dt><dd>2/5 failed in last 5 runs</dd></div>
 
-✓ notifications finished in 25s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for notifications</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>25s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>25s</small>
@@ -2083,7 +1837,7 @@ notifications: in-app UI visible (~peoplePlusButton)
                   <figcaption>
                     <span>Step 1</span>
                     Before Push
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2094,7 +1848,7 @@ notifications: in-app UI visible (~peoplePlusButton)
                   <figcaption>
                     <span>Step 2</span>
                     After Push
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2105,7 +1859,7 @@ notifications: in-app UI visible (~peoplePlusButton)
                   <figcaption>
                     <span>Step 3</span>
                     After Tap Notification
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2116,7 +1870,7 @@ notifications: in-app UI visible (~peoplePlusButton)
                   <figcaption>
                     <span>Step 4</span>
                     In App After Notification
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -2126,7 +1880,7 @@ notifications: in-app UI visible (~peoplePlusButton)
           <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
-              
+
               <h2>removeRoom</h2>
               <p>Conversation-List / iPhone 17 Pro Max · Stable recently</p>
             </div>
@@ -2139,49 +1893,32 @@ notifications: in-app UI visible (~peoplePlusButton)
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="removeRoom.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js">Copy rerun command</button>
               <button type="button" data-copy-link="#removeroom">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js</code>
+              <code>APPIUM_PORT=4725 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>10s</dd></div>
               <div><dt>Lane</dt><dd>Conversation-List</dd></div>
               <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
               <div><dt>Appium port</dt><dd>4725</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:17 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:17 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
-removeRoom: &quot;A-Public Room-bic7vrhx&quot;
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/removeRoom/01_before_swipe_left.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/removeRoom/02_after_swipe_left.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/removeRoom/03_after_tap_remove.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/Conversation-List/removeRoom/04_after_room_removed.png
 
-✓ removeRoom finished in 10s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for removeRoom</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>10s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>10s</small>
@@ -2220,7 +1957,7 @@ removeRoom: &quot;A-Public Room-bic7vrhx&quot;
                   <figcaption>
                     <span>Step 1</span>
                     Before Swipe Left
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2231,7 +1968,7 @@ removeRoom: &quot;A-Public Room-bic7vrhx&quot;
                   <figcaption>
                     <span>Step 2</span>
                     After Swipe Left
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2242,7 +1979,7 @@ removeRoom: &quot;A-Public Room-bic7vrhx&quot;
                   <figcaption>
                     <span>Step 3</span>
                     After Tap Remove
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2253,7 +1990,7 @@ removeRoom: &quot;A-Public Room-bic7vrhx&quot;
                   <figcaption>
                     <span>Step 4</span>
                     After Room Removed
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -2276,50 +2013,32 @@ removeRoom: &quot;A-Public Room-bic7vrhx&quot;
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="PinnedMessageEditFlow.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/PinnedMessageEditFlow.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/PinnedMessageEditFlow.js">Copy rerun command</button>
               <button type="button" data-copy-link="#pinnedmessageeditflow">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/PinnedMessageEditFlow.js</code>
+              <code>APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/PinnedMessageEditFlow.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>1m 2s</dd></div>
               <div><dt>Lane</dt><dd>ConversationView</dd></div>
               <div><dt>Device</dt><dd>iPhone 17</dd></div>
               <div><dt>Appium port</dt><dd>4727</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:16 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:17 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates &amp; machines: https://dotenvx.com/ops
-Already logged in (loginView not present). Skipping login flow.
-permissions: no notification prompt found; skipping future notification checks
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-PinnedMessageEditFlow: creating isolated room &quot;A-Pinned Edit Flow-ikvc23d5&quot;
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/PinnedMessageEditFlow/01_room_opened.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/PinnedMessageEditFlow/03_pin_shows_original.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/PinnedMessageEditFlow/06_pin_shows_edited.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/PinnedMessageEditFlow/08_unpinned_drawer_closed.png
 
-✓ PinnedMessageEditFlow finished in 1m 2s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for PinnedMessageEditFlow</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>1m 2s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>1m 2s</small>
@@ -2358,7 +2077,7 @@ PinnedMessageEditFlow: creating isolated room &quot;A-Pinned Edit Flow-ikvc23d5&
                   <figcaption>
                     <span>Step 1</span>
                     Room Opened
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2369,7 +2088,7 @@ PinnedMessageEditFlow: creating isolated room &quot;A-Pinned Edit Flow-ikvc23d5&
                   <figcaption>
                     <span>Step 2</span>
                     Pin Shows Original
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2380,7 +2099,7 @@ PinnedMessageEditFlow: creating isolated room &quot;A-Pinned Edit Flow-ikvc23d5&
                   <figcaption>
                     <span>Step 3</span>
                     Pin Shows Edited
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2391,7 +2110,7 @@ PinnedMessageEditFlow: creating isolated room &quot;A-Pinned Edit Flow-ikvc23d5&
                   <figcaption>
                     <span>Step 4</span>
                     Unpinned Drawer Closed
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -2414,55 +2133,32 @@ PinnedMessageEditFlow: creating isolated room &quot;A-Pinned Edit Flow-ikvc23d5&
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="markdowns.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/markdowns.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/markdowns.js">Copy rerun command</button>
               <button type="button" data-copy-link="#markdowns">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/markdowns.js</code>
+              <code>APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/markdowns.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>1m 24s</dd></div>
               <div><dt>Lane</dt><dd>ConversationView</dd></div>
               <div><dt>Device</dt><dd>iPhone 17</dd></div>
               <div><dt>Appium port</dt><dd>4727</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:17 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:18 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
-runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/01_room_opened.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/01_headings.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/02_emphasis.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/03_links.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/04_inline_code.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/05_code_block.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/06_lists.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/07_blockquote.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/08_mixed.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/09_emojis.png
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/markdowns/10_appointments.png
 
-✓ markdowns finished in 1m 24s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for markdowns</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>1m 24s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>1m 24s</small>
@@ -2501,7 +2197,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 1</span>
                     Headings
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2512,7 +2208,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 2</span>
                     Room Opened
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2523,7 +2219,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 3</span>
                     Emphasis
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2534,7 +2230,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 4</span>
                     Links
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2545,7 +2241,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 5</span>
                     Inline Code
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2556,7 +2252,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 6</span>
                     Code Block
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2567,7 +2263,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 7</span>
                     Lists
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2578,7 +2274,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 8</span>
                     Blockquote
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2589,7 +2285,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 9</span>
                     Mixed
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2600,7 +2296,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 10</span>
                     Emojis
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2611,7 +2307,7 @@ runSingle: skipping login check for this worker test
                   <figcaption>
                     <span>Step 11</span>
                     Appointments
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -2634,65 +2330,32 @@ runSingle: skipping login check for this worker test
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="attachments.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js">Copy rerun command</button>
               <button type="button" data-copy-link="#attachments">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js</code>
+              <code>APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>1m 9s</dd></div>
               <div><dt>Lane</dt><dd>ConversationView</dd></div>
               <div><dt>Device</dt><dd>iPhone 17</dd></div>
               <div><dt>Appium port</dt><dd>4727</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:18 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:19 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: [&#39;.env.local&#39;, &#39;.env&#39;] }
-attachments: creating &quot;A-AttachmentRoom-8o7veaf3&quot;
-Clicked Rooms plus
-createPublicRoom: A-AttachmentRoom-8o7veaf3
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/01_in_room.png
-attachments: tapped ~shareOptionsButton
-attachments: share options dialog visible (Send GIF)
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/02_share_options_dialog.png
-attachments: tapped &quot;Attach Photos&quot;
-permissions: no photo library prompt found; skipping future photo checks
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/03_photo_picker_open.png
-attachments: fast tapped 3 photo grid point(s)
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/04_after_tap_all_photos.png
-attachments: tapped photo picker Done
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/05_attachment_in_composer.png
-attachments: sent attachment draft
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/06_after_send_attachment.png
-attachments: tapped ~shareOptionsButton
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/07_share_options_dialog_for_gif.png
-attachments: tapped Send GIF (~Send GIF)
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/08_gif_picker_open.png
-attachments: tapped first GIF at (76, 288)
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/attachments/09_after_send_gif.png
 
-✓ attachments finished in 1m 9s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for attachments</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>1m 9s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>1m 9s</small>
@@ -2731,7 +2394,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 1</span>
                     In Room
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2742,7 +2405,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 2</span>
                     Share Options Dialog
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2753,7 +2416,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 3</span>
                     Photo Picker Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2764,7 +2427,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 4</span>
                     After Tap All Photos
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2775,7 +2438,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 5</span>
                     Attachment In Composer
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2786,7 +2449,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 6</span>
                     After Send Attachment
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2797,7 +2460,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 7</span>
                     Share Options Dialog For Gif
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2808,7 +2471,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 8</span>
                     Gif Picker Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2819,7 +2482,7 @@ attachments: tapped first GIF at (76, 288)
                   <figcaption>
                     <span>Step 9</span>
                     After Send Gif
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -2829,7 +2492,7 @@ attachments: tapped first GIF at (76, 288)
           <summary class="section-summary">
             <div>
               <span class="status-pill pass">PASS</span>
-              
+
               <h2>editRoom</h2>
               <p>ConversationView / iPhone 17 · Stable recently</p>
             </div>
@@ -2842,63 +2505,32 @@ attachments: tapped first GIF at (76, 288)
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="editRoom.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/editRoom.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/editRoom.js">Copy rerun command</button>
               <button type="button" data-copy-link="#editroom">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/editRoom.js</code>
+              <code>APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/editRoom.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>48s</dd></div>
               <div><dt>Lane</dt><dd>ConversationView</dd></div>
               <div><dt>Device</dt><dd>iPhone 17</dd></div>
               <div><dt>Appium port</dt><dd>4727</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:19 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:20 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
-[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
-runSingle: skipping login check for this worker test
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-editRoom: creating &quot;E-Public Room-uoe5aeir&quot;
-Clicked Rooms plus
-createPublicRoom: E-Public Room-uoe5aeir
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/01_in_room.png
-editRoom: tapped ~openRoomSettingsButton
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/02_edit_modal_open.png
-editRoom: toggled private via Yes switch
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/03_after_toggle_private.png
-editRoom: set room name: &quot;E-Public Room-uoe5aeir-EDITED&quot;
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/04_after_name_edited.png
-editRoom: set topic via ~setTopic: &quot;This is a random room topic&quot;
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/05_after_topic_filled.png
-editRoom: tapped Save
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/06_after_save.png
-editRoom: tapped ~closeButton
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/07_after_close.png
-editRoom: tapped ~openRoomSettingsButton
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/editRoom/08_reopened_saved_settings.png
 
-✓ editRoom finished in 48s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for editRoom</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>48s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>48s</small>
@@ -2937,7 +2569,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 1</span>
                     In Room
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2948,7 +2580,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 2</span>
                     Edit Modal Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2959,7 +2591,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 3</span>
                     After Toggle Private
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2970,7 +2602,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 4</span>
                     After Name Edited
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2981,7 +2613,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 5</span>
                     After Topic Filled
-                    
+
                   </figcaption>
                 </figure>
 
@@ -2992,7 +2624,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 6</span>
                     After Save
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3003,7 +2635,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 7</span>
                     After Close
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3014,7 +2646,7 @@ editRoom: tapped ~openRoomSettingsButton
                   <figcaption>
                     <span>Step 8</span>
                     Reopened Saved Settings
-                    
+
                   </figcaption>
                 </figure></div>
           </div>
@@ -3037,65 +2669,32 @@ editRoom: tapped ~openRoomSettingsButton
           <div class="test-section-body">
             <div class="test-actions">
               <a class="markdown-link" href="membersRoom.md">Markdown guide</a>
-              <button type="button" data-copy="APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/membersRoom.js">Copy rerun command</button>
+              <button type="button" data-copy="APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/membersRoom.js">Copy rerun command</button>
               <button type="button" data-copy-link="#membersroom">Copy section link</button>
             </div>
             <section class="command-box">
               <h4>Rerun this test</h4>
-              <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/membersRoom.js</code>
+              <code>APPIUM_PORT=4727 DEVICE_NAME=&#39;iPhone 17&#39; node Tests/membersRoom.js</code>
             </section>
             <dl class="meta-grid">
               <div><dt>Duration</dt><dd>56s</dd></div>
               <div><dt>Lane</dt><dd>ConversationView</dd></div>
               <div><dt>Device</dt><dd>iPhone 17</dd></div>
               <div><dt>Appium port</dt><dd>4727</dd></div>
-              <div><dt>Started</dt><dd>Jul 28, 1:20 PM</dd></div>
-              <div><dt>Finished</dt><dd>Jul 28, 1:21 PM</dd></div>
+              <div><dt>Started</dt><dd></dd></div>
+              <div><dt>Finished</dt><dd></dd></div>
               <div><dt>History</dt><dd>Stable recently</dd></div>
-              
-            </dl>
-            <section class="failure-box"><h4>Error snippet</h4><pre>[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
-membersRoom: creating &quot;M-Public Room-x614mq60&quot;
-Clicked Rooms plus
-createPublicRoom: M-Public Room-x614mq60
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/01_in_room.png
-membersRoom: tapped ~openRoomSettingsButton
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/02_edit_modal_open.png
-membersRoom: tapped Members row
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/03_members_screen.png
-membersRoom: tapped nav bar Edit
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/04_edit_members.png
-membersRoom: tapped first visible  remove control
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/05_after_remove_x.png
-membersRoom: typed &quot;greg.blake&quot; in Add Individuals TextField
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/06_after_type_invitee.png
-membersRoom: &quot;greg.blake&quot; already appears selected; skipping typeahead result tap
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/07_after_select_invitee.png
-membersRoom: tapped nav bar Cancel
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/08_after_cancel.png
-membersRoom: tapped back fallback coordinates (0.09, 0.115)
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/09_after_back.png
-membersRoom: no remove control — skipping 
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/10_after_close.png
-membersRoom: tapped back fallback coordinates (0.055, 0.09)
-📸 Screenshot: /Users/tony.tran/GitHub/Connect-Apple-Testing/screenshots/ConversationView/membersRoom/11_after_back_to_list.png
 
-✓ membersRoom finished in 56s
-</pre></section>
-            
-            
+            </dl>
+
+
+
             <section class="history-box">
               <h4>Recent history for membersRoom</h4>
-              
-          <div class="history-list">
-            
-                  <a href="index.html">
-                    <span class="status-pill pass">PASS</span>
-                    <strong>Jul 28, 1:16 PM</strong>
-                    <small>56s</small>
-                  </a>
 
-                  <a href="../archive/2026-07-28T17-16-00Z-split3-combined/index.html">
+          <div class="history-list">
+
+                  <a href="index.html">
                     <span class="status-pill pass">PASS</span>
                     <strong>Jul 28, 1:16 PM</strong>
                     <small>56s</small>
@@ -3134,7 +2733,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 1</span>
                     In Room
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3145,7 +2744,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 2</span>
                     Edit Modal Open
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3156,7 +2755,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 3</span>
                     Members Screen
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3167,7 +2766,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 4</span>
                     Edit Members
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3178,7 +2777,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 5</span>
                     After Remove X
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3189,7 +2788,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 6</span>
                     After Type Invitee
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3200,7 +2799,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 7</span>
                     After Select Invitee
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3211,7 +2810,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 8</span>
                     After Cancel
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3222,7 +2821,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 9</span>
                     After Back
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3233,7 +2832,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 10</span>
                     After Close
-                    
+
                   </figcaption>
                 </figure>
 
@@ -3244,7 +2843,7 @@ membersRoom: tapped back fallback coordinates (0.055, 0.09)
                   <figcaption>
                     <span>Step 11</span>
                     After Back To List
-                    
+
                   </figcaption>
                 </figure></div>
           </div>

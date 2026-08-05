@@ -5,8 +5,6 @@
 - Lane: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-07-28T17:17:10.639Z
-- Finished: 2026-07-28T17:17:23.927Z
 
 ## Steps
 

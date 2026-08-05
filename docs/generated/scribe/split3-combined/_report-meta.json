@@ -3,17 +3,23 @@
   "reportType": "latest",
   "source": "combined summary.md",
   "status": "PASS",
-  "startedAt": "2026-07-28T17:16:00.896Z",
-  "updatedAt": "2026-07-28T17:21:23.130Z",
-  "durationMs": 504872,
+  "startedAt": "2026-07-28T17:16:00.149Z",
+  "updatedAt": "2026-07-28T17:21:22.142Z",
+  "durationMs": 322000,
   "passed": 12,
   "failed": 0,
   "total": 12,
   "environment": {
     "branch": "main",
-    "commit": "ee10076",
+    "commit": "c5420ba",
+    "automationBranch": "main",
+    "automationCommit": "c5420ba",
+    "appBranch": "",
+    "appCommit": "",
     "node": "v24.14.0",
     "bundleId": "",
+    "appVersion": "",
+    "appBuild": "",
     "source": "combined summary.md",
     "devices": [
       "iPhone 17 Pro",
@@ -21,148 +27,144 @@
       "iPhone 17"
     ],
     "appiumPorts": [
-      4723,
-      4725,
-      4727
+      "4723",
+      "4725",
+      "4727"
     ],
-    "wdaPorts": [
-      8100,
-      8200,
-      8300
-    ]
+    "wdaPorts": []
   },
   "results": [
     {
       "name": "CreateRoom",
       "status": "PASS",
       "duration": "41s",
-      "durationMs": 41004,
+      "durationMs": 41000,
       "laneRunId": "main-suite",
       "deviceName": "iPhone 17 Pro",
-      "appiumPort": 4723,
-      "startedAt": "2026-07-28T17:16:01.430Z",
-      "finishedAt": "2026-07-28T17:16:42.434Z"
+      "appiumPort": "4723",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "newMessage",
       "status": "PASS",
       "duration": "28s",
-      "durationMs": 28205,
+      "durationMs": 28000,
       "laneRunId": "main-suite",
       "deviceName": "iPhone 17 Pro",
-      "appiumPort": 4723,
-      "startedAt": "2026-07-28T17:16:42.822Z",
-      "finishedAt": "2026-07-28T17:17:11.027Z"
+      "appiumPort": "4723",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "ConversationList",
       "status": "PASS",
       "duration": "54s",
-      "durationMs": 53924,
+      "durationMs": 54000,
       "laneRunId": "Conversation-List",
       "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": 4725,
-      "startedAt": "2026-07-28T17:16:01.772Z",
-      "finishedAt": "2026-07-28T17:16:55.696Z"
+      "appiumPort": "4725",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "favoriteRoom",
       "status": "PASS",
       "duration": "14s",
-      "durationMs": 14377,
+      "durationMs": 14000,
       "laneRunId": "Conversation-List",
       "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": 4725,
-      "startedAt": "2026-07-28T17:16:55.990Z",
-      "finishedAt": "2026-07-28T17:17:10.366Z"
+      "appiumPort": "4725",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "markAsRead",
       "status": "PASS",
       "duration": "13s",
-      "durationMs": 13289,
+      "durationMs": 13000,
       "laneRunId": "Conversation-List",
       "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": 4725,
-      "startedAt": "2026-07-28T17:17:10.639Z",
-      "finishedAt": "2026-07-28T17:17:23.927Z"
+      "appiumPort": "4725",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "notifications",
       "status": "PASS",
       "duration": "25s",
-      "durationMs": 24546,
+      "durationMs": 25000,
       "laneRunId": "Conversation-List",
       "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": 4725,
-      "startedAt": "2026-07-28T17:17:24.207Z",
-      "finishedAt": "2026-07-28T17:17:48.755Z"
+      "appiumPort": "4725",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "removeRoom",
       "status": "PASS",
       "duration": "10s",
-      "durationMs": 10276,
+      "durationMs": 10000,
       "laneRunId": "Conversation-List",
       "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": 4725,
-      "startedAt": "2026-07-28T17:17:49.121Z",
-      "finishedAt": "2026-07-28T17:17:59.397Z"
+      "appiumPort": "4725",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "PinnedMessageEditFlow",
       "status": "PASS",
       "duration": "1m 2s",
-      "durationMs": 62393,
+      "durationMs": 62000,
       "laneRunId": "ConversationView",
       "deviceName": "iPhone 17",
-      "appiumPort": 4727,
-      "startedAt": "2026-07-28T17:16:01.594Z",
-      "finishedAt": "2026-07-28T17:17:03.987Z"
+      "appiumPort": "4727",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "markdowns",
       "status": "PASS",
       "duration": "1m 24s",
-      "durationMs": 84148,
+      "durationMs": 84000,
       "laneRunId": "ConversationView",
       "deviceName": "iPhone 17",
-      "appiumPort": 4727,
-      "startedAt": "2026-07-28T17:17:04.257Z",
-      "finishedAt": "2026-07-28T17:18:28.406Z"
+      "appiumPort": "4727",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "attachments",
       "status": "PASS",
       "duration": "1m 9s",
-      "durationMs": 68694,
+      "durationMs": 69000,
       "laneRunId": "ConversationView",
       "deviceName": "iPhone 17",
-      "appiumPort": 4727,
-      "startedAt": "2026-07-28T17:18:28.702Z",
-      "finishedAt": "2026-07-28T17:19:37.397Z"
+      "appiumPort": "4727",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "editRoom",
       "status": "PASS",
       "duration": "48s",
-      "durationMs": 47681,
+      "durationMs": 48000,
       "laneRunId": "ConversationView",
       "deviceName": "iPhone 17",
-      "appiumPort": 4727,
-      "startedAt": "2026-07-28T17:19:37.749Z",
-      "finishedAt": "2026-07-28T17:20:25.431Z"
+      "appiumPort": "4727",
+      "startedAt": "",
+      "finishedAt": ""
     },
     {
       "name": "membersRoom",
       "status": "PASS",
       "duration": "56s",
-      "durationMs": 56335,
+      "durationMs": 56000,
       "laneRunId": "ConversationView",
       "deviceName": "iPhone 17",
-      "appiumPort": 4727,
-      "startedAt": "2026-07-28T17:20:25.766Z",
-      "finishedAt": "2026-07-28T17:21:22.101Z"
+      "appiumPort": "4727",
+      "startedAt": "",
+      "finishedAt": ""
     }
   ]
 }
