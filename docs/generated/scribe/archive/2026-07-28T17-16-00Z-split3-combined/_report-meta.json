@@ -11,9 +11,9 @@
   "total": 12,
   "environment": {
     "branch": "main",
-    "commit": "c5420ba",
+    "commit": "44734eb",
     "automationBranch": "main",
-    "automationCommit": "c5420ba",
+    "automationCommit": "44734eb",
     "appBranch": "",
     "appCommit": "",
     "node": "v24.14.0",
