@@ -163,10 +163,6 @@ async function openRoomFromRoomsList(driver, roomName, timeout = DEFAULT_TIMEOUT
 
 async function ensureTargetRoomOpen(driver, roomName, timeout = DEFAULT_TIMEOUT) {
   if (await isTargetRoomOpen(driver, roomName, 3000)) {
-    await driver.pause(1200);
-  }
-
-  if (await isTargetRoomOpen(driver, roomName, 3000)) {
     return;
   }
 

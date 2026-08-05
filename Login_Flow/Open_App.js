@@ -13,7 +13,9 @@ async function createDriver() {
         'appium:bundleId': bundleId,
         //'appium:app': '/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app',
         'appium:noReset': noReset,
-        'appium:showXcodeLog': true,
+        // Reuse the app and WebDriverAgent between sessions unless a debug run opts out.
+        'appium:useNewWDA': process.env.APPIUM_USE_NEW_WDA === '1',
+        'appium:showXcodeLog': process.env.APPIUM_SHOW_XCODE_LOG === '1',
         'appium:newCommandTimeout': newCommandTimeout
 
     };

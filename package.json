@@ -11,6 +11,7 @@
     "test:suite:full": "node Tests/runAll.js",
     "test:suite:fast": "CREATE_ROOM_MODE=smoke CONVERSATION_LAYOUTS=Classic CONVERSATION_SORTS='Recent Activity' MARKDOWN_EXAMPLE_IDS=01_headings,02_emphasis,09_emojis node Tests/runAll.js",
     "test:suite:turbo": "CONNECT_SCREENSHOTS=0 CREATE_ROOM_MODE=smoke CONVERSATION_LAYOUTS=Classic CONVERSATION_SORTS='Recent Activity' MARKDOWN_EXAMPLE_IDS=01_headings,02_emphasis,09_emojis node Tests/runAll.js",
+    "sims:ready": "node scripts/bootSplitSimulators.js",
     "test:one": "node scripts/runAndGenerateReport.js --mode one",
     "test:parallel": "node scripts/runAndGenerateReport.js --mode parallel",
     "test:parallel:split": "node scripts/runAndGenerateReport.js --mode split",

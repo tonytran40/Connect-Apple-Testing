@@ -214,6 +214,14 @@ Split parallel defaults to one login check per lane: the first test on each simu
 
 Use this when you want to spread the suite across three simulators. The grouping separates conversation list tests from conversation view tests so each lane has a clearer purpose.
 
+Before a cold run, prepare all three simulators concurrently:
+
+```bash
+npm run sims:ready
+```
+
+This waits for each simulator to fully boot and opens Connect, so Appium does not race a black or partially booted screen. It leaves the simulators running and does not start the three Appium servers. Set `SIMULATOR_BOOT_OPEN_UI=1` if you also want the Simulator windows brought forward.
+
 Recommended terminal layout:
 
 | Tab | Command | Purpose |
@@ -578,6 +586,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:suite:full` | Alias for full `runAll.js` suite |
 | `npm run test:suite:fast` | Reduced suite |
 | `npm run test:suite:turbo` | Reduced suite with screenshots disabled |
+| `npm run sims:ready` | Boot all three split simulators in parallel and pre-open Connect |
 | `npm run test:one -- <testName>` | Run one test and generate its browser report |
 | `npm run test:parallel` | Parallel runner for one or more simulator lanes, then generate its report |
 | `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes, then generate its report |
