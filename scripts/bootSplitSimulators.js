@@ -8,9 +8,21 @@ const DEFAULT_LANES = [
   { label: 'Conversation-List', udid: 'B5A3CFF9-F618-411B-91FC-92C8FDD0D069' },
   { label: 'ConversationView', udid: '0244243B-055B-4FAE-8AF8-61FC1486248C' },
 ];
+const APP_LAUNCH_TIMEOUT_MS = boundedInt(process.env.SIMULATOR_APP_LAUNCH_TIMEOUT_MS, 45000, 5000, 120000);
+const APP_LAUNCH_RETRY_MS = boundedInt(process.env.SIMULATOR_APP_LAUNCH_RETRY_MS, 1500, 250, 10000);
 
 function envValue(name, fallback) {
   return process.env[name] || fallback;
+}
+
+function boundedInt(value, fallback, min, max) {
+  const parsed = Number.parseInt(value, 10);
+  const selected = Number.isFinite(parsed) ? parsed : fallback;
+  return Math.min(max, Math.max(min, selected));
+}
+
+function pause(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function run(command, args, { allowFailure = false } = {}) {
@@ -38,16 +50,44 @@ function lanes() {
   ];
 }
 
+async function launchAppWhenReady(lane, bundleId) {
+  const deadline = Date.now() + APP_LAUNCH_TIMEOUT_MS;
+  let lastOutput = '';
+  let attempts = 0;
+
+  while (Date.now() < deadline) {
+    attempts += 1;
+    const result = await run('xcrun', ['simctl', 'launch', lane.udid, bundleId], { allowFailure: true });
+    if (result.code === 0) {
+      console.log(`[${lane.label}] Connect is open (attempt ${attempts})`);
+      return;
+    }
+
+    lastOutput = result.output;
+    const remainingMs = Math.max(0, deadline - Date.now());
+    console.log(
+      `[${lane.label}] Connect launch is not ready yet; retrying in ${APP_LAUNCH_RETRY_MS}ms ` +
+        `(${Math.ceil(remainingMs / 1000)}s remaining)`
+    );
+    await pause(Math.min(APP_LAUNCH_RETRY_MS, remainingMs));
+  }
+
+  throw new Error(
+    `[${lane.label}] Could not launch ${bundleId} after ${Math.round(APP_LAUNCH_TIMEOUT_MS / 1000)}s. ` +
+      `The app may not be installed on this simulator. Last simctl output: ${lastOutput || 'none'}`
+  );
+}
+
 async function bootLane(lane, launchBundleId) {
   console.log(`[${lane.label}] booting ${lane.udid}`);
   // `boot` errors when a device is already running; `bootstatus -b` confirms readiness either way.
   await run('xcrun', ['simctl', 'boot', lane.udid], { allowFailure: true });
   await run('xcrun', ['simctl', 'bootstatus', lane.udid, '-b']);
-
   if (launchBundleId) {
-    await run('xcrun', ['simctl', 'launch', lane.udid, launchBundleId]);
+    await launchAppWhenReady(lane, launchBundleId);
+  } else {
+    console.log(`[${lane.label}] ready`);
   }
-  console.log(`[${lane.label}] ready${launchBundleId ? ' and Connect is open' : ''}`);
 }
 
 async function runBoot() {
@@ -57,12 +97,19 @@ async function runBoot() {
   const selectedLanes = lanes();
 
   if (dryRun) {
-    selectedLanes.forEach(lane => console.log(`[dry-run] xcrun simctl bootstatus ${lane.udid} -b`));
+    selectedLanes.forEach(lane => {
+      console.log(`[dry-run] xcrun simctl boot ${lane.udid}`);
+      console.log(`[dry-run] xcrun simctl bootstatus ${lane.udid} -b`);
+      if (bundleId) console.log(`[dry-run] xcrun simctl launch ${lane.udid} ${bundleId}`);
+    });
     return;
   }
 
   const started = performance.now();
-  await Promise.all(selectedLanes.map(lane => bootLane(lane, bundleId)));
+  for (const lane of selectedLanes) {
+    // CoreSimulator is more stable when cold simulator boot and app launch happen one lane at a time.
+    await bootLane(lane, bundleId);
+  }
   console.log(`All simulators ready in ${Math.round((performance.now() - started) / 1000)}s`);
 
   if (process.env.SIMULATOR_BOOT_OPEN_UI === '1') {

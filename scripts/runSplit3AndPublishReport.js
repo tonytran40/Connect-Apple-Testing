@@ -35,16 +35,34 @@ function gitHasStagedChanges() {
   return diff.status !== 0;
 }
 
+function hasFreshCombinedSummary(startedAt) {
+  const runRoot = path.join(REPO_ROOT, 'reports', 'runs', RUN_ID);
+  return ['summary.json', 'summary.md'].some(file => {
+    const summaryPath = path.join(runRoot, file);
+    return fs.existsSync(summaryPath) && fs.statSync(summaryPath).mtimeMs >= startedAt - 1000;
+  });
+}
+
 function main() {
   console.log(`[publish-report] Running three-simulator split test for ${RUN_ID}`);
+  const testStartedAt = Date.now();
   const test = run('node', ['Tests/runSplitParallel.js'], {
     allowFailure: true,
     env: {
       ...process.env,
       SPLIT_THIRD_ENABLED: '1',
       SPLIT_COMBINED_RUN_ID: RUN_ID,
+      SPLIT_LOGIN_PREFLIGHT: '1',
     },
   });
+
+  if (!hasFreshCombinedSummary(testStartedAt)) {
+    console.error(
+      '[publish-report] No fresh combined test summary was written; refusing to publish an older report.'
+    );
+    process.exitCode = test.status || 1;
+    return;
+  }
 
   console.log('[publish-report] Generating Scribe-style web report');
   run('npm', ['run', 'docs:scribe', '--', '--run', RUN_ID]);

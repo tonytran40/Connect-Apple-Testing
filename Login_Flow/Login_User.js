@@ -11,18 +11,11 @@ function intEnv(name, fallback, min, max) {
 
 const LOGIN_SUCCESS_TIMEOUT_MS = intEnv('LOGIN_SUCCESS_TIMEOUT_MS', 30000, 5000, 120000);
 const LOGIN_POLL_MS = intEnv('LOGIN_POLL_MS', 500, 100, 3000);
-
-async function exists(el, timeout = 1500) {
-  try {
-    await el.waitForExist({ timeout });
-    return true;
-  } catch {
-    return false;
-  }
-}
+const APP_ENTRY_TIMEOUT_MS = intEnv('APP_ENTRY_TIMEOUT_MS', 12000, 3000, 60000);
+const APP_ENTRY_POLL_MS = intEnv('APP_ENTRY_POLL_MS', 250, 100, 1000);
 
 async function isOnLoginScreen(driver) {
-  return exists(driver.$(SELECTORS.loginView), 1500);
+  return visible(driver, SELECTORS.loginView, 250);
 }
 
 async function visible(driver, selector, timeout = 500) {
@@ -51,6 +44,20 @@ async function isLoggedInSignalVisible(driver) {
   }
 
   return false;
+}
+
+async function waitForAppEntryState(driver) {
+  const deadline = Date.now() + APP_ENTRY_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    if (await isOnLoginScreen(driver)) return 'login';
+    if (await isLoggedInSignalVisible(driver)) return 'home';
+    await driver.pause(APP_ENTRY_POLL_MS);
+  }
+
+  throw new Error(
+    `Connect did not reach either login or the conversation list within ${APP_ENTRY_TIMEOUT_MS}ms`
+  );
 }
 
 async function loginErrorText(driver) {
@@ -137,9 +144,9 @@ async function waitForLoginSuccess(driver) {
 }
 
 async function ensureLoggedIn(driver) {
-  const onLogin = await isOnLoginScreen(driver);
+  const entryState = await waitForAppEntryState(driver);
 
-  if (!onLogin) {
+  if (entryState === 'home') {
     console.log('Already logged in (loginView not present). Skipping login flow.');
     await allowNotificationPromptIfNeeded(driver);
     return;

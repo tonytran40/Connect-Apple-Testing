@@ -21,9 +21,10 @@
     "test:notifications": "npm run test:one -- notifications",
     "test:members-room": "npm run test:one -- membersRoom",
     "test:attachments": "npm run test:one -- attachments",
+    "test:reactions": "npm run test:one -- Reactions",
     "test:remove-all-rooms": "npm run test:one -- removeAllrooms",
     "docs:scribe": "node scripts/generateScribeDocs.js",
-    "docs:serve": "python3 -m http.server 5500"
+    "docs:serve": "python3 -m http.server 5500 --directory docs"
   },
   "repository": {
     "type": "git",

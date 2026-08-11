@@ -11,7 +11,7 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 | **Login** | Auto-login when `loginView` is shown (localhost server, credentials from `.env`) |
 | **Rooms** | Create public/private rooms (`CreateRoom.js`); edit room settings (`editRoom.js`); remove room rows (`removeRoom.js`); manage room members (`membersRoom.js`) |
 | **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); mark unread/read (`markAsRead.js`); swipe-left remove (`removeRoom.js`) |
-| **Messaging** | New DM (`newMessage.js`); markdown rendering (`markdowns.js`); pin/edit/unpin (`PinnedMessageEditFlow.js`); attachment entry points (`attachments.js`) |
+| **Messaging** | New DM (`newMessage.js`); reactions from the message long-press picker (`Reactions.js`); markdown rendering (`markdowns.js`); pin/edit/unpin (`PinnedMessageEditFlow.js`); attachment entry points (`attachments.js`) |
 | **Notifications** | Push a simulator notification and verify app re-entry (`notifications.js`) |
 | **Settings** | Conversation layout & sort (`ConversationList.js`); sign out (`Login_Signout.js`) |
 | **Suite** | One session, shared login, markdown report (`Tests/runAll.js`) |
@@ -208,19 +208,21 @@ This launches `main-suite` on the iPhone 17 Pro lane and `standalones` on the iP
 
 Set `SPLIT_COMBINED_RUN_ID=some-name` if you want the merged report written to a different `reports/runs/{runId}/` folder.
 
-Split parallel defaults to one login check per lane: the first test on each simulator runs `ensureLoggedIn`, then later tests on that same lane skip the login check and go straight to the conversation list reset. If you want the older behavior, run with `SPLIT_LOGIN_ONCE_PER_LANE=0`.
+Split parallel defaults to one login check per lane: the first test on each simulator waits for Connect to reach either the login screen or conversation list, runs `ensureLoggedIn` when needed, then later tests on that same lane skip the login check and go straight to the conversation list reset. If you want the older behavior, run with `SPLIT_LOGIN_ONCE_PER_LANE=0`.
+
+`npm run test:parallel:split3:publish` additionally performs a login preflight before any test starts. It signs in and verifies the Connect home screen on all simulators concurrently, then launches the three test lanes. Each test still performs its normal conversation-list reset. This makes logged-out publish runs fail at a clear login step instead of failing inside the first feature test.
 
 ### Three-simulator split experiment
 
 Use this when you want to spread the suite across three simulators. The grouping separates conversation list tests from conversation view tests so each lane has a clearer purpose.
 
-Before a cold run, prepare all three simulators concurrently:
+Before a cold run, prepare all three simulators one at a time:
 
 ```bash
 npm run sims:ready
 ```
 
-This waits for each simulator to fully boot and opens Connect, so Appium does not race a black or partially booted screen. It leaves the simulators running and does not start the three Appium servers. Set `SIMULATOR_BOOT_OPEN_UI=1` if you also want the Simulator windows brought forward.
+This boots a simulator, waits for it to be fully ready, opens Connect, then starts the next lane. It avoids three cold simulator/app launches competing for CoreSimulator resources. Connect launch is retried for up to 45 seconds because CoreSimulator can briefly reject an app immediately after boot. It leaves the simulators running and does not start the three Appium servers. Set `SIMULATOR_BOOT_LAUNCH_APP=0` to skip opening Connect, `SIMULATOR_BOOT_OPEN_UI=1` to bring the Simulator windows forward, `SIMULATOR_APP_LAUNCH_TIMEOUT_MS` to change the 45-second launch window, or `SIMULATOR_APP_LAUNCH_RETRY_MS` to change the 1.5-second retry interval.
 
 Recommended terminal layout:
 
@@ -237,7 +239,7 @@ Default three-lane split:
 |-------|-----------|------|--------|-----|-------|
 | `main-suite` | iPhone 17 Pro | `A848480F-1933-47A5-B063-DB070BB3AC66` | `4723` | `8100` | `CreateRoom`, `newMessage` |
 | `Conversation-List` | iPhone 17 Pro Max | `B5A3CFF9-F618-411B-91FC-92C8FDD0D069` | `4725` | `8200` | `ConversationList`, `favoriteRoom`, `markAsRead`, `notifications`, `removeRoom` |
-| `ConversationView` | iPhone 17 | `0244243B-055B-4FAE-8AF8-61FC1486248C` | `4727` | `8300` | `PinnedMessageEditFlow`, `markdowns`, `attachments`, `editRoom`, `membersRoom` |
+| `ConversationView` | iPhone 17 | `0244243B-055B-4FAE-8AF8-61FC1486248C` | `4727` | `8300` | `PinnedMessageEditFlow`, `Reactions`, `markdowns`, `attachments`, `editRoom`, `membersRoom` |
 
 Run all three groups with:
 
@@ -308,7 +310,7 @@ Use one command for any individual test:
 npm run test:one -- favoriteRoom
 ```
 
-That writes the latest report to `docs/generated/scribe/favoriteRoom-latest/`. Existing shortcuts such as `npm run test:attachments` and `npm run test:members-room` use the same behavior.
+That writes the latest report to `docs/generated/scribe/favoriteRoom-latest/`. Existing shortcuts such as `npm run test:attachments`, `npm run test:members-room`, and `npm run test:reactions` use the same behavior.
 
 The report contains status cards, search/filter controls, lane/device health, slow-test callouts, latest-vs-previous run comparison, failure categories, rerun commands, copyable share links, Connect build metadata, run environment details, per-test history, failure timelines, screenshot compare panels, failure snippets, and step-by-step screenshots.
 
@@ -528,6 +530,7 @@ Connect-Apple-Testing/
 │   ├── attachments.js       # standalone attachment entry flow
 │   ├── markdowns.js
 │   ├── PinnedMessageEditFlow.js
+│   ├── Reactions.js         # add/remove a message reaction through the long-press picker
 │   ├── ConversationList.js
 │   ├── Login_Signout.js
 │   └── …                    # EditMessage, PinnedMessages, User_Settings, etc.

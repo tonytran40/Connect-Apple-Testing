@@ -56,6 +56,11 @@ function byId(id) {
   return `~${id}`;
 }
 
+// Conversation-view reaction chips should expose `messageReaction-<emoji>` from SwiftUI.
+function reactionChip(emoji) {
+  return byId(`messageReaction-${emoji}`);
+}
+
 const SELECTORS = Object.freeze(
   Object.fromEntries(Object.entries(A11Y).map(([key, id]) => [key, byId(id)]))
 );
@@ -70,4 +75,5 @@ module.exports = {
   SELECTORS,
   PREDICATES,
   byId,
+  reactionChip,
 };

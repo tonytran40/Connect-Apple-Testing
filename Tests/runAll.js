@@ -44,6 +44,7 @@ const tests = [
     area: 'Pin message, verify sheet, edit, verify pin, unpin, verify cleared',
     run: require('./PinnedMessageEditFlow').run,
   },
+  { name: 'Reactions', area: 'Add and remove a message reaction from the long-press picker', run: require('./Reactions').run },
   { name: 'markdowns', area: 'Markdown and emoji rendering', run: require('./markdowns').run },
   {
     name: 'ConversationList',

@@ -9,6 +9,7 @@ const { formatDurationMs } = require('../utils/reportWriter');
 const MAIN_SUITE_TESTS = [
   'CreateRoom',
   'PinnedMessageEditFlow',
+  'Reactions',
   'markdowns',
   'ConversationList',
   'newMessage',

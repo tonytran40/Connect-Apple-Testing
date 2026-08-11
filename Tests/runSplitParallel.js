@@ -8,10 +8,10 @@ const { performance } = require('perf_hooks');
 const { formatDurationMs } = require('../utils/reportWriter');
 
 const MAIN_TESTS = 'CreateRoom,PinnedMessageEditFlow,markdowns,ConversationList,newMessage';
-const STANDALONE_TESTS = 'attachments,editRoom,membersRoom,favoriteRoom,markAsRead,removeRoom,notifications';
+const STANDALONE_TESTS = 'attachments,editRoom,membersRoom,favoriteRoom,markAsRead,removeRoom,notifications,Reactions';
 const THREE_LANE_MAIN_TESTS = 'CreateRoom,newMessage';
 const THREE_LANE_CONVERSATION_LIST_TESTS = 'ConversationList,favoriteRoom,markAsRead,notifications,removeRoom';
-const THREE_LANE_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,markdowns,attachments,editRoom,membersRoom';
+const THREE_LANE_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,Reactions,markdowns,attachments,editRoom,membersRoom';
 
 function envValue(name, fallback) {
   return process.env[name] || fallback;
@@ -45,6 +45,9 @@ function makeLane({
       PARALLEL_APPIUM_PORTS: appiumPort,
       PARALLEL_LOGIN_ONCE_PER_WORKER:
         process.env.SPLIT_LOGIN_ONCE_PER_LANE || process.env.PARALLEL_LOGIN_ONCE_PER_WORKER || '1',
+      APPIUM_PORT: appiumPort,
+      DEVICE_NAME: deviceName,
+      SIMULATOR_UDID: udid,
       WDA_LOCAL_PORT: wdaPort,
       WDA_DERIVED_DATA_PATH: derivedDataPath,
     },
@@ -324,6 +327,29 @@ async function runLane(lane) {
   });
 }
 
+async function prepareLane(lane) {
+  return new Promise((resolve, reject) => {
+    console.log(`[${lane.label}] checking login before tests`);
+    const child = spawn(process.execPath, [path.resolve(__dirname, '..', 'scripts', 'prepareSimulatorLane.js')], {
+      cwd: path.resolve(__dirname, '..'),
+      env: lane.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    prefixOutput(child.stdout, lane.label);
+    prefixOutput(child.stderr, lane.label);
+    child.on('error', reject);
+    child.on('close', code => {
+      if (code === 0) {
+        console.log(`[${lane.label}] login ready`);
+        resolve();
+        return;
+      }
+      reject(new Error(`[${lane.label}] login preflight failed with exit code ${code}`));
+    });
+  });
+}
+
 async function run() {
   const started = performance.now();
   const startedAt = new Date().toISOString();
@@ -380,6 +406,10 @@ async function run() {
         throw new Error(`Appium is not responding on port ${lane.appiumPort}. Start it before running this script.`);
       }
     }
+  }
+
+  if (process.env.SPLIT_LOGIN_PREFLIGHT === '1' && process.env.PARALLEL_DRY_RUN !== '1') {
+    await Promise.all(lanes.map(prepareLane));
   }
 
   const codes = await Promise.all(lanes.map(runLane));
