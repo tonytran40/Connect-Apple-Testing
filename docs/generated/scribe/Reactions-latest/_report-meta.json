@@ -1,0 +1,45 @@
+{
+  "runId": "Reactions-latest",
+  "reportType": "latest",
+  "source": "summary.json",
+  "status": "PASS",
+  "startedAt": "2026-08-11T19:06:27.243Z",
+  "updatedAt": "2026-08-11T19:07:16.242Z",
+  "durationMs": 48999,
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "environment": {
+    "branch": "main",
+    "commit": "d3454d5",
+    "automationBranch": "main",
+    "automationCommit": "d3454d5",
+    "appBranch": "",
+    "appCommit": "",
+    "node": "v24.19.0",
+    "bundleId": "",
+    "appVersion": "",
+    "appBuild": "",
+    "source": "summary.json",
+    "devices": [],
+    "appiumPorts": [
+      4723
+    ],
+    "wdaPorts": [
+      8100
+    ]
+  },
+  "results": [
+    {
+      "name": "Reactions",
+      "status": "PASS",
+      "duration": "49s",
+      "durationMs": 48737,
+      "laneRunId": "Reactions-latest",
+      "deviceName": "",
+      "appiumPort": 4723,
+      "startedAt": "2026-08-11T19:06:27.492Z",
+      "finishedAt": "2026-08-11T19:07:16.230Z"
+    }
+  ]
+}

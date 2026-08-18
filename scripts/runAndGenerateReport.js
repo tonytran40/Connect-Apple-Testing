@@ -41,7 +41,7 @@ function runNode(script, args, env) {
     });
 
     child.on('error', reject);
-    child.on('close', code => resolve(code || 0));
+    child.on('close', code => resolve(Number.isInteger(code) ? code : 1));
   });
 }
 

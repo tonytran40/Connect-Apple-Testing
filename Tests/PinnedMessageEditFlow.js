@@ -8,7 +8,13 @@ const {
   ensureRoomsSectionReady,
   goBack,
 } = require('../utils/testSession');
-const { SELECTORS, PREDICATES } = require('../utils/selectors');
+const { SELECTORS } = require('../utils/selectors');
+const {
+  escapePredicateString,
+  openRoomsPlusMenu: tapRoomsPlusMenu,
+  tapByText,
+  typeComposerMessage,
+} = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'PinnedMessageEditFlow';
@@ -26,19 +32,6 @@ async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
   const newConversationButton = await driver.$(SELECTORS.newConversationButton);
   await newConversationButton.waitForDisplayed({ timeout });
   await newConversationButton.click();
-}
-
-async function tapByTextButtonOrStatic(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const safe = escapePredicateString(text);
-  const el = await driver.$(
-    `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "${safe}" OR name == "${safe}")`
-  );
-  await el.waitForDisplayed({ timeout });
-  await el.click();
-}
-
-function escapePredicateString(value) {
-  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 async function tapSearchResultByText(driver, text, timeout = 20000) {
@@ -96,17 +89,7 @@ async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGE
 
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
   await ensureRoomsSectionReady(driver);
-
-  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
-  await roomsHeader.waitForDisplayed({ timeout });
-
-  const headerLocation = await roomsHeader.getLocation();
-  const headerSize = await roomsHeader.getSize();
-  const windowRect = await driver.getWindowRect();
-  await driver.execute('mobile: tap', {
-    x: Math.min(windowRect.width - 20, Math.round(headerLocation.x + headerSize.width + 8)),
-    y: Math.round(headerLocation.y + headerSize.height / 2),
-  });
+  await tapRoomsPlusMenu(driver, timeout);
 }
 
 async function isConversationTitleVisible(driver, roomName, timeout = 1200) {
@@ -141,7 +124,7 @@ async function openRoomFromRoomsList(driver, roomName, timeout = DEFAULT_TIMEOUT
 
   for (let i = 0; i < 10; i++) {
     try {
-      await tapByTextButtonOrStatic(driver, roomName, Math.min(timeout, 2500));
+      await tapByText(driver, roomName, Math.min(timeout, 2500));
       break;
     } catch (err) {
       if (i === 9) throw new Error(`Could not find room "${roomName}" in the Rooms list`);
@@ -186,8 +169,8 @@ async function createRoomFromSheet(driver, roomName, timeout = DEFAULT_TIMEOUT) 
   await roomField.waitForDisplayed({ timeout });
   await roomField.click();
   await roomField.setValue(roomName);
-  await tapByTextButtonOrStatic(driver, 'Create', timeout);
-  await tapByTextButtonOrStatic(driver, 'Skip for now', timeout);
+  await tapByText(driver, 'Create', timeout);
+  await tapByText(driver, 'Skip for now', timeout);
   await ensureTargetRoomOpen(driver, roomName, timeout);
 }
 
@@ -200,8 +183,8 @@ async function createRoomFromRoomsList(driver, roomName, timeout = DEFAULT_TIMEO
   await roomField.waitForDisplayed({ timeout });
   await roomField.click();
   await roomField.setValue(roomName);
-  await tapByTextButtonOrStatic(driver, 'Create', timeout);
-  await tapByTextButtonOrStatic(driver, 'Skip for now', timeout);
+  await tapByText(driver, 'Create', timeout);
+  await tapByText(driver, 'Skip for now', timeout);
   await ensureTargetRoomOpen(driver, roomName, timeout);
 }
 
@@ -213,36 +196,6 @@ function generateRandomMessage(prefix = 'Message test') {
 function generatePinnedRoomName() {
   const rand = Math.random().toString(36).slice(2, 10);
   return `A-Pinned Edit Flow-${rand}`;
-}
-
-async function typeComposerMessage(driver, message, timeout = 20000) {
-  const byId = await driver.$(SELECTORS.roomComposerTextView);
-  if (await byId.isExisting().catch(() => false)) {
-    await byId.waitForDisplayed({ timeout });
-    await byId.click();
-    await byId.setValue(message);
-    return;
-  }
-  const placeholder = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
-     (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
-      label CONTAINS "Message" OR name CONTAINS "Message")`
-  );
-  if (await placeholder.isExisting().catch(() => false)) {
-    await placeholder.waitForDisplayed({ timeout });
-    await placeholder.click();
-    await driver.pause(300);
-  }
-  const textViews = await driver.$$('//XCUIElementTypeTextView');
-  for (const tv of textViews) {
-    if (await tv.isDisplayed().catch(() => false)) {
-      await tv.click();
-      await driver.pause(150);
-      await tv.setValue(message);
-      return;
-    }
-  }
-  throw new Error('Could not find message composer TextView');
 }
 
 async function findMessageBubbleByText(driver, messageText, timeout = 20000) {

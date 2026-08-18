@@ -36,6 +36,7 @@ async function createDriver() {
         hostname: '127.0.0.1',
         port: appiumPort,
         path: '/',
+        logLevel: process.env.WDIO_LOG_LEVEL || 'error',
         capabilities: caps
     });
 

@@ -25,7 +25,6 @@ function formatDurationMs(ms) {
 
 function buildMarkdown(results, startedAt, meta = {}) {
   const { suiteDurationMs, loginSetupMs, suiteOptions } = meta;
-  const total = results.length;
   const passed = results.filter(result => result.status === 'PASS').length;
   const failed = results.filter(result => result.status === 'FAIL').length;
   const running = results.filter(result => result.status === 'RUNNING').length;

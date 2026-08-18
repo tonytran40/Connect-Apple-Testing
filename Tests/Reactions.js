@@ -3,7 +3,12 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, ensureRoomsSectionReady } = require('../utils/testSession');
-const { SELECTORS, PREDICATES, reactionChip } = require('../utils/selectors');
+const { SELECTORS, reactionChip } = require('../utils/selectors');
+const {
+  escapePredicateString,
+  openRoomsPlusMenu,
+  tapByText,
+} = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'Reactions';
@@ -19,35 +24,8 @@ const QUICK_REACTIONS = [
   { name: 'laugh', labels: ['🤣', 'Laugh'] },
 ];
 
-function escapePredicateString(value) {
-  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
 function randomSuffix() {
   return Math.random().toString(36).slice(2, 10);
-}
-
-async function tapButtonOrText(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const safe = escapePredicateString(text);
-  const target = await driver.$(
-    `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND ` +
-      `(name == "${safe}" OR label == "${safe}")`
-  );
-  await target.waitForDisplayed({ timeout });
-  await target.click();
-}
-
-async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
-  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
-  await roomsHeader.waitForDisplayed({ timeout });
-
-  const location = await roomsHeader.getLocation();
-  const size = await roomsHeader.getSize();
-  const windowRect = await driver.getWindowRect();
-  await driver.execute('mobile: tap', {
-    x: Math.min(windowRect.width - 20, Math.round(location.x + size.width + 8)),
-    y: Math.round(location.y + size.height / 2),
-  });
 }
 
 async function createRoom(driver, roomName, timeout = DEFAULT_TIMEOUT) {
@@ -62,8 +40,8 @@ async function createRoom(driver, roomName, timeout = DEFAULT_TIMEOUT) {
   await roomNameField.waitForDisplayed({ timeout });
   await roomNameField.click();
   await roomNameField.setValue(roomName);
-  await tapButtonOrText(driver, 'Create', timeout);
-  await tapButtonOrText(driver, 'Skip for now', timeout);
+  await tapByText(driver, 'Create', timeout);
+  await tapByText(driver, 'Skip for now', timeout);
 
   const roomSettings = await driver.$(SELECTORS.openRoomSettingsButton);
   await roomSettings.waitForDisplayed({ timeout });

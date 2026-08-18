@@ -5,6 +5,11 @@ const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
 const { generateRoomName, createPublicRoom } = require('./CreateRoom');
+const {
+  escapePredicateString: esc,
+  pauseIfNeeded: pause,
+  tapByText: tapExactText,
+} = require('../utils/uiActions');
 
 const TEST_NAME = 'membersRoom';
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.MEMBERS_ROOM_TIMEOUT_MS, 10) || 20000;
@@ -12,20 +17,12 @@ const INVITEE = process.env.MEMBERS_ROOM_INVITEE || process.env.RECIPIENT || 'gr
 const SEARCH_AFTER_TYPE_MS =
   Number.parseInt(process.env.MEMBERS_ROOM_SEARCH_PAUSE_MS, 10) || 800;
 
-function esc(s) {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
 function containsAnyTextPredicate(text) {
   const safe = esc(text);
   return (
     `(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton" OR type == "XCUIElementTypeOther" OR type == "XCUIElementTypeCell") ` +
     `AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}" OR value CONTAINS "${safe}")`
   );
-}
-
-async function pause(driver, ms) {
-  if (ms > 0) await driver.pause(ms);
 }
 
 async function waitForInRoom(driver, timeout = DEFAULT_TIMEOUT) {
@@ -69,16 +66,8 @@ async function tapMembersRow(driver, timeout = DEFAULT_TIMEOUT) {
   console.log('membersRoom: tapped Members cell');
 }
 
-async function tapByText(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const safe = esc(text);
-  const textEl = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
-  );
-  if (await textEl.isExisting().catch(() => false)) {
-    await textEl.waitForDisplayed({ timeout });
-    await textEl.click();
-    return;
-  }
+async function tapMemberText(driver, text, timeout = DEFAULT_TIMEOUT) {
+  if (await tapExactText(driver, text, Math.min(timeout, 2000)).then(() => true).catch(() => false)) return;
   const loose = await driver.$(`-ios predicate string:${containsAnyTextPredicate(text)}`);
   await loose.waitForDisplayed({ timeout });
   await loose.click();
@@ -95,7 +84,7 @@ async function tapNavBarButton(driver, label, timeout = DEFAULT_TIMEOUT) {
     console.log(`membersRoom: tapped nav bar ${label}`);
     return;
   }
-  await tapByText(driver, label, timeout);
+  await tapMemberText(driver, label, timeout);
   console.log(`membersRoom: tapped ${label}`);
 }
 
@@ -274,6 +263,12 @@ async function tapRemoveMemberX(driver, memberName, timeout = DEFAULT_TIMEOUT) {
 }
 
 async function tapCloseEditModal(driver, timeout = DEFAULT_TIMEOUT) {
+  const roomHeader = await driver.$(SELECTORS.openRoomSettingsButton);
+  if (await roomHeader.isDisplayed().catch(() => false)) {
+    console.log('membersRoom: edit modal already closed; room header is visible');
+    return;
+  }
+
   const closeBtn = await driver.$(SELECTORS.closeButton);
   if (await closeBtn.isExisting().catch(() => false)) {
     await closeBtn.waitForDisplayed({ timeout });
@@ -282,19 +277,16 @@ async function tapCloseEditModal(driver, timeout = DEFAULT_TIMEOUT) {
     return;
   }
 
-  const clearBtn = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND (label == "" OR name == "")`
+  const backBtn = await driver.$(SELECTORS.backButton);
+  if (await backBtn.isDisplayed().catch(() => false)) {
+    await backBtn.click();
+    console.log(`membersRoom: tapped ${SELECTORS.backButton} to close edit modal`);
+    return;
+  }
+
+  throw new Error(
+    `membersRoom: edit modal exposes neither ${SELECTORS.closeButton} nor ${SELECTORS.backButton}`
   );
-  if (!(await clearBtn.isExisting().catch(() => false))) {
-    console.log('membersRoom: no remove control — skipping ');
-    return;
-  }
-  if (!(await clearBtn.isDisplayed().catch(() => false))) {
-    console.log('membersRoom:  not visible — skipping remove');
-    return;
-  }
-  await clearBtn.click();
-  console.log('membersRoom: tapped  remove control');
 }
 
 async function runTest(driver, options = {}) {

@@ -2,10 +2,18 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const {
+  ensureRoomsSectionReady,
+  goBack,
+  resetToHome,
+  runWithOptionalDriver,
+  waitForConversationRow,
+} = require('../utils/testSession');
+const { escapePredicateString: esc, getElementRect, pauseIfNeeded: pause } = require('../utils/uiActions');
+const { createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'removeRoom';
-const CANDIDATES = (process.env.REMOVE_ROOM_CANDIDATES || 'A-Public,B-Private')
+const CANDIDATES = (process.env.REMOVE_ROOM_CANDIDATES || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
@@ -13,19 +21,10 @@ const CANDIDATES = (process.env.REMOVE_ROOM_CANDIDATES || 'A-Public,B-Private')
 const WAIT_MS = Number.parseInt(process.env.REMOVE_ROOM_WAIT_TIMEOUT_MS, 10) || 30000;
 const POLL_MS = Number.parseInt(process.env.REMOVE_ROOM_POLL_MS, 10) || 400;
 
-function esc(s) {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-async function pause(driver, ms) {
-  if (ms > 0) await driver.pause(ms);
-}
-
 /** Row mid-Y for a horizontal swipe (getRect is unreliable on some WDIO elements). */
 async function rowMidY(el) {
-  const loc = await el.getLocation();
-  const size = await el.getSize();
-  return Math.round(loc.y + size.height / 2);
+  const rect = await getElementRect(el);
+  return Math.round(rect.y + rect.height / 2);
 }
 
 async function swipeLeftOnRow(driver, el) {
@@ -64,24 +63,10 @@ async function swipeLeftOnRow(driver, el) {
 
 /** First visible title matching any candidate substring; returns element + full title for XPath. */
 async function waitForTargetRow(driver, names) {
-  const parts = names.map(n => {
-    const q = esc(n);
-    return `(name CONTAINS[c] "${q}" OR label CONTAINS[c] "${q}")`;
+  return waitForConversationRow(driver, names, {
+    timeout: WAIT_MS,
+    pauseMs: POLL_MS,
   });
-  const title = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (${parts.join(' OR ')})`
-  );
-  const deadline = Date.now() + WAIT_MS;
-  while (Date.now() < deadline) {
-    if (await title.isDisplayed().catch(() => false)) {
-      const n = await title.getAttribute('name').catch(() => '');
-      const l = await title.getAttribute('label').catch(() => '');
-      const roomTitle = (n && String(n).trim()) || (l && String(l).trim()) || names[0];
-      return { el: title, roomTitle };
-    }
-    await driver.pause(POLL_MS);
-  }
-  throw new Error(`removeRoom: none of [${names.join(', ')}] visible within ${WAIT_MS}ms`);
 }
 
 async function tapRemoveBesideTitle(driver, roomTitle) {
@@ -112,6 +97,18 @@ async function waitUntilTitleGone(driver, roomTitle) {
   });
 }
 
+async function prepareTargetRoom(driver) {
+  if (CANDIDATES.length) return CANDIDATES;
+
+  const roomName = `E-RemoveRoom-${Math.random().toString(36).slice(2, 10)}`;
+  console.log(`removeRoom: creating isolated room "${roomName}"`);
+  await ensureRoomsSectionReady(driver);
+  await createPublicRoom(driver, roomName);
+  await goBack(driver, 500);
+  await ensureRoomsSectionReady(driver);
+  return [roomName];
+}
+
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
 
@@ -122,7 +119,8 @@ async function runTest(driver, options = {}) {
   await resetToHome(driver);
   await pause(driver, 450);
 
-  const { el, roomTitle } = await waitForTargetRow(driver, CANDIDATES);
+  const candidates = await prepareTargetRoom(driver);
+  const { el, roomTitle } = await waitForTargetRow(driver, candidates);
   console.log(`removeRoom: "${roomTitle}"`);
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe_left.png');

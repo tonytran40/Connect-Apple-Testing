@@ -4,15 +4,10 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
+const { boundedInt, tapByText } = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'ConversationList';
-
-function boundedInt(envVal, fallback, min, max) {
-  const n = parseInt(envVal, 10);
-  const v = Number.isFinite(n) ? n : fallback;
-  return Math.min(max, Math.max(min, v));
-}
 
 const SCROLL_TO_TEXT_MAX = boundedInt(process.env.CONVERSATION_SCROLL_MAX, 10, 4, 20);
 const SCROLL_STEP_PAUSE_MS = boundedInt(process.env.CONVERSATION_SCROLL_PAUSE_MS, 260, 120, 800);
@@ -48,31 +43,6 @@ async function scrollToText(driver, text, maxScrolls = SCROLL_TO_TEXT_MAX) {
     await driver.pause(SCROLL_STEP_PAUSE_MS);
   }
   throw new Error(`Could not find "${text}" after ${maxScrolls} scrolls`);
-}
-
-async function tapByText(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const safe = text.replace(/"/g, '\\"');
-  const textEl = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
-  );
-  if (await textEl.isExisting().catch(() => false)) {
-    await textEl.waitForDisplayed({ timeout });
-    await textEl.click();
-    return;
-  }
-  const parentButton = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeButton[1]`
-  );
-  if (await parentButton.isExisting().catch(() => false)) {
-    await parentButton.waitForDisplayed({ timeout });
-    await parentButton.click();
-    return;
-  }
-  const parentCell = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeCell[1]`
-  );
-  await parentCell.waitForDisplayed({ timeout });
-  await parentCell.click();
 }
 
 async function tapRadioLoose(driver, title, timeout = DEFAULT_TIMEOUT) {

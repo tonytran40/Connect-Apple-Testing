@@ -2,15 +2,20 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const {
+  runWithOptionalDriver,
+  resetToHome,
+  ensureRoomsSectionReady,
+  goBack,
+  waitForConversationRow,
+} = require('../utils/testSession');
 const { A11Y } = require('../utils/selectors');
+const { createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'markAsRead';
-const CANDIDATES = (
-  process.env.MARK_AS_READ_CANDIDATES ||
-  process.env.MARKDOWN_ROOM_NAME ||
-  'Message Room,Markdown room'
-)
+const CONFIGURED_CANDIDATES =
+  process.env.MARK_AS_READ_CANDIDATES || process.env.MARKDOWN_ROOM_NAME || '';
+const CANDIDATES = CONFIGURED_CANDIDATES
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
@@ -67,24 +72,10 @@ async function swipeRightOnRow(driver, el) {
 }
 
 async function waitForTargetRow(driver, names) {
-  const parts = names.map(n => {
-    const q = esc(n);
-    return `(name CONTAINS[c] "${q}" OR label CONTAINS[c] "${q}")`;
+  return waitForConversationRow(driver, names, {
+    timeout: WAIT_MS,
+    pauseMs: POLL_MS,
   });
-  const title = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (${parts.join(' OR ')})`
-  );
-  const deadline = Date.now() + WAIT_MS;
-  while (Date.now() < deadline) {
-    if (await title.isDisplayed().catch(() => false)) {
-      const n = await title.getAttribute('name').catch(() => '');
-      const l = await title.getAttribute('label').catch(() => '');
-      const roomTitle = (n && String(n).trim()) || (l && String(l).trim()) || names[0];
-      return { el: title, roomTitle };
-    }
-    await driver.pause(POLL_MS);
-  }
-  throw new Error(`markAsRead: none of [${names.join(', ')}] visible within ${WAIT_MS}ms`);
 }
 
 async function tapMarkAsUnreadBesideTitle(driver, roomTitle) {
@@ -99,6 +90,24 @@ async function tapMarkAsUnreadBesideTitle(driver, roomTitle) {
   await btn.click();
 }
 
+function isolatedRoomName() {
+  return `M-MarkAsRead-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+async function prepareTargetRoom(driver) {
+  if (CANDIDATES.length) {
+    return CANDIDATES;
+  }
+
+  const roomName = isolatedRoomName();
+  console.log(`markAsRead: creating isolated room "${roomName}"`);
+  await ensureRoomsSectionReady(driver);
+  await createPublicRoom(driver, roomName);
+  await goBack(driver, 500);
+  await ensureRoomsSectionReady(driver);
+  return [roomName];
+}
+
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
 
@@ -109,7 +118,8 @@ async function runTest(driver, options = {}) {
   await resetToHome(driver);
   await pause(driver, 450);
 
-  const target = await waitForTargetRow(driver, CANDIDATES);
+  const candidates = await prepareTargetRoom(driver);
+  const target = await waitForTargetRow(driver, candidates);
   console.log(`markAsRead: "${target.roomTitle}"`);
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe_right.png');
@@ -120,7 +130,7 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '03_after_mark_unread.png');
 
   // Toggle back to read (same button after second swipe).
-  const again = await waitForTargetRow(driver, CANDIDATES);
+  const again = await waitForTargetRow(driver, candidates);
   await pause(driver, 400);
   await swipeRightOnRow(driver, again.el);
   await pause(driver, 200);

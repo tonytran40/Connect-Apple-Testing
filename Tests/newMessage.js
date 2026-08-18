@@ -4,11 +4,12 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
+const { escapePredicateString, typeComposerMessage } = require('../utils/uiActions');
 
 const TEST_NAME = 'newMessage';
 
 async function tapSearchResultByText(driver, text, timeout = 20000) {
-  const safe = text.replace(/"/g, '\\"');
+  const safe = escapePredicateString(text);
 
   const buttonEl = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
@@ -53,47 +54,6 @@ async function tapSearchResultByText(driver, text, timeout = 20000) {
   );
   await anyEl.waitForDisplayed({ timeout });
   await anyEl.click();
-  return;
-
-  throw new Error(`Could not tap search result for "${text}"`);
-}
-
-async function typeComposerMessage(driver, message, timeout = 20000) {
-  const byId = await driver.$(SELECTORS.roomComposerTextView);
-  const legacyById = await driver.$(SELECTORS.messageComposerTextView);
-  const composer = await byId.isExisting().catch(() => false) ? byId : legacyById;
-  if (await composer.isExisting().catch(() => false)) {
-    await composer.waitForDisplayed({ timeout });
-    await composer.click();
-    await composer.setValue(message);
-    console.log('Typed message by accessibility id');
-    return;
-  }
-
-  const placeholder = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
-     (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
-      label CONTAINS "Message" OR name CONTAINS "Message")`
-  );
-
-  if (await placeholder.isExisting().catch(() => false)) {
-    await placeholder.waitForDisplayed({ timeout });
-    await placeholder.click();
-    await driver.pause(300);
-  }
-
-  const textViews = await driver.$$('//XCUIElementTypeTextView');
-  for (const tv of textViews) {
-    if (await tv.isDisplayed().catch(() => false)) {
-      await tv.click();
-      await driver.pause(150);
-      await tv.setValue(message);
-      console.log('Typed message in composer');
-      return;
-    }
-  }
-
-  throw new Error('Could not find message composer TextView');
 }
 
 async function runTest(driver, options = {}) {

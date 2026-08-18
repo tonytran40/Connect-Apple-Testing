@@ -5,8 +5,18 @@ const fs = require('fs');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
-const { runWithOptionalDriver, ensureRoomsSectionReady } = require('../utils/testSession');
-const { SELECTORS, PREDICATES } = require('../utils/selectors');
+const {
+  runWithOptionalDriver,
+  ensureRoomsSectionReady,
+  waitForConversationRow,
+} = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
+const {
+  escapePredicateString,
+  openRoomsPlusMenu: tapRoomsPlusMenu,
+  tapByText,
+  typeComposerMessage,
+} = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'CreateRoom';
@@ -30,42 +40,6 @@ async function tapBackButton(driver, timeout = DEFAULT_TIMEOUT) {
     x: Math.round(win.width * 0.055),
     y: Math.round(win.height * 0.09),
   });
-}
-
-async function typeComposerMessage(driver, message, timeout = DEFAULT_TIMEOUT) {
-  const byId = await driver.$(SELECTORS.messageComposerTextView);
-  if (await byId.isExisting().catch(() => false)) {
-    await byId.waitForDisplayed({ timeout });
-    await byId.click();
-    await byId.setValue(message);
-    console.log('Typed message by accessibility id');
-    return;
-  }
-
-  const placeholder = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
-     (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
-      label CONTAINS "Message" OR name CONTAINS "Message")`
-  );
-
-  if (await placeholder.isExisting().catch(() => false)) {
-    await placeholder.waitForDisplayed({ timeout });
-    await placeholder.click();
-    await driver.pause(300);
-  }
-
-  const textViews = await driver.$$('//XCUIElementTypeTextView');
-  for (const tv of textViews) {
-    if (await tv.isDisplayed().catch(() => false)) {
-      await tv.click();
-      await driver.pause(150);
-      await tv.setValue(message);
-      console.log('Typed message in composer');
-      return;
-    }
-  }
-
-  throw new Error('Could not find message composer TextView');
 }
 
 function artifactsPath(fileName) {
@@ -108,19 +82,6 @@ function generateRandomMessage(prefix = 'Message test') {
   return `${prefix} - ${rand}`;
 }
 
-function escapePredicateString(value) {
-  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-async function tapByText(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const safe = escapePredicateString(text);
-  const el = await driver.$(
-    `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "${safe}" OR name == "${safe}")`
-  );
-  await el.waitForDisplayed({ timeout });
-  await el.click();
-}
-
 async function isConversationTitleVisible(driver, roomName, timeout = 1200) {
   const safe = escapePredicateString(roomName);
   const title = await driver.$(
@@ -137,7 +98,11 @@ async function isRoomConversationOpen(driver, roomName, timeout = 1200) {
 
 async function openRoomFromRoomsList(driver, roomName, timeout = DEFAULT_TIMEOUT) {
   await ensureRoomsSectionReady(driver);
-  await tapByText(driver, roomName, timeout);
+  const { el: roomTitle } = await waitForConversationRow(driver, roomName, {
+    exact: true,
+    timeout,
+  });
+  await roomTitle.click();
 
   if (!(await isRoomConversationOpen(driver, roomName, timeout))) {
     throw new Error(`Created room "${roomName}" did not open from the Rooms list`);
@@ -155,17 +120,7 @@ async function ensureCreatedRoomOpen(driver, roomName, timeout = DEFAULT_TIMEOUT
 
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
   await ensureRoomsSectionReady(driver);
-
-  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
-  await roomsHeader.waitForDisplayed({ timeout });
-
-  const headerLocation = await roomsHeader.getLocation();
-  const headerSize = await roomsHeader.getSize();
-  const windowRect = await driver.getWindowRect();
-  await driver.execute('mobile: tap', {
-    x: Math.min(windowRect.width - 20, Math.round(headerLocation.x + headerSize.width + 8)),
-    y: Math.round(headerLocation.y + headerSize.height / 2),
-  });
+  await tapRoomsPlusMenu(driver, timeout);
   console.log('Clicked Rooms plus');
 }
 

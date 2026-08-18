@@ -16,7 +16,7 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 | **Settings** | Conversation layout & sort (`ConversationList.js`); sign out (`Login_Signout.js`) |
 | **Suite** | One session, shared login, markdown report (`Tests/runAll.js`) |
 
-**Not in scope:** unit tests, pixel-perfect visual diff, load/performance benchmarks.
+**Not in scope:** Connect app unit tests, pixel-perfect visual diff, load/performance benchmarks. This automation framework does include lightweight unit and syntax checks for its own runner/reporting code.
 
 ---
 
@@ -34,7 +34,7 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 ## Prerequisites
 
 - **macOS** with **Xcode** and an iOS **Simulator** installed
-- **Node.js** (LTS recommended) and **npm**
+- **Node.js 20+** and **npm**
 - **Appium** globally or via `npx`
 - **Connect iOS** debug app installed on the simulator (`com.powerhrg.connect.v3.debug`)
 - Local **localhost** backend available when login runs (tests select **localhost** in the server picker)
@@ -45,7 +45,7 @@ Check simulators:
 xcrun simctl list devices available
 ```
 
-The default driver targets **`iPhone 17 Pro`** (see `Login_Flow/Open_App.js`). Use a simulator that matches that name, or update `appium:deviceName` (and optionally `appium:udid`) in `Open_App.js`.
+The default driver targets **`iPhone 17 Pro`** (see `Login_Flow/Open_App.js`). Split runs discover distinct available simulators by their configured device names, preferring already-booted devices. Explicit UDIDs remain available as overrides but are no longer required for each machine.
 
 ---
 
@@ -88,6 +88,14 @@ Connect_password=yourpassword
 
 Other variables tune suite speed, room names, screenshots, etc. See `.env.example` for comments.
 
+After the three Appium servers are running, validate the local setup with:
+
+```bash
+npm run doctor
+```
+
+The doctor reports the simulator selected for each lane, whether Connect is installed, Appium port health, and login credential availability.
+
 **Login flow:** If the app is already logged in (`loginView` absent), tests skip login. With `appium:noReset: true`, session state persists across runs. After submitting login, the helper waits for the conversation list and fails fast if the app shows a login error like `There was an issue logging in`.
 
 ### 5. Start Appium (separate terminal)
@@ -122,10 +130,11 @@ npm run test:suite
 
 1. `CreateRoom` — public and private room creation  
 2. `PinnedMessageEditFlow` — pin, edit, unpin  
-3. `markdowns` — markdown / emoji in composer  
-4. `ConversationList` — layout and sort in user settings  
-5. `newMessage` — new direct message, intentionally late because it can leave the app in a DM  
-6. `Login_Signout` — sign out  
+3. `Reactions` — add and remove message reactions
+4. `markdowns` — markdown / emoji in composer
+5. `ConversationList` — layout and sort in user settings
+6. `newMessage` — new direct message, intentionally late because it can leave the app in a DM
+7. `Login_Signout` — sign out
 
 Report: `reports/latest-suite-report.md` (pass/fail, durations, options).
 
@@ -168,12 +177,13 @@ Useful knobs:
 | `PARALLEL_TESTS` | Comma-separated test names, or `all` for standalone candidates |
 | `PARALLEL_WORKERS` | Number of worker lanes to use |
 | `PARALLEL_DEVICE_NAMES` | Simulator names, one per lane |
-| `PARALLEL_UDIDS` | Simulator UDIDs, one per lane |
+| `PARALLEL_UDIDS` | Optional simulator UDID overrides; split runs discover devices by name when omitted |
 | `PARALLEL_APPIUM_PORTS` | Appium server ports, one per lane |
 | `WDA_LOCAL_PORT` | Base WDA port; each worker increments from this |
 | `PARALLEL_RUN_ID` | Report/screenshot run folder name |
 | `PARALLEL_DRY_RUN=1` | Validate runner selection/reporting without launching tests |
-| `PARALLEL_LOGIN_ONCE_PER_WORKER=1` | First test per worker checks login; later tests skip it |
+| `PARALLEL_LOGIN_ONCE_PER_WORKER=1` | Legacy child-process mode checks login once per worker |
+| `PARALLEL_REUSE_DRIVER=1` | Reuse one Appium session and login across all tests in a one-worker lane (default) |
 
 Reports are written under `reports/runs/{runId}/summary.md` and `reports/runs/{runId}/summary.json`; worker logs are under `reports/runs/{runId}/logs/`. Screenshots for parallel runs are namespaced under `screenshots/{runId}/`.
 
@@ -193,10 +203,10 @@ Recommended terminal layout:
 
 The shortcut uses these default lanes:
 
-| Group | Simulator | UDID | Appium | WDA |
-|-------|-----------|------|--------|-----|
-| `main-suite` | iPhone 17 Pro | `A848480F-1933-47A5-B063-DB070BB3AC66` | `4723` | `8100` |
-| `standalones` | iPhone 17 Pro Max | `B5A3CFF9-F618-411B-91FC-92C8FDD0D069` | `4725` | `8200` |
+| Group | Simulator | Appium | WDA |
+|-------|-----------|--------|-----|
+| `main-suite` | iPhone 17 Pro | `4723` | `8100` |
+| `standalones` | iPhone 17 Pro Max | `4725` | `8200` |
 
 Run both groups with:
 
@@ -208,21 +218,21 @@ This launches `main-suite` on the iPhone 17 Pro lane and `standalones` on the iP
 
 Set `SPLIT_COMBINED_RUN_ID=some-name` if you want the merged report written to a different `reports/runs/{runId}/` folder.
 
-Split parallel defaults to one login check per lane: the first test on each simulator waits for Connect to reach either the login screen or conversation list, runs `ensureLoggedIn` when needed, then later tests on that same lane skip the login check and go straight to the conversation list reset. If you want the older behavior, run with `SPLIT_LOGIN_ONCE_PER_LANE=0`.
+Split parallel creates one Appium session per lane, logs in once, and reuses that driver for the lane's tests. Each test still resets to the conversation list first. If a failure damages the session, the runner recreates and logs in that lane before continuing, preventing one failure from automatically failing everything after it. Set `PARALLEL_REUSE_DRIVER=0` only when debugging the older child-process-per-test behavior. The split runner staggers initial WDA session requests by 6 seconds per lane (`SPLIT_SESSION_STAGGER_MS=6000`) to avoid three simultaneous WDA startups overwhelming a 16 GB Mac; set it to `0` on a runner proven to handle concurrent startup.
 
-`npm run test:parallel:split3:publish` additionally performs a login preflight before any test starts. It signs in and verifies the Connect home screen on all simulators concurrently, then launches the three test lanes. Each test still performs its normal conversation-list reset. This makes logged-out publish runs fail at a clear login step instead of failing inside the first feature test.
+`SPLIT_LOGIN_PREFLIGHT=1` is an optional extra diagnostic that verifies login in separate sessions before the lane sessions start. It is off by default because lane startup already performs the same login check. Lane startup polls for Connect for up to `APP_ENTRY_TIMEOUT_MS` (30 seconds by default), so warm launches proceed immediately while slower CI machines can raise the ceiling without adding fixed sleeps to each test. A submitted login can hydrate for up to `LOGIN_SUCCESS_TIMEOUT_MS` (60 seconds by default). If Connect restores an unfinished modal or room-creation flow, startup recovery begins after `APP_ENTRY_RECOVERY_MS` (4 seconds by default) and returns the lane to the conversation list.
 
 ### Three-simulator split experiment
 
 Use this when you want to spread the suite across three simulators. The grouping separates conversation list tests from conversation view tests so each lane has a clearer purpose.
 
-Before a cold run, prepare all three simulators one at a time:
+Before a cold run, prepare all three simulators:
 
 ```bash
 npm run sims:ready
 ```
 
-This boots a simulator, waits for it to be fully ready, opens Connect, then starts the next lane. It avoids three cold simulator/app launches competing for CoreSimulator resources. Connect launch is retried for up to 45 seconds because CoreSimulator can briefly reject an app immediately after boot. It leaves the simulators running and does not start the three Appium servers. Set `SIMULATOR_BOOT_LAUNCH_APP=0` to skip opening Connect, `SIMULATOR_BOOT_OPEN_UI=1` to bring the Simulator windows forward, `SIMULATOR_APP_LAUNCH_TIMEOUT_MS` to change the 45-second launch window, or `SIMULATOR_APP_LAUNCH_RETRY_MS` to change the 1.5-second retry interval.
+This boots one simulator at a time and opens Connect before starting the next lane. It is slower than overlapping cold boots but is the most stable option for CoreSimulator on this machine. The script checks CoreSimulatorService before it starts and stops after a 90-second per-lane boot timeout instead of waiting forever. Connect launch is retried for up to 45 seconds because CoreSimulator can briefly reject an app immediately after boot. It leaves the simulators running and does not start the three Appium servers. Set `SIMULATOR_BOOT_CONCURRENCY=2` only on a machine with enough memory to overlap two boots, `SIMULATOR_BOOT_TIMEOUT_MS` to change the 90-second boot window, `SIMULATOR_BOOT_LAUNCH_APP=0` to skip opening Connect, `SIMULATOR_BOOT_OPEN_UI=1` to bring the Simulator windows forward, `SIMULATOR_APP_LAUNCH_TIMEOUT_MS` to change the 45-second launch window, or `SIMULATOR_APP_LAUNCH_RETRY_MS` to change the 1.5-second retry interval.
 
 Recommended terminal layout:
 
@@ -235,11 +245,12 @@ Recommended terminal layout:
 
 Default three-lane split:
 
-| Group | Simulator | UDID | Appium | WDA | Tests |
-|-------|-----------|------|--------|-----|-------|
-| `main-suite` | iPhone 17 Pro | `A848480F-1933-47A5-B063-DB070BB3AC66` | `4723` | `8100` | `CreateRoom`, `newMessage` |
-| `Conversation-List` | iPhone 17 Pro Max | `B5A3CFF9-F618-411B-91FC-92C8FDD0D069` | `4725` | `8200` | `ConversationList`, `favoriteRoom`, `markAsRead`, `notifications`, `removeRoom` |
-| `ConversationView` | iPhone 17 | `0244243B-055B-4FAE-8AF8-61FC1486248C` | `4727` | `8300` | `PinnedMessageEditFlow`, `Reactions`, `markdowns`, `attachments`, `editRoom`, `membersRoom` |
+| Group | Simulator | Appium | WDA | Tests |
+|-------|-----------|--------|-----|-------|
+| `main-suite` | iPhone 17 Pro | `4723` | `8100` | `CreateRoom`, `newMessage` |
+| `Conversation-List` | iPhone 17 Pro Max | `4725` | `8200` | `favoriteRoom`, `markAsRead`, `notifications`, `removeRoom` |
+| `ConversationView` | iPhone 17 | `4727` | `8300` | `PinnedMessageEditFlow`, `Reactions`, `markdowns`, `attachments`, `editRoom`, `membersRoom` |
+| Exclusive settings phase | iPhone 17 Pro Max | `4725` | `8200` | `ConversationList` after all concurrent feature lanes finish |
 
 Run all three groups with:
 
@@ -261,10 +272,16 @@ appium --port 4725
 appium --port 4727
 ```
 
-If the third simulator was just created or has an older app build, install the same debug app on it before running:
+The runner resolves each simulator UDID from these names. To verify the mapping, app installation, credentials, and Appium ports before a run:
 
 ```bash
-xcrun simctl install 0244243B-055B-4FAE-8AF8-61FC1486248C \
+npm run doctor
+```
+
+If a simulator was just created or has an older app build, install the same debug app on it before running. Find its UDID with `xcrun simctl list devices available`, then run:
+
+```bash
+xcrun simctl install <simulator-udid> \
 "/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app"
 ```
 
@@ -279,30 +296,30 @@ npm run test:parallel:split3
 Important: each simulator has its own installed copy of the app. Appium launches the existing `com.powerhrg.connect.v3.debug` app because the driver uses `bundleId` with `noReset: true`; it does not automatically install the latest Xcode build. If one simulator looks like an older app version, update that simulator's installed app from a normal terminal tab, not from an Appium tab:
 
 ```bash
-xcrun simctl install B5A3CFF9-F618-411B-91FC-92C8FDD0D069 \
+xcrun simctl install <simulator-udid> \
 "/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app"
 ```
 
 If it still looks stale, uninstall and reinstall:
 
 ```bash
-xcrun simctl uninstall B5A3CFF9-F618-411B-91FC-92C8FDD0D069 com.powerhrg.connect.v3.debug
+xcrun simctl uninstall <simulator-udid> com.powerhrg.connect.v3.debug
 
-xcrun simctl install B5A3CFF9-F618-411B-91FC-92C8FDD0D069 \
+xcrun simctl install <simulator-udid> \
 "/Users/tony.tran/Library/Developer/Xcode/DerivedData/Connect-avitsdrqdscjvxbysyyzqofypfnh/Build/Products/Debug-iphonesimulator/Connect iOS.app"
 ```
 
 You can verify which app bundle is installed on a simulator with:
 
 ```bash
-xcrun simctl get_app_container B5A3CFF9-F618-411B-91FC-92C8FDD0D069 com.powerhrg.connect.v3.debug app
+xcrun simctl get_app_container <simulator-udid> com.powerhrg.connect.v3.debug app
 ```
 
-Each parallel test is launched through `Tests/runSingle.js`, which creates its own driver session, logs in if needed, resets back to the conversation list, and then runs the requested test. True simultaneous execution still needs separate simulator/Appium lanes; one simulator should only be driven by one worker at a time.
+Each split lane normally holds one reusable driver session for its whole test list. True simultaneous execution still needs separate simulator/Appium lanes; one simulator should only be driven by one lane at a time. The layout/sort test runs afterward as an exclusive phase because those account-wide settings can reorder another simulator's list while it is trying to locate test data.
 
 ### Scribe-style documentation
 
-Every report-aware test command now generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Each run also archives a timestamped copy for report history.
+Every report-aware test command generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Timestamped local history is opt-in with `SCRIBE_ARCHIVE_ENABLED=1`; archived output is ignored by Git so repeated runs do not inflate repository history.
 
 Use one command for any individual test:
 
@@ -355,7 +372,9 @@ To run the three-simulator split and publish the GitHub Pages report in one comm
 npm run test:parallel:split3:publish
 ```
 
-That command runs the tests, generates the latest report and archived copy, commits the Pages files, and pushes to GitHub. It still publishes the report when tests fail, so the shared page shows the failure details. Use `PUBLISH_REPORT_SKIP_PUSH=1 npm run test:parallel:split3:publish` if you want to test the publish flow locally without pushing.
+That command runs the tests, generates the latest report, stages only the current Pages report, commits it, and pushes to GitHub. It still publishes when tests fail so the shared page shows the failure details. It refuses to start when unrelated changes are staged or when a Pages target already has local edits, preventing user work from entering the automated report commit. Use `PUBLISH_REPORT_SKIP_PUSH=1 npm run test:parallel:split3:publish` to exercise the flow locally without pushing.
+
+`markdowns` creates a unique `A-Markdown Room-*` by default so repeated and parallel runs do not share timeline data. Set `MARKDOWN_ROOM_NAME` only when you intentionally want to exercise an existing fixture room.
 
 To share the report with coworkers through GitHub Pages, commit and push the generated `docs/` output. GitHub Pages can publish that folder directly from `main`.
 
@@ -443,26 +462,26 @@ These follow the same login + home pattern but are run individually today.
 
 ### `favoriteRoom.js`
 
-- Finds a row whose title contains `FAVORITE_ROOM_NAME` (default **Favorite Room**), scrolls the list if needed.
+- Creates a unique `A-Favorite Room-*` by default, or uses the existing room supplied through `FAVORITE_ROOM_NAME`, then scrolls to its row if needed.
 - **Swipe right** → tap `favoritesButton` (heart) → swipe again → tap to **unfavorite**.
 - Screenshots under `screenshots/favoriteRoom/`.
 
 ### `markAsRead.js`
 
-- Finds a row whose title **contains** any of `MARK_AS_READ_CANDIDATES` (default **Message Room**, **Markdown room**).
+- Creates and targets its own unique `M-MarkAsRead-*` room by default, avoiding shared-room interference with other lanes. Set `MARK_AS_READ_CANDIDATES` only when intentionally targeting existing data.
 - **Swipe right** → tap `markAsUnreadButton` (`label` **message-dot**) via XPath anchored to the full row title.
 - Swipes and taps again to toggle back to read.
 - Screenshots under `screenshots/markAsRead/`.
 
 ### `removeRoom.js`
 
-- Finds the first visible row whose title **contains** `A-Public` or `B-Private` (`REMOVE_ROOM_CANDIDATES`, comma-separated).
+- Creates and removes its own unique `E-RemoveRoom-*` room by default, avoiding deletion of rooms created by concurrent lanes. Set `REMOVE_ROOM_CANDIDATES` only to target existing data intentionally.
 - Resolves the **full** row title (e.g. `A-Public Room-abc123`) for reliable XPath.
 - **Swipe left** → tap clear button (`name` / `label` ****) → waits until that title disappears.
 - Uses `getLocation` + `getSize` for swipe Y (WebdriverIO `getRect` is unreliable on some elements).
 - Screenshots under `screenshots/removeRoom/`.
 
-**Typical manual flow:** run `CreateRoom` (or have `A-Public` / `B-Private` rooms on screen) → `removeRoom` to clean up.
+Set `REMOVE_ROOM_CANDIDATES` only for a deliberate cleanup check against pre-existing data; the normal test is self-contained.
 
 ### `removeAllrooms.js`
 
@@ -516,7 +535,7 @@ Connect-Apple-Testing/
 ├── Tests/
 │   ├── runAll.js            # Suite runner + report
 │   ├── runParallel.js       # Parallel lane runner + per-run reports
-│   ├── runSplitParallel.js  # Two-simulator split runner + combined report
+│   ├── runSplitParallel.js  # Two/three-simulator split runner + combined report
 │   ├── runSingle.js         # Runs one test inside a parallel worker
 │   ├── CreateRoom.js
 │   ├── newMessage.js
@@ -537,12 +556,19 @@ Connect-Apple-Testing/
 ├── utils/
 │   ├── testSession.js       # resetToHome, scroll helpers, runWithOptionalDriver
 │   ├── selectors.js         # shared accessibility IDs and common predicates
+│   ├── simulatorConfig.js   # simulator discovery and lane assignment
+│   ├── uiActions.js         # shared text taps, room menu, composer actions
 │   ├── attachmentPhotoPicker.js
 │   ├── screenshots.js
 │   ├── reportWriter.js
 │   └── cliTestTiming.js
 ├── screenshots/             # per-test artifacts (gitignored)
 ├── reports/                 # suite markdown reports
+├── scripts/
+│   ├── doctor.js            # environment and lane diagnostics
+│   ├── checkSyntax.js       # framework JavaScript syntax check
+│   └── report/              # report formatting and analysis modules
+├── unit/                    # runner/reporting unit tests
 ├── .env.example
 ├── test.js                  # npm run test:ios — launch smoke
 └── package.json
@@ -584,17 +610,22 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | Script | Command |
 |--------|---------|
 | `npm run appium` | Start Appium via local `node_modules` binary |
+| `npm run doctor` | Check simulator discovery, app installs, credentials, and Appium ports |
+| `npm run check` | Syntax-check framework JavaScript |
+| `npm run lint` | Run focused ESLint correctness checks and unused-code warnings |
+| `npm test` | Run framework unit tests |
+| `npm run validate` | Run syntax checks, ESLint, and framework unit tests |
 | `npm run test:ios` | Launch app + `connect-launch.png` |
 | `npm run test:suite` | Full `runAll.js` suite |
 | `npm run test:suite:full` | Alias for full `runAll.js` suite |
 | `npm run test:suite:fast` | Reduced suite |
 | `npm run test:suite:turbo` | Reduced suite with screenshots disabled |
-| `npm run sims:ready` | Boot all three split simulators in parallel and pre-open Connect |
+| `npm run sims:ready` | Discover and boot the three split simulators one at a time, pre-opening Connect |
 | `npm run test:one -- <testName>` | Run one test and generate its browser report |
 | `npm run test:parallel` | Parallel runner for one or more simulator lanes, then generate its report |
 | `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes, then generate its report |
 | `npm run test:parallel:split3` | Run the three-simulator split, then generate its report |
-| `npm run test:parallel:split3:publish` | Run the three-simulator split, generate the report archive, commit Pages files, and push |
+| `npm run test:parallel:split3:publish` | Run the three-simulator split, commit only the current Pages report, and push |
 | `npm run test:time` | Timing helper test |
 | `npm run test:notifications` | Push simulator notification, verify app re-entry, and generate a report |
 | `npm run test:members-room` | Create room, exercise Members edit flow, and generate a report |
@@ -607,8 +638,9 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 
 ## CI / future work
 
-- Today: local simulator, sequential tests, one session per suite run.
-- Planned: GitHub Actions, parallel jobs, JUnit/Allure export if needed.
+- GitHub Actions runs `npm run validate` on pushes and pull requests, covering framework syntax and unit-tested runner/report helpers without requiring a macOS simulator.
+- Full UI CI still requires macOS runners with Xcode, the Connect app artifact, three simulator definitions, Appium/XCUITest, credentials, and access to the localhost test backend.
+- Split execution reuses one Appium session per lane and emits Markdown/JSON/browser reports. JUnit or Allure export remains a future option if CI consumers need native test-result ingestion.
 
 ---
 

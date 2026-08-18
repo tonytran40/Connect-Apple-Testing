@@ -35,10 +35,6 @@ function debugLog(location, message, data = {}, hypothesisId = '') {
   }).catch(() => {});
 }
 
-function esc(s) {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
 async function pause(driver, ms) {
   if (ms > 0) await driver.pause(ms);
 }

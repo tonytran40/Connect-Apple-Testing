@@ -9,9 +9,11 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
+const { getElementRect } = require('../utils/uiActions');
 
 const TEST_NAME = 'notifications';
-const DEFAULT_TIMEOUT = Number.parseInt(process.env.NOTIFICATION_WAIT_TIMEOUT_MS, 10) || 15000;
+const DEFAULT_TIMEOUT = Number.parseInt(process.env.NOTIFICATION_WAIT_TIMEOUT_MS, 10) || 30000;
+const BANNER_TIMEOUT = Number.parseInt(process.env.NOTIFICATION_BANNER_TIMEOUT_MS, 10) || 6000;
 const BUNDLE_ID = process.env.CONNECT_BUNDLE_ID || 'com.powerhrg.connect.v3.debug';
 const SIM_UDID = process.env.SIMULATOR_UDID || 'booted';
 
@@ -103,29 +105,39 @@ async function tapNotificationBanner(driver, title, body) {
   const safeBody = esc(body);
 
   const selectors = [
+    '-ios predicate string:type == "XCUIElementTypeButton" AND name == "ShortLook.Platter.Content.Seamless"',
     `-ios predicate string:(label CONTAINS "${safeBody}" OR name CONTAINS "${safeBody}")`,
     `-ios predicate string:(label CONTAINS "${safeTitle}" OR name CONTAINS "${safeTitle}")`,
   ];
 
-  for (const selector of selectors) {
-    const el = await driver.$(selector);
-    if (await el.isDisplayed().catch(() => false)) {
-      await el.click();
-      console.log('notifications: tapped notification banner by text');
-      return true;
+  const deadline = Date.now() + BANNER_TIMEOUT;
+  while (Date.now() < deadline) {
+    for (const selector of selectors) {
+      const el = await driver.$(selector);
+      if (await el.isDisplayed().catch(() => false)) {
+        if (selector.includes('ShortLook.Platter.Content.Seamless')) {
+          await el.click();
+          console.log('notifications: tapped native notification button');
+        } else {
+          const rect = await getElementRect(el);
+          await driver.execute('mobile: tap', {
+            x: Math.round(rect.x + rect.width / 2),
+            y: Math.round(rect.y + rect.height / 2),
+          });
+          console.log('notifications: tapped notification banner center by text');
+        }
+        return true;
+      }
     }
+    await pause(driver, 200);
   }
 
-  const win = await driver.getWindowRect();
-  const x = Math.round(win.width / 2);
-  const y = Math.max(24, Math.round(win.height * 0.06));
-  await driver.execute('mobile: tap', { x, y });
-  console.log(`notifications: tapped notification banner via coordinates (${x}, ${y})`);
-  return true;
+  throw new Error(`notifications: notification banner was not visible within ${BANNER_TIMEOUT}ms`);
 }
 
 async function waitForInAppAfterNotification(driver, hints = [], timeout = DEFAULT_TIMEOUT) {
   const checks = [
+    SELECTORS.mainAppView,
     SELECTORS.openRoomSettingsButton,
     SELECTORS.sendMessageButton,
     SELECTORS.peoplePlusButton,

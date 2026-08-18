@@ -10,3 +10,6 @@ reports/runs/
 
 # Exception: allow documentation images
 !docs/**/*.png
+
+# Local report history can contain many duplicate screenshots. Publish only the stable latest report.
+docs/generated/scribe/archive/

@@ -4,6 +4,8 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const { runWithOptionalDriver } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
+const { tapByText, typeComposerMessage } = require('../utils/uiActions');
+const { createPublicRoom, generateRoomName } = require('./CreateRoom');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'markdowns';
@@ -48,37 +50,6 @@ function selectMarkdownExamples(all) {
   return picked;
 }
 
-async function tapByText(driver, text, timeout = 20000) {
-  const safe = text.replace(/"/g, '\\"');
-
-  const textEl = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
-  );
-
-  if (await textEl.isExisting().catch(() => false)) {
-    await textEl.waitForDisplayed({ timeout });
-    await textEl.click();
-    return;
-  }
-
-  const parentButton = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeButton[1]`
-  );
-
-  if (await parentButton.isExisting().catch(() => false)) {
-    await parentButton.waitForDisplayed({ timeout });
-    await parentButton.click();
-    return;
-  }
-
-  const parentCell = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeCell[1]`
-  );
-
-  await parentCell.waitForDisplayed({ timeout });
-  await parentCell.click();
-}
-
 async function openRoomWhenReady(driver, roomName) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < MARKDOWN_ROOM_WAIT_TIMEOUT_MS) {
@@ -93,57 +64,6 @@ async function openRoomWhenReady(driver, roomName) {
     `Room "${roomName}" was not visible after ${MARKDOWN_ROOM_WAIT_TIMEOUT_MS}ms. ` +
       'Try increasing MARKDOWN_ROOM_WAIT_TIMEOUT_MS for slower standalone login loads.'
   );
-}
-
-async function typeComposerMessage(driver, message, timeout = 20000) {
-  const setComposerValue = async el => {
-    try {
-      await el.setValue(message);
-      return true;
-    } catch {
-      // Composer focus can race with iOS keyboard animation; retry quickly instead of fixed waits.
-      await el.waitForDisplayed({ timeout: 1200 });
-      await el.click();
-      await el.setValue(message);
-      return true;
-    }
-  };
-
-  const byId = await driver.$(SELECTORS.roomComposerTextView);
-  if (await byId.isExisting().catch(() => false)) {
-    await byId.waitForDisplayed({ timeout });
-    await byId.click();
-    await setComposerValue(byId);
-    return;
-  }
-
-  const placeholder = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND 
-     (label CONTAINS "Start a new message" OR name CONTAINS "Start a new message" OR
-      label CONTAINS "Message" OR name CONTAINS "Message")`
-  );
-
-  if (await placeholder.isExisting().catch(() => false)) {
-    await placeholder.waitForDisplayed({ timeout });
-    await placeholder.click();
-    if (TYPE_PLACEHOLDER_PAUSE_MS > 0) {
-      await driver.pause(TYPE_PLACEHOLDER_PAUSE_MS);
-    }
-  }
-
-  const textViews = await driver.$$('//XCUIElementTypeTextView');
-  for (const tv of textViews) {
-    if (await tv.isDisplayed().catch(() => false)) {
-      await tv.click();
-      if (TYPE_TEXTVIEW_PAUSE_MS > 0) {
-        await driver.pause(TYPE_TEXTVIEW_PAUSE_MS);
-      }
-      await setComposerValue(tv);
-      return;
-    }
-  }
-
-  throw new Error('Could not find message composer TextView');
 }
 
 async function sendMessage(driver, timeout = DEFAULT_TIMEOUT) {
@@ -362,19 +282,28 @@ const MARKDOWN_EXAMPLES = [
 
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
-  const roomName = process.env.MARKDOWN_ROOM_NAME || 'Message Room';
+  const configuredRoomName = process.env.MARKDOWN_ROOM_NAME || '';
+  const roomName = configuredRoomName || generateRoomName('Markdown', 'A');
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
   }
-  await openRoomWhenReady(driver, roomName);
+  if (configuredRoomName) {
+    await openRoomWhenReady(driver, roomName);
+  } else {
+    console.log(`markdowns: creating isolated room "${roomName}"`);
+    await createPublicRoom(driver, roomName);
+  }
   await saveScreenshot(driver, TEST_NAME, '01_room_opened.png');
 
   for (const example of selectMarkdownExamples(MARKDOWN_EXAMPLES)) {
     if (example.useEmojiKeyboard) {
       await tapEmojiKeyboard(driver, DEFAULT_TIMEOUT);
     }
-    await typeComposerMessage(driver, example.text, DEFAULT_TIMEOUT);
+    await typeComposerMessage(driver, example.text, DEFAULT_TIMEOUT, {
+      placeholderPauseMs: TYPE_PLACEHOLDER_PAUSE_MS,
+      textViewPauseMs: TYPE_TEXTVIEW_PAUSE_MS,
+    });
     await sendMessage(driver, DEFAULT_TIMEOUT);
     await waitForComposerReadyAfterSend(driver);
     if (!SKIP_EXAMPLE_SCREENSHOTS) {

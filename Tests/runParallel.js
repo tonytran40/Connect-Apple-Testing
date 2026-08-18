@@ -5,6 +5,10 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { performance } = require('perf_hooks');
 const { formatDurationMs } = require('../utils/reportWriter');
+const { createDriver } = require('../Login_Flow/Open_App');
+const { ensureLoggedIn } = require('../Login_Flow/Login_User');
+const { ensureRoomsSectionReady } = require('../utils/testSession');
+const { resolveLaneUdids } = require('../utils/simulatorConfig');
 
 const MAIN_SUITE_TESTS = [
   'CreateRoom',
@@ -25,6 +29,7 @@ const STANDALONE_TESTS = [
   'removeRoom',
   //'notifications',
 ];
+const ACCOUNT_SETTINGS_TESTS = new Set(['ConversationList']);
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -50,6 +55,10 @@ function makeRunId() {
   return process.env.PARALLEL_RUN_ID || `parallel-${stamp}`;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function makeLanes() {
   const udids = listEnv('PARALLEL_UDIDS');
   const ports = listEnv('PARALLEL_APPIUM_PORTS');
@@ -61,8 +70,10 @@ function makeLanes() {
   const baseDerivedDataPath = process.env.WDA_DERIVED_DATA_PATH || path.join('/tmp', 'wda-connect-parallel');
 
   let count = Math.max(workerRequested, udids.length, ports.length, deviceNames.length, 1);
-  if (!allowSharedDevice && udids.length === 0 && count > 1) {
-    console.warn('runParallel: no PARALLEL_UDIDS set; limiting to 1 worker to avoid simulator collisions.');
+  if (!allowSharedDevice && udids.length === 0 && deviceNames.length === 0 && count > 1) {
+    console.warn(
+      'runParallel: no PARALLEL_UDIDS or PARALLEL_DEVICE_NAMES set; limiting to 1 worker to avoid simulator collisions.'
+    );
     count = 1;
   }
 
@@ -310,7 +321,27 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
     child.stdout.pipe(logStream);
     child.stderr.pipe(logStream);
 
+    let settled = false;
+    child.on('error', error => {
+      if (settled) return;
+      settled = true;
+      logStream.end();
+      resolve({
+        name: testName,
+        status: 'FAIL',
+        durationMs: Math.round(performance.now() - started),
+        duration: formatDurationMs(Math.round(performance.now() - started)),
+        workerIndex: lane.index,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        logPath,
+        error: `Could not start test process: ${error.message}`,
+      });
+    });
+
     child.on('close', code => {
+      if (settled) return;
+      settled = true;
       logStream.end();
       const durationMs = Math.round(performance.now() - started);
       const resultFile = path.join(resultDir, `${testName}.json`);
@@ -337,6 +368,63 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
   });
 }
 
+function testModule(testName) {
+  const testPath = path.resolve(__dirname, `${testName}.js`);
+  if (!fs.existsSync(testPath)) {
+    throw new Error(`Test file not found: ${testPath}`);
+  }
+  const loaded = require(testPath);
+  if (typeof loaded.run !== 'function') {
+    throw new Error(`Test "${testName}" does not export run()`);
+  }
+  return loaded;
+}
+
+function writeResultFile(resultDir, result) {
+  fs.writeFileSync(
+    path.join(resultDir, `${result.name}.json`),
+    `${JSON.stringify(result, null, 2)}\n`,
+    'utf8'
+  );
+}
+
+async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir }) {
+  const startedAt = new Date().toISOString();
+  const started = performance.now();
+  const logPath = path.join(logDir, `${testName}.log`);
+  let error;
+
+  fs.writeFileSync(logPath, `Starting ${testName} on ${lane.deviceName || lane.udid}\n`, 'utf8');
+  try {
+    await ensureRoomsSectionReady(driver);
+    await testModule(testName).run(driver, { skipLogin: true });
+  } catch (caught) {
+    error = caught;
+    fs.appendFileSync(logPath, `${caught?.stack || caught}\n`, 'utf8');
+  }
+
+  const durationMs = Math.round(performance.now() - started);
+  const result = {
+    name: testName,
+    status: error ? 'FAIL' : 'PASS',
+    durationMs,
+    duration: formatDurationMs(durationMs),
+    workerIndex: lane.index,
+    appiumPort: lane.appiumPort,
+    udid: lane.udid,
+    deviceName: lane.deviceName,
+    wdaLocalPort: lane.wdaLocalPort,
+    derivedDataPath: lane.derivedDataPath,
+    loginCheckSkipped: true,
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    logPath,
+    ...(error ? { error: error?.message || String(error) } : {}),
+  };
+  writeResultFile(resultDir, result);
+  return result;
+}
+
 async function run() {
   const runId = makeRunId();
   const rootDir = ensureDir(path.resolve(__dirname, '..', 'reports', 'runs', runId));
@@ -344,8 +432,17 @@ async function run() {
   const logDir = ensureDir(path.join(rootDir, 'logs'));
   const reportPath = path.join(rootDir, 'summary.md');
   const tests = resolveTests();
-  const lanes = makeLanes();
-  const pending = [...tests];
+  let lanes = makeLanes();
+  if (
+    process.env.PARALLEL_DRY_RUN !== '1' &&
+    process.env.PARALLEL_ALLOW_SHARED_DEVICE !== '1' &&
+    (lanes.length > 1 || lanes.some(lane => lane.udid))
+  ) {
+    lanes = resolveLaneUdids(lanes);
+  }
+  const exclusiveTests =
+    lanes.length > 1 ? tests.filter(testName => ACCOUNT_SETTINGS_TESTS.has(testName)) : [];
+  const pending = tests.filter(testName => !exclusiveTests.includes(testName));
   const results = [];
   const started = performance.now();
   const startedAt = new Date().toISOString();
@@ -398,7 +495,113 @@ async function run() {
     }
   }
 
-  await Promise.all(lanes.map(lane => worker(lane)));
+  async function persistentWorker(lane) {
+    let driver;
+    let setupError;
+    try {
+      const sessionStartDelayMs = Number.parseInt(process.env.PARALLEL_SESSION_START_DELAY_MS, 10) || 0;
+      if (sessionStartDelayMs > 0) {
+        console.log(
+          `runParallel: worker #${lane.index} staggering Appium session start by ${sessionStartDelayMs}ms`
+        );
+        await sleep(sessionStartDelayMs);
+      }
+      console.log(`runParallel: worker #${lane.index} creating reusable Appium session`);
+      driver = await createDriver();
+      await ensureLoggedIn(driver);
+    } catch (error) {
+      setupError = error;
+    }
+
+    try {
+      while (pending.length) {
+        const testName = pending.shift();
+        let result;
+        if (setupError) {
+          const now = new Date().toISOString();
+          result = {
+            name: testName,
+            status: 'FAIL',
+            durationMs: 0,
+            duration: '0s',
+            workerIndex: lane.index,
+            appiumPort: lane.appiumPort,
+            udid: lane.udid,
+            deviceName: lane.deviceName,
+            startedAt: now,
+            finishedAt: now,
+            error: `Lane setup failed: ${setupError?.message || setupError}`,
+          };
+          writeResultFile(resultDir, result);
+        } else {
+          console.log(`runParallel: worker #${lane.index} starting ${testName} (reused session)`);
+          result = await runOneTestWithDriver({ testName, lane, driver, resultDir, logDir });
+
+          if (result.status === 'FAIL') {
+            try {
+              await ensureLoggedIn(driver);
+              await ensureRoomsSectionReady(driver);
+            } catch (recoveryError) {
+              console.warn(
+                `runParallel: worker #${lane.index} session recovery failed; recreating session: ` +
+                  `${recoveryError?.message || recoveryError}`
+              );
+              await driver.deleteSession().catch(() => {});
+              driver = undefined;
+              try {
+                driver = await createDriver();
+                await ensureLoggedIn(driver);
+                setupError = undefined;
+              } catch (replacementError) {
+                setupError = replacementError;
+              }
+            }
+          }
+        }
+
+        results.push(result);
+        console.log(
+          `runParallel: worker #${lane.index} ${result.status} ${testName} in ${formatDurationMs(result.durationMs)}`
+        );
+        writeAggregateReport({
+          reportPath,
+          runId,
+          results: [...results].sort((a, b) => tests.indexOf(a.name) - tests.indexOf(b.name)),
+          durationMs: Math.round(performance.now() - started),
+          lanes,
+          startedAt,
+          tests,
+        });
+      }
+    } finally {
+      if (driver) await driver.deleteSession().catch(() => {});
+    }
+  }
+
+  const reuseDriver = process.env.PARALLEL_REUSE_DRIVER !== '0' && lanes.length === 1;
+  if (pending.length) {
+    if (reuseDriver) {
+      await persistentWorker(lanes[0]);
+    } else {
+      await Promise.all(lanes.map(lane => worker(lane)));
+    }
+  }
+
+  for (const testName of exclusiveTests) {
+    const lane = lanes[0];
+    console.log(`runParallel: starting exclusive account-settings test ${testName}`);
+    const result = await runOneTest({ testName, lane, runId, resultDir, logDir });
+    results.push(result);
+    writeAggregateReport({
+      reportPath,
+      runId,
+      results: [...results].sort((a, b) => tests.indexOf(a.name) - tests.indexOf(b.name)),
+      durationMs: Math.round(performance.now() - started),
+      lanes,
+      startedAt,
+      tests,
+    });
+  }
 
   const durationMs = Math.round(performance.now() - started);
   const orderedResults = [...results].sort((a, b) => tests.indexOf(a.name) - tests.indexOf(b.name));

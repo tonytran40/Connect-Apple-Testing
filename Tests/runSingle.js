@@ -15,7 +15,6 @@ function normalizeTestName(raw) {
 
 function loadTestModule(testName) {
   const file = path.join(__dirname, `${testName}.js`);
-  // eslint-disable-next-line import/no-dynamic-require, global-require
   const mod = require(file);
   if (typeof mod.run !== 'function') {
     throw new Error(`Test "${testName}" does not export run()`);

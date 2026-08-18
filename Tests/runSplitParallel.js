@@ -6,12 +6,16 @@ const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { performance } = require('perf_hooks');
 const { formatDurationMs } = require('../utils/reportWriter');
+const { resolveLaneUdids } = require('../utils/simulatorConfig');
 
-const MAIN_TESTS = 'CreateRoom,PinnedMessageEditFlow,markdowns,ConversationList,newMessage';
+const MAIN_TESTS = 'CreateRoom,PinnedMessageEditFlow,markdowns,newMessage';
 const STANDALONE_TESTS = 'attachments,editRoom,membersRoom,favoriteRoom,markAsRead,removeRoom,notifications,Reactions';
 const THREE_LANE_MAIN_TESTS = 'CreateRoom,newMessage';
-const THREE_LANE_CONVERSATION_LIST_TESTS = 'ConversationList,favoriteRoom,markAsRead,notifications,removeRoom';
+const THREE_LANE_CONVERSATION_LIST_TESTS = 'favoriteRoom,markAsRead,notifications,removeRoom';
 const THREE_LANE_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,Reactions,markdowns,attachments,editRoom,membersRoom';
+const EXCLUSIVE_SETTINGS_TESTS = 'ConversationList';
+const DEFAULT_SESSION_STAGGER_MS = 6000;
+const BUNDLE_ID = process.env.CONNECT_BUNDLE_ID || 'com.powerhrg.connect.v3.debug';
 
 function envValue(name, fallback) {
   return process.env[name] || fallback;
@@ -45,6 +49,7 @@ function makeLane({
       PARALLEL_APPIUM_PORTS: appiumPort,
       PARALLEL_LOGIN_ONCE_PER_WORKER:
         process.env.SPLIT_LOGIN_ONCE_PER_LANE || process.env.PARALLEL_LOGIN_ONCE_PER_WORKER || '1',
+      PARALLEL_REUSE_DRIVER: process.env.PARALLEL_REUSE_DRIVER || '1',
       APPIUM_PORT: appiumPort,
       DEVICE_NAME: deviceName,
       SIMULATOR_UDID: udid,
@@ -52,6 +57,17 @@ function makeLane({
       WDA_DERIVED_DATA_PATH: derivedDataPath,
     },
     appiumPort,
+  };
+}
+
+function withResolvedLaneEnvironment(lane) {
+  return {
+    ...lane,
+    env: {
+      ...lane.env,
+      PARALLEL_UDIDS: lane.udid,
+      SIMULATOR_UDID: lane.udid,
+    },
   };
 }
 
@@ -293,6 +309,26 @@ function installAppOnLanes(lanes) {
   }
 }
 
+function assertAppInstalledOnLanes(lanes) {
+  if (process.env.SPLIT_INSTALL_APP === '1' || process.env.SPLIT_SKIP_APP_INSTALL_CHECK === '1') {
+    return;
+  }
+
+  for (const lane of lanes) {
+    const result = spawnSync(
+      'xcrun',
+      ['simctl', 'get_app_container', lane.udid, BUNDLE_ID, 'app'],
+      { encoding: 'utf8' }
+    );
+    if (result.status !== 0) {
+      throw new Error(
+        `[${lane.label}] ${BUNDLE_ID} is not installed on ${lane.deviceName} (${lane.udid}). ` +
+          'Install Connect first, set SPLIT_INSTALL_APP=1 with CONNECT_APP_PATH, or run npm run doctor.'
+      );
+    }
+  }
+}
+
 function prefixOutput(stream, label) {
   let pending = '';
   stream.on('data', chunk => {
@@ -320,9 +356,12 @@ async function runLane(lane) {
     prefixOutput(child.stdout, lane.label);
     prefixOutput(child.stderr, lane.label);
 
-    child.on('close', code => {
-      console.log(`[${lane.label}] finished with exit code ${code}`);
-      resolve(code || 0);
+    child.on('close', (code, signal) => {
+      const exitCode = Number.isInteger(code) ? code : 1;
+      console.log(
+        `[${lane.label}] finished with exit code ${exitCode}${signal ? ` (signal ${signal})` : ''}`
+      );
+      resolve(exitCode);
     });
   });
 }
@@ -357,13 +396,13 @@ async function run() {
   const combinedRunId = envValue('SPLIT_COMBINED_RUN_ID', useThirdLane ? 'split3-combined' : 'split-combined');
   const combinedRoot = ensureDir(path.resolve(__dirname, '..', 'reports', 'runs', combinedRunId));
   const combinedReportPath = path.join(combinedRoot, 'summary.md');
-  const lanes = [
+  let lanes = [
     makeLane({
       label: 'main-suite',
       runId: envValue('SPLIT_MAIN_RUN_ID', 'main-suite'),
       tests: envValue('SPLIT_MAIN_TESTS', useThirdLane ? THREE_LANE_MAIN_TESTS : MAIN_TESTS),
       deviceName: envValue('SPLIT_MAIN_DEVICE_NAME', 'iPhone 17 Pro'),
-      udid: envValue('SPLIT_MAIN_UDID', 'A848480F-1933-47A5-B063-DB070BB3AC66'),
+      udid: envValue('SPLIT_MAIN_UDID', ''),
       appiumPort: envValue('SPLIT_MAIN_APPIUM_PORT', '4723'),
       wdaPort: envValue('SPLIT_MAIN_WDA_PORT', '8100'),
       derivedDataPath: envValue('SPLIT_MAIN_WDA_DERIVED_DATA_PATH', '/tmp/wda-main'),
@@ -373,7 +412,7 @@ async function run() {
       runId: envValue('SPLIT_STANDALONE_RUN_ID', useThirdLane ? 'Conversation-List' : 'standalones'),
       tests: envValue('SPLIT_STANDALONE_TESTS', useThirdLane ? THREE_LANE_CONVERSATION_LIST_TESTS : STANDALONE_TESTS),
       deviceName: envValue('SPLIT_STANDALONE_DEVICE_NAME', 'iPhone 17 Pro Max'),
-      udid: envValue('SPLIT_STANDALONE_UDID', 'B5A3CFF9-F618-411B-91FC-92C8FDD0D069'),
+      udid: envValue('SPLIT_STANDALONE_UDID', ''),
       appiumPort: envValue('SPLIT_STANDALONE_APPIUM_PORT', '4725'),
       wdaPort: envValue('SPLIT_STANDALONE_WDA_PORT', '8200'),
       derivedDataPath: envValue('SPLIT_STANDALONE_WDA_DERIVED_DATA_PATH', '/tmp/wda-standalones'),
@@ -387,7 +426,7 @@ async function run() {
         runId: envValue('SPLIT_THIRD_RUN_ID', 'ConversationView'),
         tests: envValue('SPLIT_THIRD_TESTS', THREE_LANE_CONVERSATION_VIEW_TESTS),
         deviceName: envValue('SPLIT_THIRD_DEVICE_NAME', 'iPhone 17'),
-        udid: envValue('SPLIT_THIRD_UDID', '0244243B-055B-4FAE-8AF8-61FC1486248C'),
+        udid: envValue('SPLIT_THIRD_UDID', ''),
         appiumPort: envValue('SPLIT_THIRD_APPIUM_PORT', '4727'),
         wdaPort: envValue('SPLIT_THIRD_WDA_PORT', '8300'),
         derivedDataPath: envValue('SPLIT_THIRD_WDA_DERIVED_DATA_PATH', '/tmp/wda-conversation-view'),
@@ -395,9 +434,32 @@ async function run() {
     );
   }
 
+  const configuredSessionStaggerMs = Number.parseInt(process.env.SPLIT_SESSION_STAGGER_MS, 10);
+  const sessionStaggerMs = Math.max(
+    0,
+    Number.isFinite(configuredSessionStaggerMs)
+      ? configuredSessionStaggerMs
+      : DEFAULT_SESSION_STAGGER_MS
+  );
+  lanes = lanes.map((lane, index) => ({
+    ...lane,
+    env: {
+      ...lane.env,
+      PARALLEL_SESSION_START_DELAY_MS:
+        lane.env.PARALLEL_SESSION_START_DELAY_MS || String(sessionStaggerMs * index),
+      WDIO_LOG_LEVEL: lane.env.WDIO_LOG_LEVEL || 'error',
+    },
+  }));
+
+  if (process.env.PARALLEL_DRY_RUN !== '1') {
+    lanes = resolveLaneUdids(lanes).map(withResolvedLaneEnvironment);
+    lanes.forEach(lane => console.log(`[${lane.label}] using ${lane.deviceName} (${lane.udid})`));
+  }
+
   const shouldCheckAppium = process.env.PARALLEL_DRY_RUN !== '1' && process.env.SPLIT_SKIP_APPIUM_CHECK !== '1';
   if (process.env.PARALLEL_DRY_RUN !== '1') {
     installAppOnLanes(lanes);
+    assertAppInstalledOnLanes(lanes);
   }
 
   if (shouldCheckAppium) {
@@ -413,10 +475,32 @@ async function run() {
   }
 
   const codes = await Promise.all(lanes.map(runLane));
+  const reportLanes = [...lanes];
+
+  // Conversation layout and sorting are account-wide settings. Run this coverage only
+  // after the feature lanes finish so another simulator cannot have its list reordered
+  // while it is searching for a room or conversation.
+  if (process.env.SPLIT_EXCLUSIVE_SETTINGS !== '0') {
+    const sourceLane = lanes[1] || lanes[0];
+    const exclusiveLane = makeLane({
+      label: sourceLane.label,
+      runId: envValue('SPLIT_SETTINGS_RUN_ID', `${sourceLane.runId}-settings`),
+      tests: envValue('SPLIT_SETTINGS_TESTS', EXCLUSIVE_SETTINGS_TESTS),
+      deviceName: sourceLane.deviceName,
+      udid: sourceLane.udid,
+      appiumPort: sourceLane.appiumPort,
+      wdaPort: sourceLane.wdaPort,
+      derivedDataPath: sourceLane.derivedDataPath,
+    });
+    console.log(`[split] feature lanes finished; starting exclusive account-settings coverage`);
+    codes.push(await runLane(exclusiveLane));
+    reportLanes.push(exclusiveLane);
+  }
+
   const combined = writeCombinedReport({
     reportPath: combinedReportPath,
     runId: combinedRunId,
-    lanes,
+    lanes: reportLanes,
     laneCodes: codes,
     durationMs: Math.round(performance.now() - started),
     startedAt,

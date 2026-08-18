@@ -52,7 +52,7 @@ async function runCliTimed(label, runAsync) {
       finishedAt: new Date().toISOString(),
       error: err?.message || String(err),
     });
-    console.error(`\n✗ ${label} failed after ${formatDurationMs(ms)}`);
+    console.error(`\n✗ ${label} failed after ${formatDurationMs(ms)}: ${err?.message || err}`);
     throw err;
   }
 }

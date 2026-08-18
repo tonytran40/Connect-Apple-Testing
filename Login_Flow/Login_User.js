@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const { SELECTORS, PREDICATES } = require('../utils/selectors');
 const { allowNotificationPromptIfNeeded } = require('../utils/permissions');
+const { resetToHome } = require('../utils/testSession');
 
 function intEnv(name, fallback, min, max) {
   const n = Number.parseInt(process.env[name], 10);
@@ -9,10 +10,13 @@ function intEnv(name, fallback, min, max) {
   return Math.min(max, Math.max(min, v));
 }
 
-const LOGIN_SUCCESS_TIMEOUT_MS = intEnv('LOGIN_SUCCESS_TIMEOUT_MS', 30000, 5000, 120000);
+const LOGIN_SUCCESS_TIMEOUT_MS = intEnv('LOGIN_SUCCESS_TIMEOUT_MS', 60000, 5000, 180000);
 const LOGIN_POLL_MS = intEnv('LOGIN_POLL_MS', 500, 100, 3000);
-const APP_ENTRY_TIMEOUT_MS = intEnv('APP_ENTRY_TIMEOUT_MS', 12000, 3000, 60000);
+// Cold simulator launches can take materially longer than warm lane reuse. This
+// is only a ceiling: polling still continues immediately once Connect is ready.
+const APP_ENTRY_TIMEOUT_MS = intEnv('APP_ENTRY_TIMEOUT_MS', 30000, 3000, 120000);
 const APP_ENTRY_POLL_MS = intEnv('APP_ENTRY_POLL_MS', 250, 100, 1000);
+const APP_ENTRY_RECOVERY_MS = intEnv('APP_ENTRY_RECOVERY_MS', 4000, 1000, 15000);
 
 async function isOnLoginScreen(driver) {
   return visible(driver, SELECTORS.loginView, 250);
@@ -48,10 +52,20 @@ async function isLoggedInSignalVisible(driver) {
 
 async function waitForAppEntryState(driver) {
   const deadline = Date.now() + APP_ENTRY_TIMEOUT_MS;
+  const recoveryAt = Date.now() + Math.min(APP_ENTRY_RECOVERY_MS, APP_ENTRY_TIMEOUT_MS);
+  let recoveryAttempted = false;
 
   while (Date.now() < deadline) {
     if (await isOnLoginScreen(driver)) return 'login';
     if (await isLoggedInSignalVisible(driver)) return 'home';
+
+    if (!recoveryAttempted && Date.now() >= recoveryAt) {
+      recoveryAttempted = true;
+      console.log('Login preflight: recovering from an unfinished in-app flow');
+      await resetToHome(driver, 8);
+      continue;
+    }
+
     await driver.pause(APP_ENTRY_POLL_MS);
   }
 

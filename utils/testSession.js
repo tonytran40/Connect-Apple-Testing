@@ -1,5 +1,6 @@
 const { createDriver } = require('../Login_Flow/Open_App');
 const { SELECTORS, PREDICATES } = require('./selectors');
+const { boundedInt, escapePredicateString } = require('./uiActions');
 
 const ROOMS_HEADER_SELECTOR = PREDICATES.roomsHeaderButton;
 
@@ -107,14 +108,61 @@ async function swipeViewport(driver, direction) {
   await driver.releaseActions().catch(() => {});
 }
 
+async function dismissGifPickerIfVisible(driver) {
+  const gifTab = await driver.$(
+    '-ios predicate string:type == "XCUIElementTypeStaticText" AND ' +
+      '(label == "All GIFs" OR name == "All GIFs")'
+  );
+  if (!(await gifTab.isDisplayed().catch(() => false))) return false;
+
+  const rect = await driver.getWindowRect();
+  const x = Math.round(rect.width * 0.5);
+  await driver.performActions([
+    {
+      type: 'pointer',
+      id: 'dismissGifPicker',
+      parameters: { pointerType: 'touch' },
+      actions: [
+        { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: Math.round(rect.height * 0.1) },
+        { type: 'pointerDown', button: 0 },
+        { type: 'pause', duration: 100 },
+        { type: 'pointerMove', duration: 450, origin: 'viewport', x, y: Math.round(rect.height * 0.78) },
+        { type: 'pointerUp', button: 0 },
+      ],
+    },
+  ]);
+  await driver.releaseActions().catch(() => {});
+  await driver.pause(500);
+  console.log('resetToHome: dismissed unfinished GIF picker');
+  return true;
+}
+
 async function resetToHome(driver, maxSteps = 8) {
   for (let i = 0; i < maxSteps; i++) {
+    // Never use generic navigation fallbacks on the login screen.
+    if (await isDisplayed(driver, SELECTORS.loginView, 300)) {
+      return;
+    }
+
     if (
       (await isDisplayed(driver, SELECTORS.peoplePlusButton)) ||
       (await isRoomsHeaderVisible(driver)) ||
       (await isDisplayed(driver, SELECTORS.settingsButton))
     ) {
       return;
+    }
+
+    if (await dismissGifPickerIfVisible(driver)) {
+      continue;
+    }
+
+    const skipForNow = await driver.$(
+      '-ios predicate string:type == "XCUIElementTypeButton" AND label == "Skip for now"'
+    );
+    if (await skipForNow.isDisplayed().catch(() => false)) {
+      await skipForNow.click();
+      await driver.pause(500);
+      continue;
     }
 
     if (await tapBackLikeControl(driver)) {
@@ -140,15 +188,75 @@ async function resetToHome(driver, maxSteps = 8) {
   }
 }
 
-function boundedInt(envVal, fallback, min, max) {
-  const n = parseInt(envVal, 10);
-  const v = Number.isFinite(n) ? n : fallback;
-  return Math.min(max, Math.max(min, v));
-}
-
-const ROOMS_HEADER_MIN_Y = boundedInt(process.env.CONNECT_ROOMS_HEADER_MIN_Y, 150, 100, 240);
+// The Rooms header sits around y=133 on current iPhone 17 layouts. Keep a small
+// guard against an in-room header while accepting the normal conversation list.
+const ROOMS_HEADER_MIN_Y = boundedInt(process.env.CONNECT_ROOMS_HEADER_MIN_Y, 120, 100, 240);
 const DEFAULT_ENTRY_MAX_SCROLLS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_MAX_SCROLLS, 24, 4, 40);
 const DEFAULT_ENTRY_SCROLL_PAUSE_MS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_SCROLL_PAUSE_MS, 250, 120, 600);
+
+async function scrollConversationListDown(driver) {
+  try {
+    await driver.execute('mobile: scroll', { direction: 'down' });
+  } catch {
+    try {
+      await driver.execute('mobile: swipe', { direction: 'up' });
+    } catch {
+      await swipeViewport(driver, 'up');
+    }
+  }
+}
+
+/**
+ * Find a room title even when it is outside the current list viewport.
+ * A fresh element query is used after every scroll to avoid stale XCTest references.
+ */
+async function waitForConversationRow(driver, names, opts = {}) {
+  const candidates = (Array.isArray(names) ? names : [names])
+    .map(name => String(name || '').trim())
+    .filter(Boolean);
+  if (!candidates.length) {
+    throw new Error('waitForConversationRow requires at least one room name');
+  }
+
+  const exact = opts.exact === true;
+  const timeout = opts.timeout ?? 30000;
+  const maxScrolls = opts.maxScrolls ?? DEFAULT_ENTRY_MAX_SCROLLS;
+  const pauseMs = opts.pauseMs ?? DEFAULT_ENTRY_SCROLL_PAUSE_MS;
+  const comparisons = candidates.map(name => {
+    const safe = escapePredicateString(name);
+    const operator = exact ? '==' : 'CONTAINS[c]';
+    return `(name ${operator} "${safe}" OR label ${operator} "${safe}")`;
+  });
+  const selector =
+    '-ios predicate string:' +
+    '(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton" OR ' +
+    'type == "XCUIElementTypeOther" OR type == "XCUIElementTypeCell") AND ' +
+    `(${comparisons.join(' OR ')})`;
+  const deadline = Date.now() + timeout;
+
+  for (let scrolls = 0; Date.now() < deadline; scrolls++) {
+    const title = await driver.$(selector);
+    if (await title.isDisplayed().catch(() => false)) {
+      const name = await title.getAttribute('name').catch(() => '');
+      const label = await title.getAttribute('label').catch(() => '');
+      const roomTitle = (name && String(name).trim()) || (label && String(label).trim()) || candidates[0];
+      if (scrolls > 0) {
+        console.log(`waitForConversationRow: found "${roomTitle}" after ${scrolls} scroll(s)`);
+      }
+      return { el: title, roomTitle };
+    }
+
+    if (scrolls >= maxScrolls) {
+      break;
+    }
+    await scrollConversationListDown(driver);
+    await driver.pause(pauseMs);
+  }
+
+  throw new Error(
+    `None of [${candidates.join(', ')}] became visible after ${maxScrolls} list scroll(s)`
+  );
+}
 
 /**
  * Scroll the main list down until ~peoplePlusButton or ~newConversationButton is visible (long room lists).
@@ -223,4 +331,5 @@ module.exports = {
   ensureRoomsSectionReady,
   goBack,
   scrollUntilConversationEntryVisible,
+  waitForConversationRow,
 };

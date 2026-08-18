@@ -27,37 +27,6 @@ async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
   console.log('Opened Start Conversation via newConversationButton');
 }
 
-async function tapByText(driver, text, timeout = 20000) {
-  const safe = text.replace(/"/g, '\\"');
-
-  const textEl = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (label == "${safe}" OR name == "${safe}")`
-  );
-
-  if (await textEl.isExisting().catch(() => false)) {
-    await textEl.waitForDisplayed({ timeout });
-    await textEl.click();
-    return;
-  }
-
-  const parentButton = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeButton[1]`
-  );
-
-  if (await parentButton.isExisting().catch(() => false)) {
-    await parentButton.waitForDisplayed({ timeout });
-    await parentButton.click();
-    return;
-  }
-
-  const parentCell = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeCell[1]`
-  );
-
-  await parentCell.waitForDisplayed({ timeout });
-  await parentCell.click();
-}
-
 function generateRandomMessage(prefix = 'Message test') {
   const rand = Math.random().toString(36).slice(2, 10);
   return `${prefix} - ${rand}`;

@@ -13,6 +13,11 @@ const {
 } = require('../utils/attachmentPhotoPicker');
 const { SELECTORS } = require('../utils/selectors');
 const { createPublicRoom } = require('./CreateRoom');
+const {
+  escapePredicateString,
+  pauseIfNeeded,
+  tapByText,
+} = require('../utils/uiActions');
 
 const TEST_NAME = 'attachments';
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_ROOM_TIMEOUT_MS, 10) || 20000;
@@ -21,14 +26,12 @@ const COMPOSER_ATTACHMENT_SETTLE_MS =
 const GIF_PICKER_SETTLE_MS = Number.parseInt(process.env.ATTACHMENT_GIF_PICKER_SETTLE_MS, 10) || 800;
 const GIF_SEND_SETTLE_MS = Number.parseInt(process.env.ATTACHMENT_GIF_SEND_SETTLE_MS, 10) || 1500;
 const GIF_TAP_X_RATIO = Number.parseFloat(process.env.ATTACHMENT_GIF_TAP_X_RATIO) || 0.19;
-const GIF_TAP_Y_RATIO = Number.parseFloat(process.env.ATTACHMENT_GIF_TAP_Y_RATIO) || 0.33;
+const GIF_TAP_Y_RATIO = Number.parseFloat(process.env.ATTACHMENT_GIF_TAP_Y_RATIO) || 0.31;
+const GIF_TAP_RETRY_WAIT_MS =
+  Number.parseInt(process.env.ATTACHMENT_GIF_TAP_RETRY_WAIT_MS, 10) || 2500;
 const DEBUG_PICKER = process.env.ATTACHMENT_DEBUG_PICKER === '1';
 const USE_EXISTING_ROOM = process.env.ATTACHMENT_USE_EXISTING_ROOM === '1';
 const SHARE_OPTIONS = ['Attach Photos', 'Attach Files', 'Send GIF'];
-
-function esc(s) {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
 
 function generateAttachmentRoomName(sortKey) {
   const rand = Math.random().toString(36).slice(2, 10);
@@ -43,32 +46,9 @@ function resolveAttachmentRoomName() {
   return generateAttachmentRoomName(process.env.ATTACHMENT_ROOM_SORT_KEY || 'A');
 }
 
-async function pause(driver, ms) {
-  if (ms > 0) await driver.pause(ms);
-}
-
 async function waitForInRoom(driver, timeout = DEFAULT_TIMEOUT) {
   const header = await driver.$(SELECTORS.openRoomSettingsButton);
   await header.waitForDisplayed({ timeout });
-}
-
-async function tapByText(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const safe = esc(text);
-  const textEl = await driver.$(
-    `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "${safe}" OR name == "${safe}")`
-  );
-
-  if (await textEl.isExisting().catch(() => false)) {
-    await textEl.waitForDisplayed({ timeout });
-    await textEl.click();
-    return;
-  }
-
-  const parentCell = await driver.$(
-    `//XCUIElementTypeStaticText[@name="${text}" or @label="${text}"]/ancestor::XCUIElementTypeCell[1]`
-  );
-  await parentCell.waitForDisplayed({ timeout });
-  await parentCell.click();
 }
 
 async function openExistingRoom(driver, roomName, timeout = DEFAULT_TIMEOUT) {
@@ -92,7 +72,7 @@ async function openExistingRoom(driver, roomName, timeout = DEFAULT_TIMEOUT) {
         } catch {}
       }
     }
-    await pause(driver, 350);
+    await pauseIfNeeded(driver, 350);
   }
 
   throw new Error(`attachments: room "${roomName}" was not visible`);
@@ -109,7 +89,7 @@ async function enterAttachmentRoom(driver) {
 
   console.log(`attachments: creating "${roomName}"`);
   await createPublicRoom(driver, roomName);
-  await pause(driver, 600);
+  await pauseIfNeeded(driver, 600);
   await waitForInRoom(driver);
 }
 
@@ -129,7 +109,7 @@ async function waitForShareOptionsDialog(driver, timeout = DEFAULT_TIMEOUT) {
     }
 
     for (const label of SHARE_OPTIONS) {
-      const safe = esc(label);
+      const safe = escapePredicateString(label);
       const el = await driver.$(
         `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (name == "${safe}" OR label == "${safe}")`
       );
@@ -137,7 +117,7 @@ async function waitForShareOptionsDialog(driver, timeout = DEFAULT_TIMEOUT) {
         return label;
       }
     }
-    await pause(driver, 200);
+    await pauseIfNeeded(driver, 200);
   }
 
   throw new Error('attachments: share options dialog did not appear');
@@ -152,7 +132,7 @@ async function tapShareOption(driver, label, timeout = DEFAULT_TIMEOUT) {
     return;
   }
 
-  const safe = esc(label);
+  const safe = escapePredicateString(label);
   const el = await driver.$(
     `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (name == "${safe}" OR label == "${safe}")`
   );
@@ -161,14 +141,69 @@ async function tapShareOption(driver, label, timeout = DEFAULT_TIMEOUT) {
   console.log(`attachments: tapped "${label}"`);
 }
 
-async function tapFirstGif(driver) {
+async function tapGifAtRatio(driver, xRatio, yRatio) {
   const win = await driver.getWindowRect();
   const point = {
-    x: Math.round(win.width * GIF_TAP_X_RATIO),
-    y: Math.round(win.height * GIF_TAP_Y_RATIO),
+    x: Math.round(win.width * xRatio),
+    y: Math.round(win.height * yRatio),
   };
-  await driver.execute('mobile: tap', point);
-  console.log(`attachments: tapped first GIF at (${point.x}, ${point.y})`);
+  try {
+    await driver.performActions([
+      {
+        type: 'pointer',
+        id: 'gifTap',
+        parameters: { pointerType: 'touch' },
+        actions: [
+          { type: 'pointerMove', duration: 0, origin: 'viewport', x: point.x, y: point.y },
+          { type: 'pointerDown', button: 0 },
+          { type: 'pause', duration: 100 },
+          { type: 'pointerUp', button: 0 },
+        ],
+      },
+    ]);
+    await driver.releaseActions().catch(() => {});
+  } catch {
+    await driver.execute('mobile: tap', point);
+  }
+  console.log(`attachments: tapped GIF tile at (${point.x}, ${point.y})`);
+}
+
+async function isConversationVisible(driver) {
+  const conversationSignals = [
+    SELECTORS.shareOptionsButton,
+    SELECTORS.roomComposerTextView,
+    SELECTORS.messageComposerTextView,
+  ];
+  for (const selector of conversationSignals) {
+    const element = await driver.$(selector);
+    if (await element.isDisplayed().catch(() => false)) return true;
+  }
+  return false;
+}
+
+async function waitForGifPickerDismissed(driver, timeout = DEFAULT_TIMEOUT) {
+  await driver.waitUntil(
+    () => isConversationVisible(driver),
+    {
+      timeout,
+      interval: 250,
+      timeoutMsg: 'attachments: GIF picker did not dismiss after selecting the first GIF',
+    }
+  );
+}
+
+async function selectLoadedGif(driver) {
+  const tileCenters = [GIF_TAP_X_RATIO, 0.5, 0.8];
+  for (let index = 0; index < tileCenters.length; index++) {
+    await tapGifAtRatio(driver, tileCenters[index], GIF_TAP_Y_RATIO);
+    const dismissed = await driver.waitUntil(() => isConversationVisible(driver), {
+      timeout: GIF_TAP_RETRY_WAIT_MS,
+      interval: 200,
+    }).then(() => true).catch(() => false);
+    if (dismissed) return;
+    console.log(`attachments: GIF tile ${index + 1} was not ready; trying the next tile`);
+  }
+  await waitForGifPickerDismissed(driver);
 }
 
 async function runTest(driver, options = {}) {
@@ -176,22 +211,22 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, 400);
+    await pauseIfNeeded(driver, 400);
   }
 
   await resetToHome(driver);
-  await pause(driver, 450);
+  await pauseIfNeeded(driver, 450);
   await enterAttachmentRoom(driver);
   await saveScreenshot(driver, TEST_NAME, '01_in_room.png');
 
   await tapShareOptionsButton(driver);
-  await pause(driver, 400);
+  await pauseIfNeeded(driver, 400);
   const visibleOption = await waitForShareOptionsDialog(driver);
   console.log(`attachments: share options dialog visible (${visibleOption})`);
   await saveScreenshot(driver, TEST_NAME, '02_share_options_dialog.png');
 
   await tapShareOption(driver, 'Attach Photos');
-  await pause(driver, 800);
+  await pauseIfNeeded(driver, 800);
   await waitForPhotoPicker(driver);
   await saveScreenshot(driver, TEST_NAME, '03_photo_picker_open.png');
 
@@ -200,29 +235,29 @@ async function runTest(driver, options = {}) {
   }
 
   await tapAllPhotosInPicker(driver);
-  await pause(driver, 400);
+  await pauseIfNeeded(driver, 400);
   await saveScreenshot(driver, TEST_NAME, '04_after_tap_all_photos.png');
 
   await tapDoneInPhotoPicker(driver);
   await waitForAttachmentDraftInComposer(driver);
-  await pause(driver, COMPOSER_ATTACHMENT_SETTLE_MS);
+  await pauseIfNeeded(driver, COMPOSER_ATTACHMENT_SETTLE_MS);
   await saveScreenshot(driver, TEST_NAME, '05_attachment_in_composer.png');
 
   await sendComposerDraft(driver);
-  await pause(driver, 500);
+  await pauseIfNeeded(driver, 500);
   await saveScreenshot(driver, TEST_NAME, '06_after_send_attachment.png');
 
   await tapShareOptionsButton(driver);
-  await pause(driver, 400);
+  await pauseIfNeeded(driver, 400);
   await waitForShareOptionsDialog(driver);
   await saveScreenshot(driver, TEST_NAME, '07_share_options_dialog_for_gif.png');
 
   await tapShareOption(driver, 'Send GIF');
-  await pause(driver, GIF_PICKER_SETTLE_MS);
+  await pauseIfNeeded(driver, GIF_PICKER_SETTLE_MS);
   await saveScreenshot(driver, TEST_NAME, '08_gif_picker_open.png');
 
-  await tapFirstGif(driver);
-  await pause(driver, GIF_SEND_SETTLE_MS);
+  await selectLoadedGif(driver);
+  await pauseIfNeeded(driver, GIF_SEND_SETTLE_MS);
   await saveScreenshot(driver, TEST_NAME, '09_after_send_gif.png');
 }
 

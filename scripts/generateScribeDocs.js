@@ -2,90 +2,42 @@ require('dotenv').config();
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const {
+  buildEnvironmentSummary,
+  buildLaneStats,
+  buildRunComparison,
+  countsForSummary,
+  failureCategory,
+  failureSnippet,
+  findPreviousComparableReport,
+  formatDate,
+  formatDurationMs,
+  laneForResult,
+  rerunCommandForResult,
+  resultDurationMs,
+} = require('./report/reportAnalysis');
+const {
+  argValue,
+  escapeHtml,
+  escapeMd,
+  relativeLink,
+  safePathPart,
+  slugify,
+  timestampSlug,
+  titleFromFileName,
+} = require('./report/reportUtils');
+const {
+  ensureDir,
+  gitTracksFile,
+  readJsonIfExists,
+  readTextIfExists,
+  writeGeneratedFile,
+} = require('./report/reportFiles');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const REPORTS_ROOT = path.join(REPO_ROOT, 'reports', 'runs');
 const SCREENSHOTS_ROOT = path.join(REPO_ROOT, 'screenshots');
 const DEFAULT_OUTPUT_ROOT = path.join(REPO_ROOT, 'docs', 'generated', 'scribe');
-
-function argValue(name, fallback = '') {
-  const prefix = `--${name}=`;
-  const match = process.argv.find(arg => arg.startsWith(prefix));
-  if (match) return match.slice(prefix.length);
-  const index = process.argv.indexOf(`--${name}`);
-  if (index >= 0 && process.argv[index + 1]) return process.argv[index + 1];
-  return fallback;
-}
-
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
-
-function writeGeneratedFile(file, contents) {
-  // Generated markup should not add whitespace-only lines to repository diffs.
-  fs.writeFileSync(file, String(contents).replace(/[ \t]+(?=\r?\n)/g, ''), 'utf8');
-}
-
-function readJsonIfExists(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
-function readTextIfExists(file) {
-  try {
-    return fs.readFileSync(file, 'utf8');
-  } catch {
-    return '';
-  }
-}
-
-function escapeMd(value) {
-  return String(value ?? '').replace(/\|/g, '\\|');
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function slugify(value) {
-  return String(value ?? 'test')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'test';
-}
-
-function timestampSlug(value) {
-  const date = new Date(value || Date.now());
-  const iso = Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
-  return iso.replace(/\.\d{3}Z$/, 'Z').replace(/[:.]/g, '-');
-}
-
-function titleFromFileName(fileName) {
-  return path
-    .basename(fileName, path.extname(fileName))
-    .replace(/^\d+[_-]?/, '')
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, ch => ch.toUpperCase());
-}
-
-function relativeLink(fromFile, targetPath) {
-  return path.relative(path.dirname(fromFile), targetPath).replace(/\\/g, '/');
-}
-
-function safePathPart(value) {
-  return String(value ?? 'unknown').replace(/[^a-zA-Z0-9._-]+/g, '-');
-}
 
 function copyScreenshotAsset({ outDir, laneRunId, testName, screenshot }) {
   const assetDir = ensureDir(path.join(outDir, 'assets', safePathPart(laneRunId), safePathPart(testName)));
@@ -260,262 +212,8 @@ function loadRunSummary(runId) {
   };
 }
 
-function laneForResult(result, fallbackRunId) {
-  return result.laneRunId || result.laneLabel || fallbackRunId;
-}
-
 function statusClass(status) {
   return String(status || 'UNKNOWN').toLowerCase();
-}
-
-function formatDate(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function formatDurationMs(ms) {
-  if (!Number.isFinite(ms) || ms < 0) return '';
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  const totalSeconds = Math.round(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
-}
-
-function resultDurationMs(result) {
-  if (Number.isFinite(result?.durationMs)) return result.durationMs;
-  const started = Date.parse(result?.startedAt || '');
-  const finished = Date.parse(result?.finishedAt || '');
-  if (Number.isFinite(started) && Number.isFinite(finished) && finished >= started) {
-    return finished - started;
-  }
-  return 0;
-}
-
-function shellQuote(value) {
-  const text = String(value ?? '');
-  if (/^[a-zA-Z0-9_./:=@-]+$/.test(text)) return text;
-  return `'${text.replace(/'/g, "'\\''")}'`;
-}
-
-function testFileForResult(result) {
-  const explicit = {
-    attachments: 'attachments.js',
-    membersRoom: 'membersRoom.js',
-    notifications: 'notifications.js',
-    removeAllrooms: 'removeAllrooms.js',
-  };
-  return explicit[result.name] || `${result.name}.js`;
-}
-
-function rerunCommandForResult(result) {
-  const env = [];
-  if (result.appiumPort) env.push(`APPIUM_PORT=${shellQuote(result.appiumPort)}`);
-  if (result.udid) env.push(`SIMULATOR_UDID=${shellQuote(result.udid)}`);
-  if (result.deviceName) env.push(`DEVICE_NAME=${shellQuote(result.deviceName)}`);
-  return [...env, 'node', `Tests/${testFileForResult(result)}`].join(' ');
-}
-
-function readLogSnippet(result, maxLines = 28) {
-  const logPath = result?.logPath;
-  if (!logPath) return '';
-  const text = readTextIfExists(logPath);
-  if (!text) return '';
-
-  const lines = text
-    .split(/\r?\n/)
-    .filter(line => /error|fail|exception|stack|no such element|timeout/i.test(line));
-
-  return (lines.length ? lines : text.split(/\r?\n/).slice(-maxLines)).slice(-maxLines).join('\n');
-}
-
-function failureSnippet(result) {
-  if (result?.status !== 'FAIL') return '';
-  return result?.error || readLogSnippet(result) || '';
-}
-
-function failureCategory(result) {
-  if (result?.status !== 'FAIL') return '';
-
-  const text = `${result?.name || ''}\n${failureSnippet(result)}`.toLowerCase();
-  if (/login|auth|credential|nitro|server.*log/i.test(text)) return 'Login';
-  if (/permission|allow|privacy|photo library|notification/i.test(text)) return 'Permission';
-  if (/no such element|could not.*locate|selector|accessibility|stale element|not displayed/i.test(text)) return 'Selector';
-  if (/timeout|timed out|waitfor|still not displayed/i.test(text)) return 'Timeout';
-  if (/crash|terminated|springboard|not running|session deleted/i.test(text)) return 'App crash';
-  if (/network|internet|connection|offline|lost connection/i.test(text)) return 'Network';
-  if (/assert|expected|actual|mismatch|verify/i.test(text)) return 'Assertion';
-  return 'Unknown';
-}
-
-function uniqueReportRuns(reports = []) {
-  const seen = new Set();
-  return reports
-    .slice()
-    .sort((a, b) => Date.parse(b.startedAt || b.updatedAt || 0) - Date.parse(a.startedAt || a.updatedAt || 0))
-    .filter(report => {
-      const key = [
-        report.runId || '',
-        report.startedAt || '',
-        report.passed ?? '',
-        report.failed ?? '',
-        report.total ?? '',
-      ].join('|');
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-}
-
-function findPreviousComparableReport(reports, summary) {
-  const currentStartedAt = summary.startedAt || '';
-  return uniqueReportRuns(reports).find(report => {
-    if ((report.startedAt || '') === currentStartedAt) return false;
-    return Array.isArray(report.results) && report.results.length > 0;
-  });
-}
-
-function buildRunComparison(results, previousReport) {
-  if (!previousReport) {
-    return {
-      hasPrevious: false,
-      newlyFailed: [],
-      newlyFixed: [],
-      slower: [],
-      faster: [],
-    };
-  }
-
-  const previousByName = new Map((previousReport.results || []).map(result => [result.name, result]));
-  const newlyFailed = [];
-  const newlyFixed = [];
-  const slower = [];
-  const faster = [];
-
-  for (const result of results) {
-    const previous = previousByName.get(result.name);
-    if (!previous) continue;
-
-    if (previous.status !== 'FAIL' && result.status === 'FAIL') newlyFailed.push(result);
-    if (previous.status === 'FAIL' && result.status === 'PASS') newlyFixed.push(result);
-
-    const diffMs = resultDurationMs(result) - resultDurationMs(previous);
-    if (Math.abs(diffMs) >= 5000) {
-      const item = { result, previous, diffMs };
-      if (diffMs > 0) slower.push(item);
-      if (diffMs < 0) faster.push(item);
-    }
-  }
-
-  slower.sort((a, b) => b.diffMs - a.diffMs);
-  faster.sort((a, b) => a.diffMs - b.diffMs);
-
-  return {
-    hasPrevious: true,
-    previousLabel: formatDate(previousReport.startedAt) || previousReport.runId || 'previous run',
-    newlyFailed,
-    newlyFixed,
-    slower,
-    faster,
-  };
-}
-
-function buildEnvironmentSummary(summary, results) {
-  function gitValue(args) {
-    try {
-      return execFileSync('git', args, {
-        cwd: REPO_ROOT,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
-    } catch {
-      return '';
-    }
-  }
-
-  const devices = [...new Set(results.map(result => result.deviceName).filter(Boolean))];
-  const appiumPorts = [...new Set(results.map(result => result.appiumPort).filter(Boolean))];
-  const wdaPorts = [...new Set(results.map(result => result.wdaLocalPort).filter(Boolean))];
-  const appPath = process.env.CONNECT_APP_PATH || '';
-  const infoPlist = appPath ? path.join(appPath, 'Info.plist') : '';
-  const plistValue = key => {
-    if (!infoPlist || !fs.existsSync(infoPlist)) return '';
-    try {
-      return execFileSync('plutil', ['-extract', key, 'raw', infoPlist], {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
-    } catch {
-      return '';
-    }
-  };
-  const automationBranch = gitValue(['rev-parse', '--abbrev-ref', 'HEAD']);
-  const automationCommit = gitValue(['rev-parse', '--short', 'HEAD']);
-  const appBranch = process.env.TEST_REPORT_BRANCH || process.env.APP_BRANCH || process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || '';
-  const appCommit = process.env.TEST_REPORT_COMMIT || process.env.APP_COMMIT || (process.env.GITHUB_SHA ? process.env.GITHUB_SHA.slice(0, 7) : '');
-
-  return {
-    branch: appBranch || automationBranch,
-    commit: appCommit || automationCommit,
-    automationBranch,
-    automationCommit,
-    appBranch,
-    appCommit,
-    node: process.version,
-    bundleId: process.env.CONNECT_BUNDLE_ID || '',
-    appVersion: process.env.CONNECT_APP_VERSION || plistValue('CFBundleShortVersionString'),
-    appBuild: process.env.CONNECT_APP_BUILD || plistValue('CFBundleVersion'),
-    source: summary.source || '',
-    devices,
-    appiumPorts,
-    wdaPorts,
-  };
-}
-
-function buildLaneStats(results, runId) {
-  const lanes = new Map();
-  for (const result of results) {
-    const lane = laneForResult(result, runId);
-    if (!lanes.has(lane)) {
-      lanes.set(lane, {
-        lane,
-        deviceName: result.deviceName || '',
-        appiumPort: result.appiumPort || '',
-        passed: 0,
-        failed: 0,
-        total: 0,
-        durationMs: 0,
-      });
-    }
-
-    const stats = lanes.get(lane);
-    stats.deviceName ||= result.deviceName || '';
-    stats.appiumPort ||= result.appiumPort || '';
-    stats.total += 1;
-    stats.durationMs += resultDurationMs(result);
-    if (result.status === 'PASS') stats.passed += 1;
-    if (result.status === 'FAIL') stats.failed += 1;
-  }
-  return [...lanes.values()];
-}
-
-function countsForSummary(summary) {
-  const results = summary.results || [];
-  const counts = summary.counts || {};
-  const failed = counts.failed ?? results.filter(result => result.status === 'FAIL').length;
-  const passed = counts.passed ?? results.filter(result => result.status === 'PASS').length;
-  return {
-    passed,
-    failed,
-    total: counts.total ?? results.length,
-  };
 }
 
 function archiveRunId(runId, summary) {
@@ -570,6 +268,10 @@ function failedStepIndex(screenshots, result) {
   if (result.status !== 'FAIL' || !screenshots.length) return -1;
   const errorIndex = screenshots.findIndex(screenshot => /^error\.(png|jpe?g)$/i.test(path.basename(screenshot)));
   return errorIndex >= 0 ? errorIndex : screenshots.length - 1;
+}
+
+function testDetailFile(outDir, result) {
+  return path.join(outDir, 'tests', safePathPart(slugify(result.name)), 'index.html');
 }
 
 function writeTestDoc({ outDir, runId, result }) {
@@ -658,6 +360,179 @@ function writeIndex({ outDir, runId, summary, testDocs }) {
 
   writeGeneratedFile(file, `${lines.join('\n')}\n`);
   return file;
+}
+
+function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] }) {
+  const testHistory = buildTestHistory(allReports);
+  const results = summary.results || [];
+  const averageDurationMs = results.length
+    ? results.reduce((sum, result) => sum + resultDurationMs(result), 0) / results.length
+    : 0;
+  const slowThresholdMs = averageDurationMs * 1.25;
+
+  for (const result of results) {
+    const file = testDetailFile(outDir, result);
+    ensureDir(path.dirname(file));
+    const laneRunId = laneForResult(result, runId);
+    const screenshots = listScreenshots(laneRunId, result.name, result);
+    const screenshotAssets = screenshots.map(screenshot =>
+      copyScreenshotAsset({ outDir, laneRunId, testName: result.name, screenshot })
+    );
+    const failedIndex = failedStepIndex(screenshotAssets, result);
+    const failedAsset = failedIndex >= 0 ? screenshotAssets[failedIndex] : null;
+    const beforeFailureAsset = failedIndex > 0 ? screenshotAssets[failedIndex - 1] : null;
+    const history = (testHistory.get(result.name) || []).slice(0, 6);
+    const failure = failureSnippet(result);
+    const category = failureCategory(result);
+    const rerunCommand = rerunCommandForResult(result);
+    const isSlow = resultDurationMs(result) > slowThresholdMs && resultDurationMs(result) > 0;
+    const backToReport = relativeLink(file, path.join(outDir, 'index.html'));
+    const markdownGuide = relativeLink(file, testDocs[result.name]);
+    const screenshotGrid = screenshotAssets.length
+      ? screenshotAssets
+          .map((screenshot, index) => {
+            const title = titleFromFileName(screenshot);
+            const failedHere = index === failedIndex;
+            return `
+              <figure class="step${failedHere ? ' failed-step' : ''}">
+                <a href="${escapeHtml(relativeLink(file, screenshot))}">
+                  <img src="${escapeHtml(relativeLink(file, screenshot))}" alt="${escapeHtml(title)}" loading="lazy">
+                </a>
+                <figcaption><strong>${failedHere ? 'Failed here' : `Step ${index + 1}`}</strong>${escapeHtml(title)}</figcaption>
+              </figure>`;
+          })
+          .join('\n')
+      : '<p class="empty">No screenshots were captured for this test run.</p>';
+    const failurePanel = failure
+      ? `
+        <section class="failure">
+          <span>Failure${category ? ` · ${escapeHtml(category)}` : ''}</span>
+          <pre>${escapeHtml(failure)}</pre>
+        </section>`
+      : '';
+    const failureCompare = failedAsset
+      ? `
+        <section class="failure-focus">
+          <div><h2>Failure focus</h2><p>The red frame marks the screenshot captured at the failing step.</p></div>
+          <div class="failure-compare">
+            ${beforeFailureAsset ? `<figure><img src="${escapeHtml(relativeLink(file, beforeFailureAsset))}" alt="Last screenshot before failure" loading="lazy"><figcaption>Before failure</figcaption></figure>` : ''}
+            <figure class="failed-step"><img src="${escapeHtml(relativeLink(file, failedAsset))}" alt="Failed screenshot" loading="lazy"><figcaption>Failed step</figcaption></figure>
+          </div>
+        </section>`
+      : '';
+    const historyMarkup = history.length
+      ? history
+          .map(item => {
+            const href = item.dir ? relativeLink(file, path.join(item.dir, 'index.html')) : item.href || '#';
+            return `<a href="${escapeHtml(href)}"><span class="status-pill ${statusClass(item.status)}">${escapeHtml(item.status)}</span><strong>${escapeHtml(formatDate(item.startedAt) || item.runId || 'Run')}</strong><small>${escapeHtml(item.duration || '')}</small></a>`;
+          })
+          .join('\n')
+      : '<p class="muted">No previous report history for this test yet.</p>';
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(result.name)} · ${escapeHtml(runId)}</title>
+  <style>
+    :root { --ink:#162033; --muted:#6c7789; --line:#dfe6ef; --paper:#f7f9fc; --panel:#fff; --pass:#0f9f6e; --fail:#d93f3f; --unknown:#7c8798; --blue:#0e61d8; --navy:#090222; --shadow:0 18px 60px rgba(22,32,51,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:radial-gradient(circle at top left,rgba(14,97,216,.17),transparent 34rem),var(--paper); font:16px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    a { color:inherit; }
+    .hero { padding:2rem clamp(1rem,5vw,5rem) 3.5rem; color:#fff; background:linear-gradient(135deg,#090222,#0d2d58); }
+    .back { display:inline-flex; align-items:center; gap:.45rem; color:rgba(255,255,255,.82); font-weight:800; text-decoration:none; }
+    .back:hover { color:#fff; }
+    .eyebrow { margin:2.8rem 0 .6rem; color:rgba(255,255,255,.66); font-size:.78rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { max-width:58rem; margin:0; font-size:clamp(2.3rem,6vw,5.3rem); letter-spacing:-.07em; line-height:.94; overflow-wrap:anywhere; }
+    .hero-meta { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.35rem; }
+    .hero-meta span { border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:.38rem .68rem; background:rgba(255,255,255,.08); font-weight:800; }
+    main { max-width:88rem; margin:-1.7rem auto 0; padding:0 clamp(1rem,5vw,5rem) 4rem; }
+    .panel, .step { border:1px solid var(--line); border-radius:1.25rem; background:rgba(255,255,255,.96); box-shadow:var(--shadow); }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; padding:1rem; }
+    .summary div { min-width:0; border:1px solid var(--line); border-radius:.9rem; padding:.8rem; background:#fbfdff; }
+    dt { color:var(--muted); font-size:.7rem; font-weight:900; letter-spacing:.09em; text-transform:uppercase; }
+    dd { margin:.2rem 0 0; font-size:1.05rem; font-weight:800; overflow-wrap:anywhere; }
+    .actions { display:flex; flex-wrap:wrap; gap:.65rem; margin:1.25rem 0; }
+    .actions a, button { border:1px solid var(--line); border-radius:.75rem; padding:.65rem .85rem; background:#fff; color:var(--blue); font:inherit; font-weight:900; text-decoration:none; cursor:pointer; }
+    .actions a:hover, button:hover { border-color:var(--blue); background:#f2f7ff; }
+    .command { padding:1rem 1.15rem; }
+    .command h2, .history h2, .failure-focus h2 { margin:0 0 .55rem; font-size:1.15rem; }
+    code { display:block; overflow:auto; border-radius:.75rem; padding:.8rem; background:#0e1729; color:#e7efff; white-space:pre-wrap; }
+    .failure { margin:1.25rem 0; border:1px solid rgba(217,63,63,.42); border-radius:1rem; padding:1rem; background:#fff7f7; }
+    .failure span { color:#a32929; font-size:.76rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+    pre { margin:.75rem 0 0; overflow:auto; color:#7a2020; font:600 .88rem/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
+    .failure-focus, .history { margin:1.25rem 0; padding:1.15rem; }
+    .failure-focus p, .muted { margin:0; color:var(--muted); }
+    .failure-compare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-top:1rem; }
+    figure { min-width:0; margin:0; }
+    figure img { display:block; width:100%; max-height:42rem; object-fit:contain; background:#101a2d; }
+    figcaption { display:grid; gap:.25rem; padding:.75rem; color:var(--muted); font-size:.88rem; }
+    figcaption strong { color:var(--ink); font-size:.78rem; font-weight:900; letter-spacing:.07em; text-transform:uppercase; }
+    .failed-step { overflow:hidden; border:4px solid var(--fail); box-shadow:0 0 0 6px rgba(217,63,63,.12); }
+    .history-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr)); gap:.65rem; }
+    .history-list a { display:grid; gap:.35rem; border:1px solid var(--line); border-radius:.75rem; padding:.7rem; text-decoration:none; }
+    .history-list a:hover { border-color:var(--blue); }
+    .history-list small { color:var(--muted); }
+    .status-pill { display:inline-flex; justify-self:start; border-radius:999px; padding:.22rem .52rem; color:#fff; font-size:.72rem; font-weight:900; letter-spacing:.05em; }
+    .status-pill.pass { background:var(--pass); } .status-pill.fail { background:var(--fail); } .status-pill.unknown { background:var(--unknown); }
+    .steps-heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; margin:2rem 0 1rem; }
+    .steps-heading h2 { margin:0; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.04em; }
+    .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(18rem,1fr)); gap:1rem; }
+    .step { overflow:hidden; }
+    .step:hover { border-color:rgba(14,97,216,.5); }
+    .empty { border:1px dashed var(--line); border-radius:1rem; padding:1rem; color:var(--muted); background:#fff; }
+    @media (max-width:700px) { .summary, .failure-compare { grid-template-columns:1fr; } .hero { padding-bottom:3rem; } }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <a class="back" href="${escapeHtml(backToReport)}">← Back to report</a>
+    <p class="eyebrow">${escapeHtml(runId)} · ${escapeHtml(laneRunId)}</p>
+    <h1>${escapeHtml(result.name)}</h1>
+    <div class="hero-meta">
+      <span class="status-pill ${statusClass(result.status)}">${escapeHtml(result.status || 'UNKNOWN')}</span>
+      <span>${escapeHtml(result.duration || formatDurationMs(resultDurationMs(result)))}</span>
+      <span>${screenshotAssets.length} screenshot${screenshotAssets.length === 1 ? '' : 's'}</span>
+      ${isSlow ? '<span>Slow test</span>' : ''}
+    </div>
+  </header>
+  <main>
+    <dl class="summary panel">
+      <div><dt>Lane</dt><dd>${escapeHtml(laneRunId)}</dd></div>
+      <div><dt>Device</dt><dd>${escapeHtml(result.deviceName || 'Not reported')}</dd></div>
+      <div><dt>Appium port</dt><dd>${escapeHtml(result.appiumPort || 'Not reported')}</dd></div>
+      <div><dt>Finished</dt><dd>${escapeHtml(formatDate(result.finishedAt) || result.finishedAt || 'Not reported')}</dd></div>
+    </dl>
+    <div class="actions">
+      <a href="${escapeHtml(markdownGuide)}">Markdown guide</a>
+      <button type="button" data-copy="${escapeHtml(rerunCommand)}">Copy rerun command</button>
+      <button type="button" data-copy-link>Copy page link</button>
+    </div>
+    <section class="command panel"><h2>Rerun this test</h2><code>${escapeHtml(rerunCommand)}</code></section>
+    ${failurePanel}
+    ${failureCompare}
+    <section class="history panel"><h2>Recent history</h2><div class="history-list">${historyMarkup}</div></section>
+    <div class="steps-heading"><h2>Test steps</h2><span class="muted">${screenshotAssets.length} captured screenshot${screenshotAssets.length === 1 ? '' : 's'}</span></div>
+    <section class="steps-grid">${screenshotGrid}</section>
+  </main>
+  <script>
+    async function copyText(value) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(value);
+      const textarea = document.createElement('textarea');
+      textarea.value = value; textarea.style.position = 'fixed'; textarea.style.left = '-9999px';
+      document.body.appendChild(textarea); textarea.select(); document.execCommand('copy'); textarea.remove();
+    }
+    document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+      await copyText(button.dataset.copy || ''); const original = button.textContent; button.textContent = 'Copied'; setTimeout(() => { button.textContent = original; }, 1200);
+    }));
+    document.querySelector('[data-copy-link]').addEventListener('click', async event => {
+      await copyText(window.location.href); const original = event.currentTarget.textContent; event.currentTarget.textContent = 'Copied'; setTimeout(() => { event.currentTarget.textContent = original; }, 1200);
+    });
+  </script>
+</body>
+</html>`;
+    writeGeneratedFile(file, html);
+  }
 }
 
 function reportIdentity(report) {
@@ -909,14 +784,14 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     .map(result => {
       const laneRunId = laneForResult(result, runId);
       const screenshots = listScreenshots(laneRunId, result.name, result);
-      const testId = slugify(result.name);
+      const detailHref = relativeLink(file, testDetailFile(outDir, result));
       const durationMs = resultDurationMs(result);
       const isSlow = slowResults.includes(result);
       const history = testHistory.get(result.name) || [];
       const flake = flakeSummary(history);
       const isFlaky = isFlakyHistory(history);
       return `
-        <a class="test-card ${statusClass(result.status)}${isSlow ? ' slow' : ''}" href="#${testId}" data-test-card data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(result.status || 'UNKNOWN')}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshots.length ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}">
+        <a class="test-card ${statusClass(result.status)}${isSlow ? ' slow' : ''}" href="${escapeHtml(detailHref)}" data-test-card data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(result.status || 'UNKNOWN')}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshots.length ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}">
           <div class="test-card-top">
             <span class="status-pill ${statusClass(result.status)}">${escapeHtml(result.status || 'UNKNOWN')}</span>
             <span class="duration">${escapeHtml(result.duration || formatDurationMs(durationMs))}</span>
@@ -927,148 +802,9 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
             <span>${screenshots.length} screenshot${screenshots.length === 1 ? '' : 's'}</span>
             ${isSlow ? '<span>Slow</span>' : ''}
             ${isFlaky ? `<span>Flaky: ${escapeHtml(flake)}</span>` : ''}
+            <span class="open-details">Open details →</span>
           </div>
         </a>`;
-    })
-    .join('\n');
-
-  const testSections = results
-    .map(result => {
-      const laneRunId = laneForResult(result, runId);
-      const screenshots = listScreenshots(laneRunId, result.name, result);
-      const testId = slugify(result.name);
-      const screenshotCount = screenshots.length;
-      const isFailure = result.status === 'FAIL';
-      const durationMs = resultDurationMs(result);
-      const isSlow = slowResults.includes(result);
-      const screenshotAssets = screenshots.map(screenshot =>
-        copyScreenshotAsset({ outDir, laneRunId, testName: result.name, screenshot })
-      );
-      const failedIndex = failedStepIndex(screenshotAssets, result);
-      const failedAsset = failedIndex >= 0 ? screenshotAssets[failedIndex] : null;
-      const beforeFailureAsset = failedIndex > 0 ? screenshotAssets[failedIndex - 1] : null;
-      const afterFailureAsset = failedIndex >= 0 && failedIndex < screenshotAssets.length - 1 ? screenshotAssets[failedIndex + 1] : null;
-      const snippet = failureSnippet(result);
-      const rerunCommand = rerunCommandForResult(result);
-      const history = (testHistory.get(result.name) || []).slice(0, 8);
-      const flake = flakeSummary(history);
-      const isFlaky = isFlakyHistory(history);
-      const category = failureCategory(result);
-      const failure = snippet
-        ? `<section class="failure-box"><h4>Error snippet${category ? ` · ${escapeHtml(category)}` : ''}</h4><pre>${escapeHtml(snippet)}</pre></section>`
-        : '';
-      const failureTimeline =
-        isFailure && failedAsset
-          ? `
-            <section class="failure-timeline">
-              <div>
-                <h4>Failure timeline</h4>
-                <p class="muted">The highlighted step is where the report believes the failure happened.</p>
-              </div>
-              <div class="timeline-strip">
-                ${beforeFailureAsset ? `<a href="${escapeHtml(relativeLink(file, beforeFailureAsset))}"><span>Before</span><img src="${escapeHtml(relativeLink(file, beforeFailureAsset))}" alt="Step before failure" loading="lazy"></a>` : ''}
-                <a class="timeline-failed" href="${escapeHtml(relativeLink(file, failedAsset))}"><span>Failed</span><img src="${escapeHtml(relativeLink(file, failedAsset))}" alt="Failed step" loading="lazy"></a>
-                ${afterFailureAsset ? `<a href="${escapeHtml(relativeLink(file, afterFailureAsset))}"><span>After</span><img src="${escapeHtml(relativeLink(file, afterFailureAsset))}" alt="Step after failure" loading="lazy"></a>` : ''}
-              </div>
-            </section>`
-          : '';
-      const screenshotCompare =
-        isFailure && failedAsset && beforeFailureAsset
-          ? `
-            <section class="compare-box">
-              <h4>Screenshot compare</h4>
-              <div class="compare-grid">
-                <figure>
-                  <img src="${escapeHtml(relativeLink(file, beforeFailureAsset))}" alt="Last screenshot before failure" loading="lazy">
-                  <figcaption><span>Before failure</span>${escapeHtml(titleFromFileName(beforeFailureAsset))}</figcaption>
-                </figure>
-                <figure>
-                  <img src="${escapeHtml(relativeLink(file, failedAsset))}" alt="Failed screenshot" loading="lazy">
-                  <figcaption><span>Failed screenshot</span>${escapeHtml(titleFromFileName(failedAsset))}</figcaption>
-                </figure>
-              </div>
-            </section>`
-          : '';
-      const historyList = history.length
-        ? `
-          <div class="history-list">
-            ${history
-              .map(
-                item => `
-                  <a href="${escapeHtml(item.dir ? relativeLink(file, path.join(item.dir, 'index.html')) : item.href || '#')}">
-                    <span class="status-pill ${statusClass(item.status)}">${escapeHtml(item.status)}</span>
-                    <strong>${escapeHtml(formatDate(item.startedAt) || item.runId || 'Run')}</strong>
-                    <small>${escapeHtml(item.duration || '')}</small>
-                  </a>`
-              )
-              .join('\n')}
-          </div>`
-        : '<p class="muted">No archived history for this test yet.</p>';
-      const screenshotGrid = screenshotAssets.length
-        ? screenshotAssets
-            .map((screenshot, index) => {
-              const title = titleFromFileName(screenshot);
-              const failedHere = index === failedIndex;
-              return `
-                <figure class="step${failedHere ? ' failed-step' : ''}">
-                  <a href="${escapeHtml(relativeLink(file, screenshot))}">
-                    <img src="${escapeHtml(relativeLink(file, screenshot))}" alt="${escapeHtml(title)}" loading="lazy">
-                  </a>
-                  <figcaption>
-                    <span>${failedHere ? 'Failed here' : `Step ${index + 1}`}</span>
-                    ${escapeHtml(title)}
-                    ${failedHere && result.error ? `<pre class="step-error">${escapeHtml(result.error)}</pre>` : ''}
-                  </figcaption>
-                </figure>`;
-            })
-            .join('\n')
-        : '<p class="muted">No screenshots found for this test run.</p>';
-
-      return `
-        <details class="test-section" id="${testId}" data-test-section data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(result.status || 'UNKNOWN')}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshotCount ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}"${isFailure ? ' open' : ''}>
-          <summary class="section-summary">
-            <div>
-              <span class="status-pill ${statusClass(result.status)}">${escapeHtml(result.status || 'UNKNOWN')}</span>
-              ${isSlow ? '<span class="status-pill slow-pill">SLOW</span>' : ''}
-              <h2>${escapeHtml(result.name)}</h2>
-              <p>${escapeHtml(laneRunId)}${result.deviceName ? ` / ${escapeHtml(result.deviceName)}` : ''} · ${escapeHtml(flake)}</p>
-            </div>
-            <div class="summary-meta">
-              <span>${escapeHtml(result.duration || formatDurationMs(durationMs))}</span>
-              <span>${screenshotCount} screenshot${screenshotCount === 1 ? '' : 's'}</span>
-              <span class="collapse-label">Details</span>
-            </div>
-          </summary>
-          <div class="test-section-body">
-            <div class="test-actions">
-              <a class="markdown-link" href="${escapeHtml(relativeLink(file, testDocs[result.name]))}">Markdown guide</a>
-              <button type="button" data-copy="${escapeHtml(rerunCommand)}">Copy rerun command</button>
-              <button type="button" data-copy-link="#${escapeHtml(testId)}">Copy section link</button>
-            </div>
-            <section class="command-box">
-              <h4>Rerun this test</h4>
-              <code>${escapeHtml(rerunCommand)}</code>
-            </section>
-            <dl class="meta-grid">
-              <div><dt>Duration</dt><dd>${escapeHtml(result.duration || formatDurationMs(durationMs))}</dd></div>
-              <div><dt>Lane</dt><dd>${escapeHtml(laneRunId)}</dd></div>
-              <div><dt>Device</dt><dd>${escapeHtml(result.deviceName || '')}</dd></div>
-              <div><dt>Appium port</dt><dd>${escapeHtml(result.appiumPort || '')}</dd></div>
-              <div><dt>Started</dt><dd>${escapeHtml(formatDate(result.startedAt) || result.startedAt || '')}</dd></div>
-              <div><dt>Finished</dt><dd>${escapeHtml(formatDate(result.finishedAt) || result.finishedAt || '')}</dd></div>
-              <div><dt>History</dt><dd>${escapeHtml(flake)}</dd></div>
-              ${category ? `<div><dt>Failure category</dt><dd>${escapeHtml(category)}</dd></div>` : ''}
-            </dl>
-            ${failure}
-            ${failureTimeline}
-            ${screenshotCompare}
-            <section class="history-box">
-              <h4>Recent history for ${escapeHtml(result.name)}</h4>
-              ${historyList}
-            </section>
-            <div class="steps-grid">${screenshotGrid}</div>
-          </div>
-        </details>`;
     })
     .join('\n');
 
@@ -1079,7 +815,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
         ${failures
           .map(
             failure => `
-              <a href="#${slugify(failure.name)}">
+              <a href="${escapeHtml(relativeLink(file, testDetailFile(outDir, failure)))}">
                 <strong>${escapeHtml(failure.name)}</strong>
                 <em>${escapeHtml(failureCategory(failure))}</em>
                 <span>${escapeHtml(failureSnippet(failure) || 'Failed without error text')}</span>
@@ -1112,7 +848,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
         .slice(0, 5)
         .map(
           result => `
-            <a href="#${slugify(result.name)}">
+            <a href="${escapeHtml(relativeLink(file, testDetailFile(outDir, result)))}">
               <strong>${escapeHtml(result.name)}</strong>
               <span>${escapeHtml(result.duration || formatDurationMs(resultDurationMs(result)))} · ${escapeHtml(laneForResult(result, runId))}${durationDeltaByTest.has(result.name) ? ` · ${escapeHtml(`${formatDurationMs(Math.abs(durationDeltaByTest.get(result.name)))} ${durationDeltaByTest.get(result.name) > 0 ? 'slower' : 'faster'} vs previous`)}` : ''}</span>
             </a>`
@@ -1130,25 +866,25 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
       <div class="comparison-list">
         ${[
           ...runComparison.newlyFailed.slice(0, 4).map(result => ({
-            href: `#${slugify(result.name)}`,
+            href: relativeLink(file, testDetailFile(outDir, result)),
             label: result.name,
             meta: 'New failure',
             tone: 'fail',
           })),
           ...runComparison.newlyFixed.slice(0, 4).map(result => ({
-            href: `#${slugify(result.name)}`,
+            href: relativeLink(file, testDetailFile(outDir, result)),
             label: result.name,
             meta: 'Fixed since previous',
             tone: 'pass',
           })),
           ...runComparison.slower.slice(0, 4).map(item => ({
-            href: `#${slugify(item.result.name)}`,
+            href: relativeLink(file, testDetailFile(outDir, item.result)),
             label: item.result.name,
             meta: `${formatDurationMs(item.diffMs)} slower`,
             tone: 'slow',
           })),
           ...runComparison.faster.slice(0, 4).map(item => ({
-            href: `#${slugify(item.result.name)}`,
+            href: relativeLink(file, testDetailFile(outDir, item.result)),
             label: item.result.name,
             meta: `${formatDurationMs(Math.abs(item.diffMs))} faster`,
             tone: 'pass',
@@ -2073,7 +1809,6 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
       </div>
     </details>
 
-    ${testSections}
   </main>
 
   <script>
@@ -2084,13 +1819,6 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     const slowOnly = document.querySelector('#slowOnly');
     const screenshotsOnly = document.querySelector('#screenshotsOnly');
     const cards = [...document.querySelectorAll('[data-test-card]')];
-    const sections = [...document.querySelectorAll('[data-test-section]')];
-
-    function openSection(section) {
-      if (!section) return;
-      section.open = true;
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
 
     function shouldShow(element) {
       const term = search.value.trim().toLowerCase();
@@ -2109,7 +1837,6 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
 
     function applyFilters() {
       cards.forEach(card => { card.hidden = !shouldShow(card); });
-      sections.forEach(section => { section.hidden = !shouldShow(section); });
     }
 
     async function copyText(value) {
@@ -2130,17 +1857,6 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     }
 
     [search, statusFilter, laneFilter, failedOnly, slowOnly, screenshotsOnly].forEach(input => input.addEventListener('input', applyFilters));
-    cards.forEach(card => {
-      card.addEventListener('click', event => {
-        const section = document.querySelector(card.getAttribute('href'));
-        if (!section) return;
-        event.preventDefault();
-        openSection(section);
-        history.replaceState(null, '', card.getAttribute('href'));
-      });
-    });
-    window.addEventListener('hashchange', () => openSection(document.querySelector(window.location.hash)));
-    if (window.location.hash) openSection(document.querySelector(window.location.hash));
     document.querySelectorAll('[data-copy]').forEach(button => {
       button.addEventListener('click', async () => {
         await copyText(button.dataset.copy || '');
@@ -2204,7 +1920,11 @@ function writeReportMeta({ outDir, runId, summary, reportType }) {
 }
 
 function generateReportAt({ outputRoot, outputRunId, sourceRunId, summary, reportType }) {
-  const outDir = ensureDir(path.join(outputRoot, outputRunId));
+  const outDir = path.join(outputRoot, outputRunId);
+  if (reportType === 'latest' && fs.existsSync(outDir)) {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+  ensureDir(outDir);
   const testDocs = {};
 
   for (const result of summary.results) {
@@ -2244,6 +1964,15 @@ function discoverReports(outputRoot) {
   }
 
   return reports.sort((a, b) => Date.parse(b.startedAt || b.updatedAt || 0) - Date.parse(a.startedAt || a.updatedAt || 0));
+}
+
+function reportsForNavigation(reports, currentHtmlPath) {
+  if (process.env.SCRIBE_NAV_TRACKED_ONLY !== '1') return reports;
+  const current = path.resolve(currentHtmlPath);
+  return reports.filter(report => {
+    const reportIndex = path.resolve(report.dir, 'index.html');
+    return reportIndex === current || gitTracksFile(reportIndex, REPO_ROOT);
+  });
 }
 
 function reportArchiveCards(reports, linkPrefix = '') {
@@ -2561,6 +2290,7 @@ function writeArchivePages(outputRoot, reports = discoverReports(outputRoot)) {
 function generate() {
   const runId = argValue('run', process.env.SCRIBE_DOC_RUN_ID || 'split3-combined');
   const outputRoot = path.resolve(argValue('out', process.env.SCRIBE_DOC_OUTPUT_DIR || DEFAULT_OUTPUT_ROOT));
+  const archiveEnabled = argValue('archive', process.env.SCRIBE_ARCHIVE_ENABLED || '0') !== '0';
   const summary = withPreviewFailures(loadRunSummary(runId), previewFailureSpec());
   const archiveId = argValue('archive-id', process.env.SCRIBE_DOC_ARCHIVE_ID || archiveRunId(runId, summary));
   const latest = generateReportAt({
@@ -2570,14 +2300,19 @@ function generate() {
     summary,
     reportType: 'latest',
   });
-  const archive = generateReportAt({
-    outputRoot,
-    outputRunId: path.join('archive', archiveId),
-    sourceRunId: runId,
-    summary,
-    reportType: 'archive',
-  });
-  const reports = discoverReports(outputRoot);
+  const archive = archiveEnabled
+    ? generateReportAt({
+        outputRoot,
+        outputRunId: path.join('archive', archiveId),
+        sourceRunId: runId,
+        summary,
+        reportType: 'archive',
+      })
+    : null;
+  const discoveredReports = discoverReports(outputRoot).filter(
+    report => archiveEnabled || report.reportType !== 'archive'
+  );
+  const reports = reportsForNavigation(discoveredReports, latest.htmlPath);
   writeHtmlReport({
     outDir: latest.outDir,
     runId,
@@ -2586,14 +2321,32 @@ function generate() {
     reportNav: buildReportNav(reports, latest.htmlPath),
     allReports: reports,
   });
-  writeHtmlReport({
-    outDir: archive.outDir,
+  if (archive) {
+    writeHtmlReport({
+      outDir: archive.outDir,
+      runId,
+      summary,
+      testDocs: archive.testDocs,
+      reportNav: buildReportNav(reports, archive.htmlPath),
+      allReports: reports,
+    });
+  }
+  writeTestHtmlPages({
+    outDir: latest.outDir,
     runId,
     summary,
-    testDocs: archive.testDocs,
-    reportNav: buildReportNav(reports, archive.htmlPath),
+    testDocs: latest.testDocs,
     allReports: reports,
   });
+  if (archive) {
+    writeTestHtmlPages({
+      outDir: archive.outDir,
+      runId,
+      summary,
+      testDocs: archive.testDocs,
+      allReports: reports,
+    });
+  }
   refreshReportNavigation(reports);
   const archivePages = writeArchivePages(outputRoot, reports);
 
@@ -2601,7 +2354,8 @@ function generate() {
   const htmlPath = latest.htmlPath;
   console.log(`Scribe-style Markdown written to ${indexPath}`);
   console.log(`Scribe-style web report written to ${htmlPath}`);
-  console.log(`Archived copy written to ${archive.htmlPath}`);
+  if (archive) console.log(`Archived copy written to ${archive.htmlPath}`);
+  else console.log('Archive generation disabled for this report');
   console.log(`Report archive page updated at ${archivePages.repoRootIndex} (${archivePages.reportCount} reports)`);
 }
 

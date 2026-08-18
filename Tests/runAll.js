@@ -60,6 +60,7 @@ async function run() {
   const report = createReportWriter();
   const suiteStart = performance.now();
   let loginSetupMs;
+  const failures = [];
   const results = tests.map(test => ({
     name: test.name,
     area: test.area,
@@ -91,11 +92,11 @@ async function run() {
       };
       report.write(results, reportMeta());
 
-      if (!(skipResetBetweenFirstAndRest() && index > 0)) {
-        await ensureRoomsSectionReady(driver);
-      }
       const testStart = performance.now();
       try {
+        if (!(skipResetBetweenFirstAndRest() && index > 0)) {
+          await ensureRoomsSectionReady(driver);
+        }
         await test.run(driver, { skipLogin: true });
         const durationMs = Math.round(performance.now() - testStart);
         results[index] = {
@@ -114,10 +115,29 @@ async function run() {
           durationMs,
         };
         report.write(results, reportMeta());
-        throw err;
+        failures.push({ test: test.name, error: err });
+        console.error(`  ${test.name} failed: ${err?.message || err}`);
+
+        // Keep collecting regression results when the app can return home. A broken
+        // driver/session is still fatal because later results would not be meaningful.
+        try {
+          await ensureRoomsSectionReady(driver);
+        } catch (recoveryError) {
+          throw new Error(
+            `Could not recover after ${test.name}: ${recoveryError?.message || recoveryError}`,
+            { cause: err }
+          );
+        }
       }
 
       report.write(results, reportMeta());
+    }
+
+    if (failures.length) {
+      throw new AggregateError(
+        failures.map(failure => failure.error),
+        `${failures.length} suite test(s) failed: ${failures.map(failure => failure.test).join(', ')}`
+      );
     }
   } finally {
     try {

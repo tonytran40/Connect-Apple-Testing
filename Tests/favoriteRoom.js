@@ -7,9 +7,11 @@ const {
   resetToHome,
   scrollUntilConversationEntryVisible,
 } = require('../utils/testSession');
+const { escapePredicateString, getElementRect, pauseIfNeeded } = require('../utils/uiActions');
+const { createPublicRoom, generateRoomName } = require('./CreateRoom');
 
 const TEST_NAME = 'favoriteRoom';
-const FAVORITE_ROOM_NAME = process.env.FAVORITE_ROOM_NAME || 'Favorite Room';
+const CONFIGURED_FAVORITE_ROOM_NAME = process.env.FAVORITE_ROOM_NAME || '';
 
 function intEnv(name, fallback, min, max) {
   const n = parseInt(process.env[name], 10);
@@ -26,23 +28,6 @@ const POST_LOGIN_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_LOGIN_PAUSE_MS', 400, 0, 
 const POST_RESET_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_RESET_PAUSE_MS', 250, 0, 1500);
 const POST_SCROLL_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_SCROLL_PAUSE_MS', 200, 0, 1500);
 const POST_SWIPE_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_SWIPE_PAUSE_MS', 200, 0, 1500);
-
-async function pause(driver, ms) {
-  if (ms > 0) await driver.pause(ms);
-}
-
-async function getRectCompat(el) {
-  if (typeof el.getRect === 'function') {
-    return el.getRect();
-  }
-  const loc = await el.getLocation();
-  const size = await el.getSize();
-  return { x: loc.x, y: loc.y, width: size.width, height: size.height };
-}
-
-function escapePredicateString(s) {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
 
 async function holdThenSwipeRight(driver, fromX, toX, y) {
   await driver.performActions([
@@ -63,7 +48,7 @@ async function holdThenSwipeRight(driver, fromX, toX, y) {
 }
 
 async function swipeRightOnElement(driver, el) {
-  const rect = await getRectCompat(el);
+  const rect = await getElementRect(el);
   const win = await driver.getWindowRect();
   const y = Math.round(rect.y + rect.height / 2);
   const fromX = Math.max(8, Math.round(win.width * 0.08));
@@ -119,8 +104,8 @@ async function waitForFavoriteRow(driver, roomName) {
   );
 }
 
-async function tapRevealedFavorite(driver) {
-  const esc = escapePredicateString(FAVORITE_ROOM_NAME);
+async function tapRevealedFavorite(driver, roomName) {
+  const esc = escapePredicateString(roomName);
   const candidate = await driver.$(
     `//XCUIElementTypeStaticText[@name="${esc}" or @label="${esc}"]/preceding::XCUIElementTypeButton[@name="favoritesButton" or @label=""][1]`
   );
@@ -136,33 +121,39 @@ async function tapRevealedFavorite(driver) {
 
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
+  const roomName = CONFIGURED_FAVORITE_ROOM_NAME || generateRoomName('Favorite', 'A');
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, POST_LOGIN_PAUSE_MS);
+    await pauseIfNeeded(driver, POST_LOGIN_PAUSE_MS);
   }
 
   await resetToHome(driver);
-  await pause(driver, POST_RESET_PAUSE_MS);
+  await pauseIfNeeded(driver, POST_RESET_PAUSE_MS);
+  if (!CONFIGURED_FAVORITE_ROOM_NAME) {
+    console.log(`favoriteRoom: creating isolated room "${roomName}"`);
+    await createPublicRoom(driver, roomName);
+    await resetToHome(driver);
+  }
   await scrollUntilConversationEntryVisible(driver);
-  await pause(driver, POST_SCROLL_PAUSE_MS);
+  await pauseIfNeeded(driver, POST_SCROLL_PAUSE_MS);
 
-  const row = await waitForFavoriteRow(driver, FAVORITE_ROOM_NAME);
-  console.log(`favoriteRoom: found "${FAVORITE_ROOM_NAME}"`);
+  const row = await waitForFavoriteRow(driver, roomName);
+  console.log(`favoriteRoom: found "${roomName}"`);
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe.png');
   await swipeRightOnElement(driver, row);
-  await pause(driver, POST_SWIPE_PAUSE_MS);
+  await pauseIfNeeded(driver, POST_SWIPE_PAUSE_MS);
   await saveScreenshot(driver, TEST_NAME, '02_after_swipe_right.png');
-  await tapRevealedFavorite(driver);
+  await tapRevealedFavorite(driver, roomName);
   await saveScreenshot(driver, TEST_NAME, '03_after_click_favorites.png');
 
   // Toggle off: same row action again (swipe actions usually collapse after tap).
-  const rowAgain = await waitForFavoriteRow(driver, FAVORITE_ROOM_NAME);
-  await pause(driver, 400);
+  const rowAgain = await waitForFavoriteRow(driver, roomName);
+  await pauseIfNeeded(driver, 400);
   await swipeRightOnElement(driver, rowAgain);
-  await pause(driver, POST_SWIPE_PAUSE_MS);
-  await tapRevealedFavorite(driver);
+  await pauseIfNeeded(driver, POST_SWIPE_PAUSE_MS);
+  await tapRevealedFavorite(driver, roomName);
   await saveScreenshot(driver, TEST_NAME, '04_after_unfavorite.png');
 }
 
