@@ -62,10 +62,10 @@
     <p class="eyebrow">split3-combined · main-suite</p>
     <h1>CreateRoom</h1>
     <div class="hero-meta">
-      <span class="status-pill fail">FAIL</span>
-      <span>1m 56s</span>
-      <span>4 screenshots</span>
-      <span>Slow test</span>
+      <span class="status-pill pass">PASS</span>
+      <span>55s</span>
+      <span>5 screenshots</span>
+
     </div>
   </header>
   <main>
@@ -74,7 +74,7 @@
       <div><dt>Category</dt><dd>main-suite</dd></div>
       <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
       <div><dt>Appium port</dt><dd>4723</dd></div>
-      <div><dt>Finished</dt><dd>Aug 19, 11:11 AM</dd></div>
+      <div><dt>Finished</dt><dd>Aug 19, 11:26 AM</dd></div>
     </dl>
     <div class="actions">
       <a href="../../CreateRoom.md">Markdown guide</a>
@@ -84,54 +84,51 @@
     <section class="command panel"><h2>Rerun this test</h2><code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js</code></section>
     <section class="phase-timings panel"><h2>Phase timing</h2><dl class="summary">
           <div><dt>Session creation</dt><dd>0ms</dd></div>
-<div><dt>Login/readiness</dt><dd>38s</dd></div>
-<div><dt>Test body</dt><dd>1m 15s</dd></div>
-<div><dt>Screenshot capture</dt><dd>3s</dd></div>
-<div><dt>Recovery</dt><dd>7s</dd></div>
+<div><dt>Login/readiness</dt><dd>3s</dd></div>
+<div><dt>Test body</dt><dd>50s</dd></div>
+<div><dt>Screenshot capture</dt><dd>2s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
 <div><dt>Report generation</dt><dd>0ms</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>11s</dd></div>
         </dl></section>
 
-        <section class="failure">
-          <span>Failure · Selector</span>
-          <pre>element (&quot;~createRoomButton&quot;) still not displayed after 20000ms</pre>
-        </section>
 
-        <section class="failure-focus">
-          <div><h2>Failure focus</h2><p>The red frame marks the screenshot captured at the failing step.</p></div>
-          <div class="failure-compare">
-
-            <figure class="failed-step"><img src="../../assets/main-suite/CreateRoom/ERROR.png" alt="Failed screenshot" loading="lazy"><figcaption>Failed step</figcaption></figure>
-          </div>
-        </section>
-    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill fail">FAIL</span><strong>Aug 19, 11:09 AM</strong><small>1m 56s</small></a></div></section>
-    <div class="steps-heading"><h2>Test steps</h2><span class="muted">4 captured screenshots</span></div>
+    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill pass">PASS</span><strong>Aug 19, 11:25 AM</strong><small>55s</small></a></div></section>
+    <div class="steps-heading"><h2>Test steps</h2><span class="muted">5 captured screenshots</span></div>
     <section class="steps-grid">
-              <figure class="step failed-step">
-                <a href="../../assets/main-suite/CreateRoom/ERROR.png">
-                  <img src="../../assets/main-suite/CreateRoom/ERROR.png" alt="ERROR" loading="lazy">
+              <figure class="step">
+                <a href="../../assets/main-suite/CreateRoom/private_create_room.png">
+                  <img src="../../assets/main-suite/CreateRoom/private_create_room.png" alt="Private Create Room" loading="lazy">
                 </a>
-                <figcaption><strong>Failed here</strong>ERROR</figcaption>
+                <figcaption><strong>Step 1</strong>Private Create Room</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/main-suite/CreateRoom/private_room_toggle.png">
+                  <img src="../../assets/main-suite/CreateRoom/private_room_toggle.png" alt="Private Room Toggle" loading="lazy">
+                </a>
+                <figcaption><strong>Step 2</strong>Private Room Toggle</figcaption>
               </figure>
 
               <figure class="step">
                 <a href="../../assets/main-suite/CreateRoom/public_create_room.png">
                   <img src="../../assets/main-suite/CreateRoom/public_create_room.png" alt="Public Create Room" loading="lazy">
                 </a>
-                <figcaption><strong>Step 2</strong>Public Create Room</figcaption>
+                <figcaption><strong>Step 3</strong>Public Create Room</figcaption>
               </figure>
 
               <figure class="step">
                 <a href="../../assets/main-suite/CreateRoom/public_room_name.png">
                   <img src="../../assets/main-suite/CreateRoom/public_room_name.png" alt="Public Room Name" loading="lazy">
                 </a>
-                <figcaption><strong>Step 3</strong>Public Room Name</figcaption>
+                <figcaption><strong>Step 4</strong>Public Room Name</figcaption>
               </figure>
 
               <figure class="step">
                 <a href="../../assets/main-suite/CreateRoom/rooms_list_after_public.png">
                   <img src="../../assets/main-suite/CreateRoom/rooms_list_after_public.png" alt="Rooms List After Public" loading="lazy">
                 </a>
-                <figcaption><strong>Step 4</strong>Rooms List After Public</figcaption>
+                <figcaption><strong>Step 5</strong>Rooms List After Public</figcaption>
               </figure></section>
   </main>
   <script>

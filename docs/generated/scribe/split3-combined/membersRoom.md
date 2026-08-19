@@ -1,22 +1,22 @@
 # membersRoom
 
 - Status: PASS
-- Duration: 1m 57s
+- Duration: 1m 6s
 - Lane: ConversationView
 - Logical category: ConversationView
 - Device: iPhone 17
 - Appium port: 4727
-- Started: 2026-08-19T15:15:02.221Z
-- Finished: 2026-08-19T15:16:59.150Z
+- Started: 2026-08-19T15:29:44.671Z
+- Finished: 2026-08-19T15:30:50.784Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 36s |
-| Test body | 1m 17s |
-| Screenshot capture | 4s |
+| Login/readiness | 19s |
+| Test body | 46s |
+| Screenshot capture | 2s |
 | Recovery | 0ms |
 | Report generation | 0ms |
 

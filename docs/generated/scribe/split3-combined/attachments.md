@@ -1,22 +1,22 @@
 # attachments
 
 - Status: PASS
-- Duration: 2m 8s
+- Duration: 1m 21s
 - Lane: ConversationView
 - Logical category: ConversationView
 - Device: iPhone 17
 - Appium port: 4727
-- Started: 2026-08-19T15:11:30.697Z
-- Finished: 2026-08-19T15:13:38.211Z
+- Started: 2026-08-19T15:27:34.756Z
+- Finished: 2026-08-19T15:28:55.327Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 22s |
-| Test body | 1m 37s |
-| Screenshot capture | 8s |
+| Login/readiness | 14s |
+| Test body | 1m 5s |
+| Screenshot capture | 2s |
 | Recovery | 0ms |
 | Report generation | 0ms |
 

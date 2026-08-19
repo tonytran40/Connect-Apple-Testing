@@ -1,22 +1,22 @@
 # removeRoom
 
 - Status: PASS
-- Duration: 1m 4s
+- Duration: 37s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:12:34.844Z
-- Finished: 2026-08-19T15:13:38.523Z
+- Started: 2026-08-19T15:27:36.912Z
+- Finished: 2026-08-19T15:28:13.781Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 4s |
-| Test body | 57s |
-| Screenshot capture | 2s |
+| Login/readiness | 3s |
+| Test body | 33s |
+| Screenshot capture | 715ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
 

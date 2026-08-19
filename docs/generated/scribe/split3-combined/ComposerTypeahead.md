@@ -1,13 +1,13 @@
 # ComposerTypeahead
 
 - Status: FAIL
-- Duration: 59s
+- Duration: 44s
 - Lane: Conversation-List
 - Logical category: ConversationView
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:13:38.527Z
-- Finished: 2026-08-19T15:14:37.136Z
+- Started: 2026-08-19T15:28:13.787Z
+- Finished: 2026-08-19T15:28:57.334Z
 
 ## Failure
 
@@ -20,10 +20,10 @@ Visible control with source label ":grinning_face:" did not appear
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 5s |
-| Test body | 53s |
-| Screenshot capture | 591ms |
-| Recovery | 30s |
+| Login/readiness | 3s |
+| Test body | 40s |
+| Screenshot capture | 332ms |
+| Recovery | 21s |
 | Report generation | 0ms |
 
 ## Steps

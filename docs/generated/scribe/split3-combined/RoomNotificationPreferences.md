@@ -1,25 +1,25 @@
 # RoomNotificationPreferences
 
 - Status: PASS
-- Duration: 1m 42s
+- Duration: 1m 8s
 - Lane: Conversation-List
 - Logical category: ConversationView
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:16:00.698Z
-- Finished: 2026-08-19T15:17:42.426Z
+- Started: 2026-08-19T15:29:55.378Z
+- Finished: 2026-08-19T15:31:03.821Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 25s |
-| Test body | 1m 14s |
-| Screenshot capture | 3s |
+| Login/readiness | 22s |
+| Test body | 46s |
+| Screenshot capture | 637ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
-| Room creation (test-owned) | 9s |
+| Room creation (test-owned) | 6s |
 
 ## Steps
 

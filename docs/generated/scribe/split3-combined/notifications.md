@@ -1,22 +1,22 @@
 # notifications
 
 - Status: PASS
-- Duration: 27s
+- Duration: 17s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:12:08.278Z
-- Finished: 2026-08-19T15:12:34.837Z
+- Started: 2026-08-19T15:27:20.226Z
+- Finished: 2026-08-19T15:27:36.907Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 8s |
-| Test body | 17s |
-| Screenshot capture | 2s |
+| Login/readiness | 5s |
+| Test body | 11s |
+| Screenshot capture | 995ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
 

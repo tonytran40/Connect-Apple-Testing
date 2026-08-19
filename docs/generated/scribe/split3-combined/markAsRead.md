@@ -1,13 +1,13 @@
 # markAsRead
 
 - Status: PASS
-- Duration: 51s
+- Duration: 38s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:11:16.781Z
-- Finished: 2026-08-19T15:12:08.269Z
+- Started: 2026-08-19T15:26:41.927Z
+- Finished: 2026-08-19T15:27:20.219Z
 
 ## Phase Timings
 
@@ -15,8 +15,8 @@
 | --- | --- |
 | Session creation | 0ms |
 | Login/readiness | 4s |
-| Test body | 46s |
-| Screenshot capture | 2s |
+| Test body | 34s |
+| Screenshot capture | 611ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
 
