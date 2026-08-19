@@ -1,12 +1,24 @@
 # newMessage
 
 - Status: PASS
-- Duration: 30s
+- Duration: 41s
 - Lane: main-suite
+- Logical category: main-suite
 - Device: iPhone 17 Pro
 - Appium port: 4723
-- Started: 2026-08-18T19:14:12.742Z
-- Finished: 2026-08-18T19:14:42.573Z
+- Started: 2026-08-19T15:15:04.865Z
+- Finished: 2026-08-19T15:15:46.047Z
+
+## Phase Timings
+
+| Phase | Duration |
+| --- | --- |
+| Session creation | 0ms |
+| Login/readiness | 14s |
+| Test body | 26s |
+| Screenshot capture | 906ms |
+| Recovery | 0ms |
+| Report generation | 0ms |
 
 ## Steps
 

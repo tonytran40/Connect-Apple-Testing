@@ -15,7 +15,10 @@ const A11Y = Object.freeze({
   peoplePlusButton: 'peoplePlusButton',
   newConversationButton: 'newConversationButton',
   searchInputTextView: 'searchInputTextView',
-  conversationSearch: 'conversationSearch',
+  conversationSearchField: 'conversationSearchField',
+  // Compatibility alias for callers that used the old key before the source ID was corrected.
+  conversationSearch: 'conversationSearchField',
+  bookmarksScrollView: 'bookmarksScrollView',
 
   createRoomButton: 'createRoomButton',
   plusButton: 'plusButton',
@@ -70,10 +73,53 @@ const PREDICATES = Object.freeze({
     '-ios predicate string:type == "XCUIElementTypeButton" AND label CONTAINS "Rooms"',
 });
 
+const SELECTOR_METADATA = Object.freeze({
+  conversationSearchField: Object.freeze({
+    source: 'exact',
+    platforms: Object.freeze(['macOS']),
+    note: 'The app currently renders conversation search only on macOS.',
+  }),
+  conversationSearch: Object.freeze({
+    source: 'alias',
+    aliasFor: 'conversationSearchField',
+    note: 'Legacy selector key retained for existing consumers.',
+  }),
+  roomsSectionHeader: Object.freeze({
+    source: 'dynamic',
+    pattern: '<section label> section header',
+    note: 'SwiftUI builds this identifier from the visible disclosure-group label.',
+  }),
+  roomComposerPullHandle: Object.freeze({
+    source: 'exact',
+    platforms: Object.freeze(['iOS']),
+  }),
+  messageComposerTextView: Object.freeze({
+    source: 'platform',
+    platforms: Object.freeze(['legacy iOS builds']),
+    note: 'Compatibility fallback; current app source uses roomComposerTextView.',
+  }),
+  messageActionsMore: Object.freeze({
+    source: 'exact',
+    platforms: Object.freeze(['macOS']),
+  }),
+  roomsHeaderButton: Object.freeze({
+    source: 'text',
+    selectorSet: 'PREDICATES',
+    note: 'Fallback for the SwiftUI-generated Rooms disclosure header.',
+  }),
+  reactionChip: Object.freeze({
+    source: 'dynamic',
+    selectorFactory: 'reactionChip',
+    pattern: 'messageReaction-<emoji>',
+    note: 'Reaction identifiers include the runtime emoji value.',
+  }),
+});
+
 module.exports = {
   A11Y,
   SELECTORS,
   PREDICATES,
+  SELECTOR_METADATA,
   byId,
   reactionChip,
 };

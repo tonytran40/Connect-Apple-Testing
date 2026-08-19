@@ -1,12 +1,24 @@
 # editRoom
 
 - Status: PASS
-- Duration: 44s
+- Duration: 1m 24s
 - Lane: ConversationView
+- Logical category: ConversationView
 - Device: iPhone 17
 - Appium port: 4727
-- Started: 2026-08-18T19:18:39.416Z
-- Finished: 2026-08-18T19:19:23.795Z
+- Started: 2026-08-19T15:13:38.226Z
+- Finished: 2026-08-19T15:15:02.214Z
+
+## Phase Timings
+
+| Phase | Duration |
+| --- | --- |
+| Session creation | 0ms |
+| Login/readiness | 15s |
+| Test body | 1m 4s |
+| Screenshot capture | 5s |
+| Recovery | 0ms |
+| Report generation | 0ms |
 
 ## Steps
 

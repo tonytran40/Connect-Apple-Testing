@@ -33,11 +33,47 @@ const {
   readTextIfExists,
   writeGeneratedFile,
 } = require('./report/reportFiles');
+const { normalizePhaseTimings } = require('../utils/reportWriter');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const REPORTS_ROOT = path.join(REPO_ROOT, 'reports', 'runs');
 const SCREENSHOTS_ROOT = path.join(REPO_ROOT, 'screenshots');
 const DEFAULT_OUTPUT_ROOT = path.join(REPO_ROOT, 'docs', 'generated', 'scribe');
+const PHASE_LABELS = {
+  sessionCreationMs: 'Session creation',
+  loginReadinessMs: 'Login/readiness',
+  testBodyMs: 'Test body',
+  screenshotCaptureMs: 'Screenshot capture',
+  recoveryMs: 'Recovery',
+  reportGenerationMs: 'Report generation',
+  roomCreationMs: 'Room creation (test-owned)',
+};
+
+function phaseTimingEntries(timings) {
+  const phases = normalizePhaseTimings(timings?.phases || timings);
+  return Object.entries(PHASE_LABELS)
+    .filter(([key]) => key !== 'roomCreationMs' || phases[key] > 0)
+    .map(([key, label]) => ({ key, label, durationMs: phases[key] }));
+}
+
+function setReportGenerationTiming(summary, durationMs) {
+  summary.timings = {
+    unit: 'milliseconds',
+    phases: normalizePhaseTimings({
+      ...(summary.timings?.phases || summary.timings || {}),
+      reportGenerationMs: durationMs,
+    }),
+  };
+  return summary;
+}
+
+function persistReportGenerationTiming(runId, summary) {
+  const summaryPath = path.join(REPORTS_ROOT, runId, 'summary.json');
+  const stored = readJsonIfExists(summaryPath);
+  if (!stored) return;
+  stored.timings = summary.timings;
+  fs.writeFileSync(summaryPath, `${JSON.stringify(stored, null, 2)}\n`, 'utf8');
+}
 
 function copyScreenshotAsset({ outDir, laneRunId, testName, screenshot }) {
   const assetDir = ensureDir(path.join(outDir, 'assets', safePathPart(laneRunId), safePathPart(testName)));
@@ -90,9 +126,13 @@ function parseLaneRunIdsFromCombinedSummary(runId) {
 function parseCombinedResultsFromSummary(runId) {
   const summary = readTextIfExists(path.join(REPORTS_ROOT, runId, 'summary.md'));
   const lines = summary.split(/\r?\n/);
-  const headerIndex = lines.findIndex(line =>
+  const legacyHeaderIndex = lines.findIndex(line =>
     /^\| Test \| Lane \| Status \| Duration \| Device \| Appium Port \|/.test(line)
   );
+  const expandedHeaderIndex = lines.findIndex(line =>
+    /^\| Test \| Category \| Physical Lane \| Status \| Duration \| Device \| Appium Port \|/.test(line)
+  );
+  const headerIndex = expandedHeaderIndex >= 0 ? expandedHeaderIndex : legacyHeaderIndex;
   if (headerIndex < 0) return [];
 
   const results = [];
@@ -102,9 +142,13 @@ function parseCombinedResultsFromSummary(runId) {
     const cells = line.split('|').slice(1, -1).map(cell => cell.trim());
     if (cells.length < 6) continue;
 
-    const [name, laneLabel, status, duration, deviceName, appiumPort] = cells;
+    const [name, logicalCategory, laneLabel, status, duration, deviceName, appiumPort] =
+      expandedHeaderIndex >= 0
+        ? cells
+        : [cells[0], '', cells[1], cells[2], cells[3], cells[4], cells[5]];
     results.push({
       name,
+      logicalCategory,
       laneLabel,
       laneRunId: laneLabel,
       status,
@@ -151,6 +195,9 @@ function loadRunSummary(runId) {
       counts: summaryJson.counts || {},
       lanes: summaryJson.lanes || [],
       results: summaryJson.results || [],
+      timings: summaryJson.timings || {},
+      cleanup: summaryJson.cleanup || null,
+      productStatus: summaryJson.productStatus || summaryJson.status || '',
     };
   }
 
@@ -290,6 +337,7 @@ function writeTestDoc({ outDir, runId, result }) {
     `- Lane: ${laneRunId}`,
   ];
 
+  if (result.logicalCategory) lines.push(`- Logical category: ${result.logicalCategory}`);
   if (result.deviceName) lines.push(`- Device: ${result.deviceName}`);
   if (result.appiumPort) lines.push(`- Appium port: ${result.appiumPort}`);
   if (result.startedAt) lines.push(`- Started: ${result.startedAt}`);
@@ -297,6 +345,13 @@ function writeTestDoc({ outDir, runId, result }) {
 
   if (result.error) {
     lines.push('', '## Failure', '', '```text', result.error, '```');
+  }
+
+  if (result.timings) {
+    lines.push('', '## Phase Timings', '', '| Phase | Duration |', '| --- | --- |');
+    phaseTimingEntries(result.timings).forEach(phase => {
+      lines.push(`| ${phase.label} | ${formatDurationMs(phase.durationMs)} |`);
+    });
   }
 
   if (screenshots.length) {
@@ -336,18 +391,28 @@ function writeIndex({ outDir, runId, summary, testDocs }) {
     `- Passed: ${counts.passed ?? summary.results.filter(result => result.status === 'PASS').length}`,
     `- Failed: ${counts.failed ?? failures.length}`,
     `- Total tests: ${counts.total ?? summary.results.length}`,
+  ];
+
+  if (summary.timings) {
+    lines.push('', '## Phase Timings', '', '| Phase | Aggregate Duration |', '| --- | --- |');
+    phaseTimingEntries(summary.timings).forEach(phase => {
+      lines.push(`| ${phase.label} | ${formatDurationMs(phase.durationMs)} |`);
+    });
+  }
+
+  lines.push(
     '',
     '## Tests',
     '',
-    '| Test | Lane | Status | Duration | Screenshots | Guide |',
-    '| --- | --- | --- | --- | --- | --- |',
-  ];
+    '| Test | Category | Physical Lane | Status | Duration | Screenshots | Guide |',
+    '| --- | --- | --- | --- | --- | --- | --- |'
+  );
 
   for (const result of summary.results) {
     const laneRunId = laneForResult(result, runId);
     const screenshots = listScreenshots(laneRunId, result.name, result);
     lines.push(
-      `| ${escapeMd(result.name)} | ${escapeMd(laneRunId)} | ${escapeMd(result.status || '')} | ${escapeMd(result.duration || '')} | ${screenshots.length} | [guide](${relativeLink(file, testDocs[result.name])}) |`
+      `| ${escapeMd(result.name)} | ${escapeMd(result.logicalCategory || '')} | ${escapeMd(laneRunId)} | ${escapeMd(result.status || '')} | ${escapeMd(result.duration || '')} | ${screenshots.length} | [guide](${relativeLink(file, testDocs[result.name])}) |`
     );
   }
 
@@ -428,6 +493,15 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
           })
           .join('\n')
       : '<p class="muted">No previous report history for this test yet.</p>';
+    const timingMarkup = result.timings
+      ? `<section class="phase-timings panel"><h2>Phase timing</h2><dl class="summary">
+          ${phaseTimingEntries(result.timings)
+            .map(
+              phase => `<div><dt>${escapeHtml(phase.label)}</dt><dd>${escapeHtml(formatDurationMs(phase.durationMs))}</dd></div>`
+            )
+            .join('\n')}
+        </dl></section>`
+      : '';
     const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -448,7 +522,7 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
     .hero-meta span { border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:.38rem .68rem; background:rgba(255,255,255,.08); font-weight:800; }
     main { max-width:88rem; margin:-1.7rem auto 0; padding:0 clamp(1rem,5vw,5rem) 4rem; }
     .panel, .step { border:1px solid var(--line); border-radius:1.25rem; background:rgba(255,255,255,.96); box-shadow:var(--shadow); }
-    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; padding:1rem; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(10rem,1fr)); gap:.75rem; padding:1rem; }
     .summary div { min-width:0; border:1px solid var(--line); border-radius:.9rem; padding:.8rem; background:#fbfdff; }
     dt { color:var(--muted); font-size:.7rem; font-weight:900; letter-spacing:.09em; text-transform:uppercase; }
     dd { margin:.2rem 0 0; font-size:1.05rem; font-weight:800; overflow-wrap:anywhere; }
@@ -456,7 +530,9 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
     .actions a, button { border:1px solid var(--line); border-radius:.75rem; padding:.65rem .85rem; background:#fff; color:var(--blue); font:inherit; font-weight:900; text-decoration:none; cursor:pointer; }
     .actions a:hover, button:hover { border-color:var(--blue); background:#f2f7ff; }
     .command { padding:1rem 1.15rem; }
-    .command h2, .history h2, .failure-focus h2 { margin:0 0 .55rem; font-size:1.15rem; }
+    .command h2, .history h2, .failure-focus h2, .phase-timings h2 { margin:0 0 .55rem; font-size:1.15rem; }
+    .phase-timings { margin:1.25rem 0; padding:1.15rem; }
+    .phase-timings .summary { padding:0; }
     code { display:block; overflow:auto; border-radius:.75rem; padding:.8rem; background:#0e1729; color:#e7efff; white-space:pre-wrap; }
     .failure { margin:1.25rem 0; border:1px solid rgba(217,63,63,.42); border-radius:1rem; padding:1rem; background:#fff7f7; }
     .failure span { color:#a32929; font-size:.76rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
@@ -499,6 +575,7 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
   <main>
     <dl class="summary panel">
       <div><dt>Lane</dt><dd>${escapeHtml(laneRunId)}</dd></div>
+      <div><dt>Category</dt><dd>${escapeHtml(result.logicalCategory || 'Not reported')}</dd></div>
       <div><dt>Device</dt><dd>${escapeHtml(result.deviceName || 'Not reported')}</dd></div>
       <div><dt>Appium port</dt><dd>${escapeHtml(result.appiumPort || 'Not reported')}</dd></div>
       <div><dt>Finished</dt><dd>${escapeHtml(formatDate(result.finishedAt) || result.finishedAt || 'Not reported')}</dd></div>
@@ -509,6 +586,7 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
       <button type="button" data-copy-link>Copy page link</button>
     </div>
     <section class="command panel"><h2>Rerun this test</h2><code>${escapeHtml(rerunCommand)}</code></section>
+    ${timingMarkup}
     ${failurePanel}
     ${failureCompare}
     <section class="history panel"><h2>Recent history</h2><div class="history-list">${historyMarkup}</div></section>
@@ -779,6 +857,19 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     return countsByCategory;
   }, {});
   const reportSwitcher = reportSwitcherMarkup(reportNav);
+  const phaseTimingCards = summary.timings?.unit
+    ? phaseTimingEntries(summary.timings)
+        .map(
+          phase => `<div><dt>${escapeHtml(phase.label)}</dt><dd>${escapeHtml(formatDurationMs(phase.durationMs))}</dd></div>`
+        )
+        .join('\n')
+    : '';
+  const cleanupPanel = summary.cleanup?.enabled
+    ? `<section class="panel cleanup-panel ${statusClass(summary.cleanup.status)}">
+        <div class="panel-heading"><h2>Post-suite cleanup</h2><p>${escapeHtml(summary.cleanup.strict ? 'Strict' : 'Advisory')}</p></div>
+        <p><strong>${escapeHtml(summary.cleanup.status)}</strong> on ${escapeHtml(summary.cleanup.laneLabel || 'configured lane')}${summary.cleanup.error ? `: ${escapeHtml(summary.cleanup.error)}` : ''}</p>
+      </section>`
+    : '';
 
   const testCards = results
     .map(result => {
@@ -797,7 +888,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
             <span class="duration">${escapeHtml(result.duration || formatDurationMs(durationMs))}</span>
           </div>
           <h3>${escapeHtml(result.name)}</h3>
-          <p>${escapeHtml(laneRunId)}${result.deviceName ? ` / ${escapeHtml(result.deviceName)}` : ''}</p>
+          <p>${escapeHtml(result.logicalCategory || 'Uncategorized')} / ${escapeHtml(laneRunId)}${result.deviceName ? ` / ${escapeHtml(result.deviceName)}` : ''}</p>
           <div class="card-tags">
             <span>${screenshots.length} screenshot${screenshots.length === 1 ? '' : 's'}</span>
             ${isSlow ? '<span>Slow</span>' : ''}
@@ -1192,6 +1283,9 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     .overview-grid .panel {
       margin-bottom: 0;
     }
+    .phase-panel, .cleanup-panel { margin-bottom:1.5rem; padding:1.25rem; }
+    .phase-panel .meta-grid { margin-bottom:0; }
+    .cleanup-panel.fail { border-color:rgba(217,63,63,.42); background:#fff7f7; }
     .panel-heading {
       display: flex;
       justify-content: space-between;
@@ -1744,6 +1838,9 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
 
     ${failureList}
 
+    ${phaseTimingCards ? `<section class="panel phase-panel"><div class="panel-heading"><h2>Phase timing</h2><p>Aggregate workload time</p></div><dl class="meta-grid compact">${phaseTimingCards}</dl></section>` : ''}
+    ${cleanupPanel}
+
     <section class="toolbar" aria-label="Report filters">
       <input id="search" type="search" placeholder="Search tests">
       <select id="statusFilter">
@@ -1902,16 +1999,20 @@ function writeReportMeta({ outDir, runId, summary, reportType }) {
     failed: counts.failed,
     total: counts.total,
     environment: buildEnvironmentSummary(summary, results),
+    timings: summary.timings || {},
+    cleanup: summary.cleanup || null,
     results: results.map(result => ({
       name: result.name,
       status: result.status || 'UNKNOWN',
       duration: result.duration || formatDurationMs(resultDurationMs(result)),
       durationMs: resultDurationMs(result),
       laneRunId: laneForResult(result, runId),
+      logicalCategory: result.logicalCategory || '',
       deviceName: result.deviceName || '',
       appiumPort: result.appiumPort || '',
       startedAt: result.startedAt || '',
       finishedAt: result.finishedAt || '',
+      timings: result.timings || {},
     })),
   };
   const file = path.join(outDir, '_report-meta.json');
@@ -2288,6 +2389,8 @@ function writeArchivePages(outputRoot, reports = discoverReports(outputRoot)) {
 }
 
 function generate() {
+  const inheritedStart = Number.parseInt(process.env.REPORT_GENERATION_STARTED_AT_MS, 10);
+  const generationStartedAtMs = Number.isFinite(inheritedStart) ? inheritedStart : Date.now();
   const runId = argValue('run', process.env.SCRIBE_DOC_RUN_ID || 'split3-combined');
   const outputRoot = path.resolve(argValue('out', process.env.SCRIBE_DOC_OUTPUT_DIR || DEFAULT_OUTPUT_ROOT));
   const archiveEnabled = argValue('archive', process.env.SCRIBE_ARCHIVE_ENABLED || '0') !== '0';
@@ -2349,6 +2452,32 @@ function generate() {
   }
   refreshReportNavigation(reports);
   const archivePages = writeArchivePages(outputRoot, reports);
+
+  const reportGenerationMs = Math.max(0, Date.now() - generationStartedAtMs);
+  setReportGenerationTiming(summary, reportGenerationMs);
+  persistReportGenerationTiming(runId, summary);
+  writeIndex({ outDir: latest.outDir, runId, summary, testDocs: latest.testDocs });
+  writeHtmlReport({
+    outDir: latest.outDir,
+    runId,
+    summary,
+    testDocs: latest.testDocs,
+    reportNav: buildReportNav(reports, latest.htmlPath),
+    allReports: reports,
+  });
+  writeReportMeta({ outDir: latest.outDir, runId, summary, reportType: 'latest' });
+  if (archive) {
+    writeIndex({ outDir: archive.outDir, runId, summary, testDocs: archive.testDocs });
+    writeHtmlReport({
+      outDir: archive.outDir,
+      runId,
+      summary,
+      testDocs: archive.testDocs,
+      reportNav: buildReportNav(reports, archive.htmlPath),
+      allReports: reports,
+    });
+    writeReportMeta({ outDir: archive.outDir, runId, summary, reportType: 'archive' });
+  }
 
   const indexPath = latest.indexPath;
   const htmlPath = latest.htmlPath;

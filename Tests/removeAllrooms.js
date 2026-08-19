@@ -2,7 +2,11 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, ensureRoomsSectionReady } = require('../utils/testSession');
+const {
+  runWithOptionalDriver,
+  ensureRoomsSectionReady,
+  swipeConversationList,
+} = require('../utils/testSession');
 
 const TEST_NAME = 'removeAllrooms';
 
@@ -100,9 +104,9 @@ async function swipeLeftOnRow(driver, el, knownY, viewport) {
         ],
       },
     ]);
-    await driver.releaseActions();
   } catch (err) {
     console.warn(`removeAllrooms: performActions swipe failed (${err?.message || err}), using drag`);
+    await driver.releaseActions().catch(() => {});
     await driver.execute('mobile: dragFromToForDuration', {
       fromX,
       fromY: y,
@@ -110,6 +114,8 @@ async function swipeLeftOnRow(driver, el, knownY, viewport) {
       toY: y,
       duration: 0.28,
     });
+  } finally {
+    await driver.releaseActions().catch(() => {});
   }
 }
 
@@ -155,11 +161,12 @@ async function tapRemoveBesideTitle(driver, roomTitle) {
 
 async function waitUntilTitleGone(driver, roomTitle) {
   const q = esc(roomTitle);
-  const title = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name == "${q}" OR label == "${q}")`
-  );
-
-  await driver.waitUntil(async () => !(await title.isDisplayed().catch(() => false)), {
+  await driver.waitUntil(async () => {
+    const title = await driver.$(
+      `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name == "${q}" OR label == "${q}")`
+    );
+    return !(await title.isDisplayed().catch(() => false));
+  }, {
     timeout: WAIT_MS,
     interval: POLL_MS,
     timeoutMsg: `removeAllrooms: "${roomTitle}" still visible after remove`,
@@ -167,24 +174,9 @@ async function waitUntilTitleGone(driver, roomTitle) {
 }
 
 async function scrollDownList(driver) {
-  try {
-    await driver.execute('mobile: scroll', {
-      direction: 'down',
-      predicateString: targetPredicate(),
-    });
-    await pause(driver, POLL_MS);
-    return true;
-  } catch {
-    try {
-      await driver.execute('mobile: scroll', { direction: 'down' });
-      await pause(driver, POLL_MS);
-      return true;
-    } catch {
-      await driver.execute('mobile: swipe', { direction: 'up' }).catch(() => {});
-    }
-  }
+  await swipeConversationList(driver, 'up');
   await pause(driver, POLL_MS);
-  return false;
+  return true;
 }
 
 async function removeOne(driver, target, count, viewport) {

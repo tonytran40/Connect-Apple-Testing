@@ -4,7 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { performance } = require('perf_hooks');
-const { formatDurationMs } = require('../utils/reportWriter');
+const {
+  buildTimingSummary,
+  formatDurationMs,
+  mergePhaseTimings,
+  normalizePhaseTimings,
+} = require('../utils/reportWriter');
+const { readScreenshotMetrics, resetScreenshotMetrics } = require('../utils/screenshots');
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { ensureRoomsSectionReady } = require('../utils/testSession');
@@ -14,6 +20,9 @@ const MAIN_SUITE_TESTS = [
   'CreateRoom',
   'PinnedMessageEditFlow',
   'Reactions',
+  'ComposerTypeahead',
+  'MessageActions',
+  'RoomNotificationPreferences',
   'markdowns',
   'ConversationList',
   'newMessage',
@@ -41,6 +50,28 @@ function listEnv(name) {
     .split(',')
     .map(item => item.trim())
     .filter(Boolean);
+}
+
+function logicalCategoriesFromEnv() {
+  try {
+    const categories = JSON.parse(process.env.PARALLEL_LOGICAL_CATEGORIES || '{}');
+    return categories && typeof categories === 'object' ? categories : {};
+  } catch (error) {
+    throw new Error(`PARALLEL_LOGICAL_CATEGORIES must be valid JSON: ${error.message}`);
+  }
+}
+
+function addPhaseTiming(timings, key, elapsedMs) {
+  timings[key] = (timings[key] || 0) + Math.max(0, Math.round(elapsedMs));
+}
+
+async function measurePhase(timings, key, runPhase) {
+  const started = performance.now();
+  try {
+    return await runPhase();
+  } finally {
+    addPhaseTiming(timings, key, performance.now() - started);
+  }
 }
 
 function resolveTests() {
@@ -84,6 +115,7 @@ function makeLanes() {
     appiumPort: Number.parseInt(ports[i], 10) || baseAppiumPort + i,
     wdaLocalPort: baseWdaPort + i,
     derivedDataPath: `${baseDerivedDataPath}-${i}`,
+    timings: normalizePhaseTimings(),
   }));
 }
 
@@ -136,6 +168,23 @@ function truncate(value, max = 180) {
   return `${s.slice(0, max - 1)}…`;
 }
 
+function phaseTimingRows(timings) {
+  const labels = {
+    sessionCreationMs: 'Session creation',
+    loginReadinessMs: 'Login/readiness',
+    testBodyMs: 'Test body',
+    screenshotCaptureMs: 'Screenshot capture',
+    recoveryMs: 'Recovery',
+    reportGenerationMs: 'Report generation',
+    roomCreationMs: 'Room creation (test-owned)',
+  };
+  return Object.entries(labels).map(([key, label]) => ({
+    key,
+    label,
+    durationMs: timings?.phases?.[key] || 0,
+  }));
+}
+
 function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, startedAt, tests }) {
   const passed = results.filter(result => result.status === 'PASS').length;
   const failed = results.filter(result => result.status === 'FAIL').length;
@@ -162,6 +211,7 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
   const resultSummary = dryRun === total
     ? `- Result: dry run only (${total} tests selected)`
     : `- Result: ${passed}/${executed.length} executed passed (${formatPercent(passed, executed.length)})`;
+  const timings = buildTimingSummary({ lanes, results });
 
   const lines = [
     '# Parallel iOS Automation Report',
@@ -214,6 +264,12 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
     lines.push('');
   }
 
+  lines.push('## Phase Timings', '', '| Phase | Aggregate Duration |', '| --- | --- |');
+  for (const phase of phaseTimingRows(timings)) {
+    lines.push(`| ${phase.label} | ${formatDurationMs(phase.durationMs)} |`);
+  }
+  lines.push('');
+
   lines.push(
     '## Workers',
     '',
@@ -264,12 +320,21 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
       tests: tests || results.map(result => result.name),
       lanes,
       results,
+      timings,
     }, null, 2)}\n`,
     'utf8'
   );
 }
 
-function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck = false }) {
+function runOneTest({
+  testName,
+  lane,
+  runId,
+  resultDir,
+  logDir,
+  logicalCategory,
+  skipLoginCheck = false,
+}) {
   return new Promise(resolve => {
     const testPath = path.resolve(__dirname, `${testName}.js`);
     const startedAt = new Date().toISOString();
@@ -282,8 +347,10 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
         durationMs: 0,
         duration: '0s',
         workerIndex: lane.index,
+        logicalCategory,
         startedAt,
         finishedAt: new Date().toISOString(),
+        timings: normalizePhaseTimings(),
         error: `Test file not found: ${testPath}`,
       });
       return;
@@ -291,6 +358,9 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
 
     const logPath = path.join(logDir, `${testName}.log`);
     const logStream = fs.createWriteStream(logPath, { flags: 'w' });
+    const staleResultFile = path.join(resultDir, `${testName}.json`);
+    if (fs.existsSync(staleResultFile)) fs.unlinkSync(staleResultFile);
+    resetScreenshotMetrics(testName, { resultDir });
     const env = {
       ...process.env,
       TEST_RUN_ID: runId,
@@ -312,7 +382,7 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
       env.SIMULATOR_UDID = lane.udid;
     }
 
-    const child = spawn(process.execPath, [path.resolve(__dirname, 'runSingle.js'), testName], {
+    const child = spawn(process.execPath, [__filename, '--run-one-instrumented', testName], {
       cwd: path.resolve(__dirname, '..'),
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -332,9 +402,11 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
         durationMs: Math.round(performance.now() - started),
         duration: formatDurationMs(Math.round(performance.now() - started)),
         workerIndex: lane.index,
+        logicalCategory,
         startedAt,
         finishedAt: new Date().toISOString(),
         logPath,
+        timings: normalizePhaseTimings(),
         error: `Could not start test process: ${error.message}`,
       });
     });
@@ -346,6 +418,12 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
       const durationMs = Math.round(performance.now() - started);
       const resultFile = path.join(resultDir, `${testName}.json`);
       const timedResult = readJsonIfExists(resultFile);
+      const screenshot = readScreenshotMetrics(testName, { resultDir });
+      const measuredDurationMs = Math.round(performance.now() - started);
+      const fallbackTimings = normalizePhaseTimings({
+        testBodyMs: Math.max(0, measuredDurationMs - screenshot.captureMs),
+        screenshotCaptureMs: screenshot.captureMs,
+      });
       resolve({
         name: testName,
         status: code === 0 ? 'PASS' : 'FAIL',
@@ -362,6 +440,9 @@ function runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck =
         finishedAt: new Date().toISOString(),
         logPath,
         ...(timedResult || {}),
+        logicalCategory: timedResult?.logicalCategory || logicalCategory,
+        timings: timedResult?.timings || fallbackTimings,
+        screenshotMetrics: timedResult?.screenshotMetrics || screenshot,
         ...(code === 0 ? {} : { error: timedResult?.error || `Exited with code ${code}` }),
       });
     });
@@ -388,20 +469,92 @@ function writeResultFile(resultDir, result) {
   );
 }
 
-async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir }) {
+async function runInstrumentedChild(testName) {
+  const resultDir = ensureDir(process.env.TEST_RESULT_DIR || path.resolve(__dirname, '..', 'reports'));
+  const logicalCategory = logicalCategoriesFromEnv()[testName] || '';
+  const skipLoginCheck = process.env.RUN_SINGLE_SKIP_LOGIN_CHECK === '1';
+  const timings = normalizePhaseTimings();
+  const startedAt = new Date().toISOString();
+  const started = performance.now();
+  let driver;
+  let error;
+
+  resetScreenshotMetrics(testName, { resultDir });
+  try {
+    driver = await measurePhase(timings, 'sessionCreationMs', () => createDriver());
+    if (!skipLoginCheck) {
+      await measurePhase(timings, 'loginReadinessMs', () => ensureLoggedIn(driver));
+    }
+    await measurePhase(timings, 'loginReadinessMs', () => ensureRoomsSectionReady(driver));
+
+    const bodyStarted = performance.now();
+    let ownedResult;
+    try {
+      ownedResult = await testModule(testName).run(driver, { skipLogin: true });
+    } finally {
+      const screenshot = readScreenshotMetrics(testName, { resultDir });
+      addPhaseTiming(
+        timings,
+        'testBodyMs',
+        Math.max(0, performance.now() - bodyStarted - screenshot.captureMs)
+      );
+      Object.assign(timings, mergePhaseTimings(timings, ownedResult?.timings));
+    }
+  } catch (caught) {
+    error = caught;
+  } finally {
+    if (driver) await driver.deleteSession().catch(() => {});
+  }
+
+  const durationMs = Math.round(performance.now() - started);
+  const screenshot = readScreenshotMetrics(testName, { resultDir });
+  const result = {
+    name: testName,
+    status: error ? 'FAIL' : 'PASS',
+    durationMs,
+    duration: formatDurationMs(durationMs),
+    logicalCategory,
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    timings: mergePhaseTimings(timings, { screenshotCaptureMs: screenshot.captureMs }),
+    screenshotMetrics: screenshot,
+    ...(error ? { error: error?.message || String(error) } : {}),
+  };
+  writeResultFile(resultDir, result);
+  if (error) throw error;
+}
+
+async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir, logicalCategory }) {
   const startedAt = new Date().toISOString();
   const started = performance.now();
   const logPath = path.join(logDir, `${testName}.log`);
+  const timings = normalizePhaseTimings();
   let error;
+  let ownedResult;
 
   fs.writeFileSync(logPath, `Starting ${testName} on ${lane.deviceName || lane.udid}\n`, 'utf8');
+  resetScreenshotMetrics(testName, { resultDir });
   try {
-    await ensureRoomsSectionReady(driver);
-    await testModule(testName).run(driver, { skipLogin: true });
+    await measurePhase(timings, 'loginReadinessMs', () => ensureRoomsSectionReady(driver));
+    const bodyStarted = performance.now();
+    try {
+      ownedResult = await testModule(testName).run(driver, { skipLogin: true });
+    } finally {
+      const screenshot = readScreenshotMetrics(testName);
+      addPhaseTiming(
+        timings,
+        'testBodyMs',
+        Math.max(0, performance.now() - bodyStarted - screenshot.captureMs)
+      );
+    }
   } catch (caught) {
     error = caught;
     fs.appendFileSync(logPath, `${caught?.stack || caught}\n`, 'utf8');
   }
+  const screenshot = readScreenshotMetrics(testName);
+  const mergedTimings = mergePhaseTimings(timings, ownedResult?.timings, {
+    screenshotCaptureMs: screenshot.captureMs,
+  });
 
   const durationMs = Math.round(performance.now() - started);
   const result = {
@@ -410,6 +563,7 @@ async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir 
     durationMs,
     duration: formatDurationMs(durationMs),
     workerIndex: lane.index,
+    logicalCategory,
     appiumPort: lane.appiumPort,
     udid: lane.udid,
     deviceName: lane.deviceName,
@@ -419,6 +573,8 @@ async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir 
     startedAt,
     finishedAt: new Date().toISOString(),
     logPath,
+    timings: mergedTimings,
+    screenshotMetrics: screenshot,
     ...(error ? { error: error?.message || String(error) } : {}),
   };
   writeResultFile(resultDir, result);
@@ -432,6 +588,7 @@ async function run() {
   const logDir = ensureDir(path.join(rootDir, 'logs'));
   const reportPath = path.join(rootDir, 'summary.md');
   const tests = resolveTests();
+  const logicalCategories = logicalCategoriesFromEnv();
   let lanes = makeLanes();
   if (
     process.env.PARALLEL_DRY_RUN !== '1' &&
@@ -458,6 +615,8 @@ async function run() {
       durationMs: 0,
       duration: '0s',
       workerIndex: lanes[index % lanes.length].index,
+      logicalCategory: logicalCategories[testName] || '',
+      timings: normalizePhaseTimings(),
       notes: 'Not executed',
     }));
     writeAggregateReport({ reportPath, runId, results: dryResults, durationMs: 0, lanes, startedAt, tests });
@@ -475,7 +634,15 @@ async function run() {
       console.log(
         `runParallel: worker #${lane.index} starting ${testName}${skipLoginCheck ? ' (login check skipped)' : ''}`
       );
-      const result = await runOneTest({ testName, lane, runId, resultDir, logDir, skipLoginCheck });
+      const result = await runOneTest({
+        testName,
+        lane,
+        runId,
+        resultDir,
+        logDir,
+        logicalCategory: logicalCategories[testName] || '',
+        skipLoginCheck,
+      });
       if (loginOncePerWorker && result.status === 'PASS' && !skipLoginCheck) {
         hasCompletedLoginCheck = true;
       }
@@ -507,8 +674,8 @@ async function run() {
         await sleep(sessionStartDelayMs);
       }
       console.log(`runParallel: worker #${lane.index} creating reusable Appium session`);
-      driver = await createDriver();
-      await ensureLoggedIn(driver);
+      driver = await measurePhase(lane.timings, 'sessionCreationMs', () => createDriver());
+      await measurePhase(lane.timings, 'loginReadinessMs', () => ensureLoggedIn(driver));
     } catch (error) {
       setupError = error;
     }
@@ -530,17 +697,29 @@ async function run() {
             deviceName: lane.deviceName,
             startedAt: now,
             finishedAt: now,
+            logicalCategory: logicalCategories[testName] || '',
+            timings: normalizePhaseTimings(),
             error: `Lane setup failed: ${setupError?.message || setupError}`,
           };
           writeResultFile(resultDir, result);
         } else {
           console.log(`runParallel: worker #${lane.index} starting ${testName} (reused session)`);
-          result = await runOneTestWithDriver({ testName, lane, driver, resultDir, logDir });
+          result = await runOneTestWithDriver({
+            testName,
+            lane,
+            driver,
+            resultDir,
+            logDir,
+            logicalCategory: logicalCategories[testName] || '',
+          });
 
           if (result.status === 'FAIL') {
+            const recoveryTimings = normalizePhaseTimings();
             try {
-              await ensureLoggedIn(driver);
-              await ensureRoomsSectionReady(driver);
+              await measurePhase(recoveryTimings, 'recoveryMs', async () => {
+                await ensureLoggedIn(driver);
+                await ensureRoomsSectionReady(driver);
+              });
             } catch (recoveryError) {
               console.warn(
                 `runParallel: worker #${lane.index} session recovery failed; recreating session: ` +
@@ -549,13 +728,15 @@ async function run() {
               await driver.deleteSession().catch(() => {});
               driver = undefined;
               try {
-                driver = await createDriver();
-                await ensureLoggedIn(driver);
+                driver = await measurePhase(lane.timings, 'sessionCreationMs', () => createDriver());
+                await measurePhase(lane.timings, 'loginReadinessMs', () => ensureLoggedIn(driver));
                 setupError = undefined;
               } catch (replacementError) {
                 setupError = replacementError;
               }
             }
+            result.timings = mergePhaseTimings(result.timings, recoveryTimings);
+            writeResultFile(resultDir, result);
           }
         }
 
@@ -590,7 +771,14 @@ async function run() {
   for (const testName of exclusiveTests) {
     const lane = lanes[0];
     console.log(`runParallel: starting exclusive account-settings test ${testName}`);
-    const result = await runOneTest({ testName, lane, runId, resultDir, logDir });
+    const result = await runOneTest({
+      testName,
+      lane,
+      runId,
+      resultDir,
+      logDir,
+      logicalCategory: logicalCategories[testName] || '',
+    });
     results.push(result);
     writeAggregateReport({
       reportPath,
@@ -616,7 +804,11 @@ async function run() {
 }
 
 if (require.main === module) {
-  run().catch(err => {
+  const instrumentedIndex = process.argv.indexOf('--run-one-instrumented');
+  const command = instrumentedIndex >= 0
+    ? runInstrumentedChild(process.argv[instrumentedIndex + 1])
+    : run();
+  command.catch(err => {
     console.error(err);
     process.exit(1);
   });

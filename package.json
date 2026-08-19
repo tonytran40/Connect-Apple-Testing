@@ -26,7 +26,12 @@
     "test:members-room": "npm run test:one -- membersRoom",
     "test:attachments": "npm run test:one -- attachments",
     "test:reactions": "npm run test:one -- Reactions",
+    "test:composer-typeahead": "npm run test:one -- ComposerTypeahead",
+    "test:message-actions": "npm run test:one -- MessageActions",
+    "test:room-notification-preferences": "npm run test:one -- RoomNotificationPreferences",
+    "test:draft-persistence": "npm run test:one -- DraftPersistence",
     "test:remove-all-rooms": "npm run test:one -- removeAllrooms",
+    "selectors:audit": "node scripts/auditAppAccessibility.js",
     "docs:scribe": "node scripts/generateScribeDocs.js",
     "docs:serve": "python3 -m http.server 5500 --directory docs"
   },

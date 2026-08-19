@@ -1,12 +1,24 @@
 # ConversationList
 
 - Status: PASS
-- Duration: 54s
+- Duration: 1m 9s
 - Lane: Conversation-List-settings
+- Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-18T19:20:31.937Z
-- Finished: 2026-08-18T19:21:26.030Z
+- Started: 2026-08-19T15:18:14.876Z
+- Finished: 2026-08-19T15:19:24.354Z
+
+## Phase Timings
+
+| Phase | Duration |
+| --- | --- |
+| Session creation | 0ms |
+| Login/readiness | 13s |
+| Test body | 54s |
+| Screenshot capture | 3s |
+| Recovery | 0ms |
+| Report generation | 0ms |
 
 ## Steps
 

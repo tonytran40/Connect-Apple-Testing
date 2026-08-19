@@ -11,9 +11,10 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 | **Login** | Auto-login when `loginView` is shown (localhost server, credentials from `.env`) |
 | **Rooms** | Create public/private rooms (`CreateRoom.js`); edit room settings (`editRoom.js`); remove room rows (`removeRoom.js`); manage room members (`membersRoom.js`) |
 | **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); mark unread/read (`markAsRead.js`); swipe-left remove (`removeRoom.js`) |
-| **Messaging** | New DM (`newMessage.js`); reactions from the message long-press picker (`Reactions.js`); markdown rendering (`markdowns.js`); pin/edit/unpin (`PinnedMessageEditFlow.js`); attachment entry points (`attachments.js`) |
+| **Messaging** | New DM; reactions; emoji typeahead; Copy/Delete actions; markdown rendering; pin/edit/unpin; attachment entry points |
 | **Notifications** | Push a simulator notification and verify app re-entry (`notifications.js`) |
-| **Settings** | Conversation layout & sort (`ConversationList.js`); sign out (`Login_Signout.js`) |
+| **Settings** | Room notification preferences; conversation layout & sort; sign out |
+| **System flows** | Opt-in draft persistence across app background/foreground (`DraftPersistence.js`) |
 | **Suite** | One session, shared login, markdown report (`Tests/runAll.js`) |
 
 **Not in scope:** Connect app unit tests, pixel-perfect visual diff, load/performance benchmarks. This automation framework does include lightweight unit and syntax checks for its own runner/reporting code.
@@ -131,10 +132,13 @@ npm run test:suite
 1. `CreateRoom` — public and private room creation  
 2. `PinnedMessageEditFlow` — pin, edit, unpin  
 3. `Reactions` — add and remove message reactions
-4. `markdowns` — markdown / emoji in composer
-5. `ConversationList` — layout and sort in user settings
-6. `newMessage` — new direct message, intentionally late because it can leave the app in a DM
-7. `Login_Signout` — sign out
+4. `ComposerTypeahead` — emoji suggestions
+5. `MessageActions` — copy and delete a sent message
+6. `RoomNotificationPreferences` — persist and restore a room preference
+7. `markdowns` — markdown / emoji in composer
+8. `ConversationList` — layout and sort in user settings
+9. `newMessage` — new direct message, intentionally late because it can leave the app in a DM
+10. `Login_Signout` — sign out
 
 Report: `reports/latest-suite-report.md` (pass/fail, durations, options).
 
@@ -186,6 +190,8 @@ Useful knobs:
 | `PARALLEL_REUSE_DRIVER=1` | Reuse one Appium session and login across all tests in a one-worker lane (default) |
 
 Reports are written under `reports/runs/{runId}/summary.md` and `reports/runs/{runId}/summary.json`; worker logs are under `reports/runs/{runId}/logs/`. Screenshots for parallel runs are namespaced under `screenshots/{runId}/`.
+
+Dry split runs automatically use `*-dry-run` lane and combined report IDs, so scheduler validation cannot overwrite the latest real suite summaries.
 
 The parallel runner also generates the Scribe-style browser report automatically at `docs/generated/scribe/parallel-latest/`. It includes pass/fail status, completed count, a rerun command for failed tests, slowest tests, worker lane details, and links to each test's log, JSON result, and screenshot folder.
 
@@ -247,9 +253,9 @@ Default three-lane split:
 
 | Group | Simulator | Appium | WDA | Tests |
 |-------|-----------|--------|-----|-------|
-| `main-suite` | iPhone 17 Pro | `4723` | `8100` | `CreateRoom`, `newMessage` |
-| `Conversation-List` | iPhone 17 Pro Max | `4725` | `8200` | `favoriteRoom`, `markAsRead`, `notifications`, `removeRoom` |
-| `ConversationView` | iPhone 17 | `4727` | `8300` | `PinnedMessageEditFlow`, `Reactions`, `markdowns`, `attachments`, `editRoom`, `membersRoom` |
+| `main-suite` | iPhone 17 Pro | `4723` | `8100` | `CreateRoom`, `PinnedMessageEditFlow`, `Reactions`, `newMessage` |
+| `Conversation-List` | iPhone 17 Pro Max | `4725` | `8200` | List tests plus `ComposerTypeahead`, `MessageActions`, `RoomNotificationPreferences` |
+| `ConversationView` | iPhone 17 | `4727` | `8300` | `markdowns`, `attachments`, `editRoom`, `membersRoom` |
 | Exclusive settings phase | iPhone 17 Pro Max | `4725` | `8200` | `ConversationList` after all concurrent feature lanes finish |
 
 Run all three groups with:
@@ -316,6 +322,16 @@ xcrun simctl get_app_container <simulator-udid> com.powerhrg.connect.v3.debug ap
 ```
 
 Each split lane normally holds one reusable driver session for its whole test list. True simultaneous execution still needs separate simulator/Appium lanes; one simulator should only be driven by one lane at a time. The layout/sort test runs afterward as an exclusive phase because those account-wide settings can reorder another simulator's list while it is trying to locate test data.
+
+The table shows physical execution lanes. Moved tests retain their logical `ConversationView` category in reports. Set `SPLIT_BALANCE_CONVERSATION_VIEW=0` to disable balancing, or customize the main/list destinations with `SPLIT_BALANCED_CONVERSATION_VIEW_TESTS` and `SPLIT_LIST_BALANCED_CONVERSATION_VIEW_TESTS`. `attachments` always remains on the configured photo-ready lane.
+
+Reports include aggregate phase timing for session creation, login/readiness, test bodies, screenshots, recovery, report generation, and test-owned room creation. Optional generated-room cleanup runs only after product tests:
+
+```bash
+SPLIT_POST_RUN_CLEANUP=1 npm run test:parallel:split3
+```
+
+Cleanup is advisory by default. Add `SPLIT_POST_RUN_CLEANUP_STRICT=1` only when cleanup failure should fail the command.
 
 ### Scribe-style documentation
 
@@ -418,6 +434,10 @@ node Tests/notifications.js
 node Tests/removeRoom.js
 node Tests/removeAllrooms.js
 node Tests/newMessage.js
+node Tests/ComposerTypeahead.js
+node Tests/MessageActions.js
+node Tests/RoomNotificationPreferences.js
+node Tests/DraftPersistence.js
 ```
 
 Wall-clock time is printed via `utils/cliTestTiming.js`.
@@ -439,7 +459,12 @@ npm run test:suite:fast
 npm run test:notifications
 npm run test:members-room
 npm run test:attachments
+npm run test:composer-typeahead
+npm run test:message-actions
+npm run test:room-notification-preferences
+npm run test:draft-persistence
 npm run test:remove-all-rooms
+npm run selectors:audit
 ```
 
 ### Suite options (environment)
@@ -453,6 +478,16 @@ npm run test:remove-all-rooms
 | `CONVERSATION_LAYOUTS` / `CONVERSATION_SORTS` | Limit `ConversationList` matrix |
 | `CONNECT_SCREENSHOTS=0` or `SKIP_SCREENSHOTS=1` | Disable screenshots |
 | `USER_SETTINGS_DUMP_SOURCE=1` | Save User Settings page source XML while debugging |
+
+### New conversation and system coverage
+
+- `ComposerTypeahead.js` creates an isolated room, selects the `:grinning_face:` suggestion, sends the result, and verifies the rendered message. Mention suggestions are intentionally excluded until test environments provide deterministic room members.
+- `MessageActions.js` verifies Copy through the simulator clipboard when supported, then confirms Delete removes the unique message.
+- `RoomNotificationPreferences.js` changes a room preference, verifies it after reopening, and restores `ROOM_NOTIFICATION_RESTORE_LABEL` in cleanup.
+- `DraftPersistence.js` is opt-in: it backgrounds Connect with an unsent draft, reactivates the app, verifies the exact draft, clears it, and restores the Rooms list.
+- Later system flows and their deterministic prerequisites are documented in [`docs/system-tests.md`](docs/system-tests.md).
+- `npm run selectors:audit` compares exact selectors with the read-only `connect-apple` source checkout and flags stale identifiers.
+- Notification Preferences renders an unlabeled Font Awesome back chevron instead of `backButton`. The shared helper therefore uses a bounded top-left navigation lookup and never a generic first-button fallback.
 
 ---
 
@@ -539,6 +574,10 @@ Connect-Apple-Testing/
 │   ├── runSingle.js         # Runs one test inside a parallel worker
 │   ├── CreateRoom.js
 │   ├── newMessage.js
+│   ├── ComposerTypeahead.js
+│   ├── MessageActions.js
+│   ├── RoomNotificationPreferences.js
+│   ├── DraftPersistence.js       # opt-in system flow
 │   ├── editRoom.js          # standalone room settings flow
 │   ├── favoriteRoom.js      # standalone
 │   ├── markAsRead.js        # standalone (mark unread/read)
@@ -630,7 +669,12 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:notifications` | Push simulator notification, verify app re-entry, and generate a report |
 | `npm run test:members-room` | Create room, exercise Members edit flow, and generate a report |
 | `npm run test:attachments` | Create room, validate attachment entry points, and generate a report |
+| `npm run test:composer-typeahead` | Verify emoji composer suggestions |
+| `npm run test:message-actions` | Verify message Copy and Delete actions |
+| `npm run test:room-notification-preferences` | Persist and restore a room notification setting |
+| `npm run test:draft-persistence` | Run the opt-in background/foreground draft test |
 | `npm run test:remove-all-rooms` | Clean up matching rooms and generate a report |
+| `npm run selectors:audit` | Compare automation selectors with the local app source |
 | `npm run docs:scribe` | Generate Scribe-style web and Markdown docs from reports and screenshots |
 | `npm run docs:serve` | Serve the local report at `http://localhost:5500/` |
 

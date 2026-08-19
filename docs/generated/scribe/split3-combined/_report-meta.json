@@ -2,18 +2,18 @@
   "runId": "split3-combined",
   "reportType": "latest",
   "source": "summary.json",
-  "status": "PASS",
-  "startedAt": "2026-08-18T19:12:47.504Z",
-  "updatedAt": "2026-08-18T19:21:26.181Z",
-  "durationMs": 518668,
-  "passed": 13,
-  "failed": 0,
-  "total": 13,
+  "status": "FAIL",
+  "startedAt": "2026-08-19T15:09:11.139Z",
+  "updatedAt": "2026-08-19T15:19:24.512Z",
+  "durationMs": 613360,
+  "passed": 14,
+  "failed": 2,
+  "total": 16,
   "environment": {
     "branch": "main",
-    "commit": "c5aa412",
+    "commit": "632b42e",
     "automationBranch": "main",
-    "automationCommit": "c5aa412",
+    "automationCommit": "632b42e",
     "appBranch": "",
     "appCommit": "",
     "node": "v24.14.0",
@@ -31,151 +31,365 @@
       "4725",
       "4727"
     ],
-    "wdaPorts": []
+    "wdaPorts": [
+      8100,
+      8200,
+      8300
+    ]
+  },
+  "timings": {
+    "unit": "milliseconds",
+    "phases": {
+      "sessionCreationMs": 65246,
+      "loginReadinessMs": 276185,
+      "testBodyMs": 1007197,
+      "screenshotCaptureMs": 52895,
+      "recoveryMs": 37099,
+      "reportGenerationMs": 707,
+      "roomCreationMs": 14351
+    }
+  },
+  "cleanup": {
+    "enabled": false,
+    "strict": false,
+    "status": "DISABLED"
   },
   "results": [
     {
       "name": "CreateRoom",
-      "status": "PASS",
-      "duration": "52s",
-      "durationMs": 51801,
+      "status": "FAIL",
+      "duration": "1m 56s",
+      "durationMs": 115702,
       "laneRunId": "main-suite",
+      "logicalCategory": "main-suite",
       "deviceName": "iPhone 17 Pro",
       "appiumPort": "4723",
-      "startedAt": "2026-08-18T19:13:20.933Z",
-      "finishedAt": "2026-08-18T19:14:12.737Z"
-    },
-    {
-      "name": "newMessage",
-      "status": "PASS",
-      "duration": "30s",
-      "durationMs": 29831,
-      "laneRunId": "main-suite",
-      "deviceName": "iPhone 17 Pro",
-      "appiumPort": "4723",
-      "startedAt": "2026-08-18T19:14:12.742Z",
-      "finishedAt": "2026-08-18T19:14:42.573Z"
-    },
-    {
-      "name": "favoriteRoom",
-      "status": "PASS",
-      "duration": "45s",
-      "durationMs": 44926,
-      "laneRunId": "Conversation-List",
-      "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": "4725",
-      "startedAt": "2026-08-18T19:13:05.721Z",
-      "finishedAt": "2026-08-18T19:13:50.650Z"
-    },
-    {
-      "name": "markAsRead",
-      "status": "PASS",
-      "duration": "52s",
-      "durationMs": 52045,
-      "laneRunId": "Conversation-List",
-      "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": "4725",
-      "startedAt": "2026-08-18T19:13:50.657Z",
-      "finishedAt": "2026-08-18T19:14:42.702Z"
-    },
-    {
-      "name": "notifications",
-      "status": "PASS",
-      "duration": "15s",
-      "durationMs": 14550,
-      "laneRunId": "Conversation-List",
-      "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": "4725",
-      "startedAt": "2026-08-18T19:14:42.704Z",
-      "finishedAt": "2026-08-18T19:14:57.254Z"
-    },
-    {
-      "name": "removeRoom",
-      "status": "PASS",
-      "duration": "38s",
-      "durationMs": 38089,
-      "laneRunId": "Conversation-List",
-      "deviceName": "iPhone 17 Pro Max",
-      "appiumPort": "4725",
-      "startedAt": "2026-08-18T19:14:57.255Z",
-      "finishedAt": "2026-08-18T19:15:35.344Z"
+      "startedAt": "2026-08-19T15:09:47.210Z",
+      "finishedAt": "2026-08-19T15:11:42.913Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 37537,
+        "testBodyMs": 74904,
+        "screenshotCaptureMs": 3254,
+        "recoveryMs": 6723,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
     },
     {
       "name": "PinnedMessageEditFlow",
       "status": "PASS",
-      "duration": "1m 8s",
-      "durationMs": 67969,
-      "laneRunId": "ConversationView",
-      "deviceName": "iPhone 17",
-      "appiumPort": "4727",
-      "startedAt": "2026-08-18T19:13:54.520Z",
-      "finishedAt": "2026-08-18T19:15:02.490Z"
+      "duration": "1m 21s",
+      "durationMs": 81292,
+      "laneRunId": "main-suite",
+      "logicalCategory": "ConversationView",
+      "deviceName": "iPhone 17 Pro",
+      "appiumPort": "4723",
+      "startedAt": "2026-08-19T15:11:49.639Z",
+      "finishedAt": "2026-08-19T15:13:10.931Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 4868,
+        "testBodyMs": 71954,
+        "screenshotCaptureMs": 4469,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
     },
     {
       "name": "Reactions",
       "status": "PASS",
-      "duration": "1m 3s",
-      "durationMs": 62651,
-      "laneRunId": "ConversationView",
-      "deviceName": "iPhone 17",
-      "appiumPort": "4727",
-      "startedAt": "2026-08-18T19:15:02.495Z",
-      "finishedAt": "2026-08-18T19:16:05.147Z"
+      "duration": "1m 54s",
+      "durationMs": 113907,
+      "laneRunId": "main-suite",
+      "logicalCategory": "ConversationView",
+      "deviceName": "iPhone 17 Pro",
+      "appiumPort": "4723",
+      "startedAt": "2026-08-19T15:13:10.955Z",
+      "finishedAt": "2026-08-19T15:15:04.862Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 19744,
+        "testBodyMs": 86992,
+        "screenshotCaptureMs": 7168,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    },
+    {
+      "name": "newMessage",
+      "status": "PASS",
+      "duration": "41s",
+      "durationMs": 41182,
+      "laneRunId": "main-suite",
+      "logicalCategory": "main-suite",
+      "deviceName": "iPhone 17 Pro",
+      "appiumPort": "4723",
+      "startedAt": "2026-08-19T15:15:04.865Z",
+      "finishedAt": "2026-08-19T15:15:46.047Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 13998,
+        "testBodyMs": 26277,
+        "screenshotCaptureMs": 906,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    },
+    {
+      "name": "favoriteRoom",
+      "status": "PASS",
+      "duration": "1m 6s",
+      "durationMs": 66433,
+      "laneRunId": "Conversation-List",
+      "logicalCategory": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": "4725",
+      "startedAt": "2026-08-19T15:10:10.337Z",
+      "finishedAt": "2026-08-19T15:11:16.774Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 5225,
+        "testBodyMs": 59321,
+        "screenshotCaptureMs": 1884,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    },
+    {
+      "name": "markAsRead",
+      "status": "PASS",
+      "duration": "51s",
+      "durationMs": 51487,
+      "laneRunId": "Conversation-List",
+      "logicalCategory": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": "4725",
+      "startedAt": "2026-08-19T15:11:16.781Z",
+      "finishedAt": "2026-08-19T15:12:08.269Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 3550,
+        "testBodyMs": 45657,
+        "screenshotCaptureMs": 2279,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    },
+    {
+      "name": "notifications",
+      "status": "PASS",
+      "duration": "27s",
+      "durationMs": 26559,
+      "laneRunId": "Conversation-List",
+      "logicalCategory": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": "4725",
+      "startedAt": "2026-08-19T15:12:08.278Z",
+      "finishedAt": "2026-08-19T15:12:34.837Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 7763,
+        "testBodyMs": 16907,
+        "screenshotCaptureMs": 1886,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    },
+    {
+      "name": "removeRoom",
+      "status": "PASS",
+      "duration": "1m 4s",
+      "durationMs": 63679,
+      "laneRunId": "Conversation-List",
+      "logicalCategory": "Conversation-List",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": "4725",
+      "startedAt": "2026-08-19T15:12:34.844Z",
+      "finishedAt": "2026-08-19T15:13:38.523Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 4434,
+        "testBodyMs": 57451,
+        "screenshotCaptureMs": 1793,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    },
+    {
+      "name": "ComposerTypeahead",
+      "status": "FAIL",
+      "duration": "59s",
+      "durationMs": 58609,
+      "laneRunId": "Conversation-List",
+      "logicalCategory": "ConversationView",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": "4725",
+      "startedAt": "2026-08-19T15:13:38.527Z",
+      "finishedAt": "2026-08-19T15:14:37.136Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 5219,
+        "testBodyMs": 52794,
+        "screenshotCaptureMs": 591,
+        "recoveryMs": 30376,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    },
+    {
+      "name": "MessageActions",
+      "status": "PASS",
+      "duration": "53s",
+      "durationMs": 53164,
+      "laneRunId": "Conversation-List",
+      "logicalCategory": "ConversationView",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": "4725",
+      "startedAt": "2026-08-19T15:15:07.518Z",
+      "finishedAt": "2026-08-19T15:16:00.682Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 5103,
+        "testBodyMs": 45957,
+        "screenshotCaptureMs": 2103,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 5814
+      }
+    },
+    {
+      "name": "RoomNotificationPreferences",
+      "status": "PASS",
+      "duration": "1m 42s",
+      "durationMs": 101725,
+      "laneRunId": "Conversation-List",
+      "logicalCategory": "ConversationView",
+      "deviceName": "iPhone 17 Pro Max",
+      "appiumPort": "4725",
+      "startedAt": "2026-08-19T15:16:00.698Z",
+      "finishedAt": "2026-08-19T15:17:42.426Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 24758,
+        "testBodyMs": 74409,
+        "screenshotCaptureMs": 2553,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 8537
+      }
     },
     {
       "name": "markdowns",
       "status": "PASS",
-      "duration": "1m 32s",
-      "durationMs": 91736,
+      "duration": "1m 50s",
+      "durationMs": 110079,
       "laneRunId": "ConversationView",
+      "logicalCategory": "ConversationView",
       "deviceName": "iPhone 17",
       "appiumPort": "4727",
-      "startedAt": "2026-08-18T19:16:05.151Z",
-      "finishedAt": "2026-08-18T19:17:36.887Z"
+      "startedAt": "2026-08-19T15:09:40.601Z",
+      "finishedAt": "2026-08-19T15:11:30.684Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 3411,
+        "testBodyMs": 102780,
+        "screenshotCaptureMs": 3885,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
     },
     {
       "name": "attachments",
       "status": "PASS",
-      "duration": "1m 3s",
-      "durationMs": 62509,
+      "duration": "2m 8s",
+      "durationMs": 127513,
       "laneRunId": "ConversationView",
+      "logicalCategory": "ConversationView",
       "deviceName": "iPhone 17",
       "appiumPort": "4727",
-      "startedAt": "2026-08-18T19:17:36.900Z",
-      "finishedAt": "2026-08-18T19:18:39.410Z"
+      "startedAt": "2026-08-19T15:11:30.697Z",
+      "finishedAt": "2026-08-19T15:13:38.211Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 22164,
+        "testBodyMs": 97008,
+        "screenshotCaptureMs": 8339,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
     },
     {
       "name": "editRoom",
       "status": "PASS",
-      "duration": "44s",
-      "durationMs": 44379,
+      "duration": "1m 24s",
+      "durationMs": 83988,
       "laneRunId": "ConversationView",
+      "logicalCategory": "ConversationView",
       "deviceName": "iPhone 17",
       "appiumPort": "4727",
-      "startedAt": "2026-08-18T19:18:39.416Z",
-      "finishedAt": "2026-08-18T19:19:23.795Z"
+      "startedAt": "2026-08-19T15:13:38.226Z",
+      "finishedAt": "2026-08-19T15:15:02.214Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 15170,
+        "testBodyMs": 63921,
+        "screenshotCaptureMs": 4895,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
     },
     {
       "name": "membersRoom",
       "status": "PASS",
-      "duration": "59s",
-      "durationMs": 58503,
+      "duration": "1m 57s",
+      "durationMs": 116926,
       "laneRunId": "ConversationView",
+      "logicalCategory": "ConversationView",
       "deviceName": "iPhone 17",
       "appiumPort": "4727",
-      "startedAt": "2026-08-18T19:19:23.799Z",
-      "finishedAt": "2026-08-18T19:20:22.302Z"
+      "startedAt": "2026-08-19T15:15:02.221Z",
+      "finishedAt": "2026-08-19T15:16:59.150Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 35890,
+        "testBodyMs": 77296,
+        "screenshotCaptureMs": 3738,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
     },
     {
       "name": "ConversationList",
       "status": "PASS",
-      "duration": "54s",
-      "durationMs": 54088,
+      "duration": "1m 9s",
+      "durationMs": 69476,
       "laneRunId": "Conversation-List-settings",
+      "logicalCategory": "Conversation-List",
       "deviceName": "iPhone 17 Pro Max",
       "appiumPort": "4725",
-      "startedAt": "2026-08-18T19:20:31.937Z",
-      "finishedAt": "2026-08-18T19:21:26.030Z"
+      "startedAt": "2026-08-19T15:18:14.876Z",
+      "finishedAt": "2026-08-19T15:19:24.354Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 12752,
+        "testBodyMs": 53569,
+        "screenshotCaptureMs": 3152,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
     }
   ]
 }

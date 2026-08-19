@@ -127,10 +127,14 @@ async function main() {
   }
 
   console.log(`[test-report] Generating browser report for ${runId}`);
+  const reportGenerationStartedAtMs = Date.now();
   const reportCode = await runNode(
     path.join(REPO_ROOT, 'scripts', 'generateScribeDocs.js'),
     ['--run', runId],
-    env
+    {
+      ...env,
+      REPORT_GENERATION_STARTED_AT_MS: String(reportGenerationStartedAtMs),
+    }
   );
 
   if (reportCode === 0) {

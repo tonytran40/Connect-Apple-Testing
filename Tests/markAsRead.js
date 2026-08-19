@@ -58,9 +58,9 @@ async function swipeRightOnRow(driver, el) {
         ],
       },
     ]);
-    await driver.releaseActions();
   } catch (e) {
     console.warn(`markAsRead: performActions swipe failed (${e?.message || e}), using drag`);
+    await driver.releaseActions().catch(() => {});
     await driver.execute('mobile: dragFromToForDuration', {
       fromX,
       fromY: y,
@@ -68,11 +68,14 @@ async function swipeRightOnRow(driver, el) {
       toY: y,
       duration: 0.28,
     });
+  } finally {
+    await driver.releaseActions().catch(() => {});
   }
 }
 
-async function waitForTargetRow(driver, names) {
+async function waitForTargetRow(driver, names, exact = false) {
   return waitForConversationRow(driver, names, {
+    exact,
     timeout: WAIT_MS,
     pauseMs: POLL_MS,
   });
@@ -91,7 +94,7 @@ async function tapMarkAsUnreadBesideTitle(driver, roomTitle) {
 }
 
 function isolatedRoomName() {
-  return `M-MarkAsRead-${Math.random().toString(36).slice(2, 10)}`;
+  return `A-00-M-MarkAsRead-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 async function prepareTargetRoom(driver) {
@@ -101,7 +104,6 @@ async function prepareTargetRoom(driver) {
 
   const roomName = isolatedRoomName();
   console.log(`markAsRead: creating isolated room "${roomName}"`);
-  await ensureRoomsSectionReady(driver);
   await createPublicRoom(driver, roomName);
   await goBack(driver, 500);
   await ensureRoomsSectionReady(driver);
@@ -119,7 +121,8 @@ async function runTest(driver, options = {}) {
   await pause(driver, 450);
 
   const candidates = await prepareTargetRoom(driver);
-  const target = await waitForTargetRow(driver, candidates);
+  const exact = CANDIDATES.length === 0;
+  const target = await waitForTargetRow(driver, candidates, exact);
   console.log(`markAsRead: "${target.roomTitle}"`);
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe_right.png');
@@ -130,7 +133,7 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '03_after_mark_unread.png');
 
   // Toggle back to read (same button after second swipe).
-  const again = await waitForTargetRow(driver, candidates);
+  const again = await waitForTargetRow(driver, candidates, exact);
   await pause(driver, 400);
   await swipeRightOnRow(driver, again.el);
   await pause(driver, 200);

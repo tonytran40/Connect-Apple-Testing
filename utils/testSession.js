@@ -1,8 +1,19 @@
 const { createDriver } = require('../Login_Flow/Open_App');
 const { SELECTORS, PREDICATES } = require('./selectors');
-const { boundedInt, escapePredicateString } = require('./uiActions');
+const { boundedInt, escapePredicateString, getElementRect } = require('./uiActions');
 
 const ROOMS_HEADER_SELECTOR = PREDICATES.roomsHeaderButton;
+const LOST_CONNECTIVITY_SELECTOR =
+  '-ios predicate string:(name CONTAINS "Lost connection" OR label CONTAINS "Lost connection")';
+const DEFAULT_CONNECTIVITY_RECOVERY_TIMEOUT_MS = boundedInt(
+  process.env.CONNECT_CONNECTION_RECOVERY_TIMEOUT_MS,
+  120000,
+  5000,
+  300000
+);
+// A room's navigation Back button can also be labeled "Rooms". The real
+// conversation-list disclosure header is lower in the viewport.
+const ROOMS_HEADER_MIN_Y = boundedInt(process.env.CONNECT_ROOMS_HEADER_MIN_Y, 120, 100, 240);
 
 async function isDisplayed(driver, selector, timeout = 1000) {
   try {
@@ -28,8 +39,32 @@ async function getVisibleRoomsHeader(driver, timeout = 800) {
   return null;
 }
 
-async function isRoomsHeaderVisible(driver, timeout = 800) {
-  return Boolean(await getVisibleRoomsHeader(driver, timeout));
+async function getConversationListRoomsHeader(driver, timeout = 800) {
+  const header = await getVisibleRoomsHeader(driver, timeout);
+  if (!header) return null;
+
+  const location = await header.getLocation().catch(() => null);
+  return location && Number(location.y) >= ROOMS_HEADER_MIN_Y ? header : null;
+}
+
+async function connectivityToastVisible(driver) {
+  const toast = await driver.$(LOST_CONNECTIVITY_SELECTOR);
+  return toast.isDisplayed().catch(() => false);
+}
+
+async function waitForConnectivity(driver, options = {}) {
+  if (!(await connectivityToastVisible(driver))) return false;
+
+  const timeout = options.timeout ?? DEFAULT_CONNECTIVITY_RECOVERY_TIMEOUT_MS;
+  const interval = options.interval ?? 1000;
+  console.log(`Connectivity toast visible; waiting up to ${timeout}ms for recovery`);
+  await driver.waitUntil(async () => !(await connectivityToastVisible(driver)), {
+    timeout,
+    interval,
+    timeoutMsg: `Connect remained offline for ${timeout}ms`,
+  });
+  console.log('Connect connectivity recovered');
+  return true;
 }
 
 async function runWithOptionalDriver(runTest, providedDriver) {
@@ -37,7 +72,7 @@ async function runWithOptionalDriver(runTest, providedDriver) {
   const driver = providedDriver || await createDriver();
 
   try {
-    await runTest(driver);
+    return await runTest(driver);
   } finally {
     if (ownsDriver && driver) {
       await driver.deleteSession();
@@ -50,7 +85,6 @@ async function tapBackLikeControl(driver) {
     SELECTORS.backButton,
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "Back" OR label CONTAINS "Back")`,
     '//XCUIElementTypeNavigationBar/XCUIElementTypeButton[1]',
-    '(//XCUIElementTypeButton)[1]',
   ];
 
   for (const selector of selectors) {
@@ -64,6 +98,27 @@ async function tapBackLikeControl(driver) {
       }
     } catch {}
   }
+
+  // Some SwiftUI navigation destinations render only the Font Awesome chevron
+  // glyph, without the shared backButton identifier or a "Back" label. Restrict
+  // this fallback to the top-leading navigation area so we never tap the first
+  // content button (for example, a notification preference radio row).
+  try {
+    const windowRect = await driver.getWindowRect();
+    const buttons = await driver.$$('//XCUIElementTypeButton');
+    const maxX = windowRect.x + Math.max(80, windowRect.width * 0.2);
+    const maxY = windowRect.y + Math.max(160, windowRect.height * 0.2);
+
+    for (const button of buttons) {
+      if (!(await button.isDisplayed().catch(() => false))) continue;
+      const rect = await getElementRect(button).catch(() => null);
+      if (!rect) continue;
+      if (rect.x <= maxX && rect.y <= maxY) {
+        await button.click();
+        return true;
+      }
+    }
+  } catch {}
 
   try {
     const rect = await driver.getWindowRect();
@@ -108,6 +163,112 @@ async function swipeViewport(driver, direction) {
   await driver.releaseActions().catch(() => {});
 }
 
+function scopedSwipeCoordinates(rect, direction) {
+  if (direction !== 'up' && direction !== 'down') {
+    throw new Error(`Unsupported swipe direction: ${direction}`);
+  }
+
+  const rawValues = [rect?.x, rect?.y, rect?.width, rect?.height];
+  if (rawValues.some(value => value === null || value === undefined || value === '')) {
+    return null;
+  }
+
+  const values = rawValues.map(Number);
+  if (values.some(value => !Number.isFinite(value)) || values[2] < 2 || values[3] < 40) {
+    return null;
+  }
+
+  const [left, top, width, height] = values;
+  const x = Math.round(left + width * 0.5);
+  const upperY = Math.round(top + height * 0.25);
+  const lowerY = Math.round(top + height * 0.75);
+  return {
+    x,
+    startY: direction === 'down' ? upperY : lowerY,
+    endY: direction === 'down' ? lowerY : upperY,
+  };
+}
+
+function clipRectToViewport(rect, viewport) {
+  const left = Math.max(Number(rect?.x), Number(viewport?.x || 0));
+  const top = Math.max(Number(rect?.y), Number(viewport?.y || 0));
+  const right = Math.min(
+    Number(rect?.x) + Number(rect?.width),
+    Number(viewport?.x || 0) + Number(viewport?.width)
+  );
+  const bottom = Math.min(
+    Number(rect?.y) + Number(rect?.height),
+    Number(viewport?.y || 0) + Number(viewport?.height)
+  );
+
+  if (![left, top, right, bottom].every(Number.isFinite) || right <= left || bottom <= top) {
+    return null;
+  }
+
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+async function performScopedSwipe(driver, coordinates) {
+  try {
+    await driver.performActions([
+      {
+        type: 'pointer',
+        id: 'conversationListSwipe',
+        parameters: { pointerType: 'touch' },
+        actions: [
+          {
+            type: 'pointerMove',
+            duration: 0,
+            origin: 'viewport',
+            x: coordinates.x,
+            y: coordinates.startY,
+          },
+          { type: 'pointerDown', button: 0 },
+          { type: 'pause', duration: 100 },
+          {
+            type: 'pointerMove',
+            duration: 450,
+            origin: 'viewport',
+            x: coordinates.x,
+            y: coordinates.endY,
+          },
+          { type: 'pointerUp', button: 0 },
+        ],
+      },
+    ]);
+  } finally {
+    await driver.releaseActions().catch(() => {});
+  }
+}
+
+/**
+ * Swipe within the conversation-list accessibility element when possible.
+ * Returns true for a scoped gesture and false when the viewport fallback was used.
+ */
+async function swipeConversationList(driver, direction) {
+  if (direction !== 'up' && direction !== 'down') {
+    throw new Error(`Unsupported swipe direction: ${direction}`);
+  }
+
+  try {
+    const container = await driver.$(SELECTORS.bookmarksScrollView);
+    if (await container.isDisplayed().catch(() => false)) {
+      const visibleRect = clipRectToViewport(
+        await getElementRect(container),
+        await driver.getWindowRect()
+      );
+      const coordinates = scopedSwipeCoordinates(visibleRect, direction);
+      if (coordinates) {
+        await performScopedSwipe(driver, coordinates);
+        return true;
+      }
+    }
+  } catch {}
+
+  await swipeViewport(driver, direction);
+  return false;
+}
+
 async function dismissGifPickerIfVisible(driver) {
   const gifTab = await driver.$(
     '-ios predicate string:type == "XCUIElementTypeStaticText" AND ' +
@@ -146,10 +307,10 @@ async function resetToHome(driver, maxSteps = 8) {
 
     if (
       (await isDisplayed(driver, SELECTORS.peoplePlusButton)) ||
-      (await isRoomsHeaderVisible(driver)) ||
+      (await getConversationListRoomsHeader(driver)) ||
       (await isDisplayed(driver, SELECTORS.settingsButton))
     ) {
-      return;
+      return true;
     }
 
     if (await dismissGifPickerIfVisible(driver)) {
@@ -186,24 +347,15 @@ async function resetToHome(driver, maxSteps = 8) {
     await driver.activateApp(process.env.CONNECT_BUNDLE_ID || 'com.powerhrg.connect.v3.debug');
     await driver.pause(800);
   }
+
+  throw new Error('Could not return Connect to the conversation list');
 }
 
-// The Rooms header sits around y=133 on current iPhone 17 layouts. Keep a small
-// guard against an in-room header while accepting the normal conversation list.
-const ROOMS_HEADER_MIN_Y = boundedInt(process.env.CONNECT_ROOMS_HEADER_MIN_Y, 120, 100, 240);
 const DEFAULT_ENTRY_MAX_SCROLLS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_MAX_SCROLLS, 24, 4, 40);
 const DEFAULT_ENTRY_SCROLL_PAUSE_MS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_SCROLL_PAUSE_MS, 250, 120, 600);
 
 async function scrollConversationListDown(driver) {
-  try {
-    await driver.execute('mobile: scroll', { direction: 'down' });
-  } catch {
-    try {
-      await driver.execute('mobile: swipe', { direction: 'up' });
-    } catch {
-      await swipeViewport(driver, 'up');
-    }
-  }
+  await swipeConversationList(driver, 'up');
 }
 
 /**
@@ -232,6 +384,7 @@ async function waitForConversationRow(driver, names, opts = {}) {
     '(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton" OR ' +
     'type == "XCUIElementTypeOther" OR type == "XCUIElementTypeCell") AND ' +
     `(${comparisons.join(' OR ')})`;
+  await waitForConnectivity(driver, { timeout: opts.connectivityTimeout });
   const deadline = Date.now() + timeout;
 
   for (let scrolls = 0; Date.now() < deadline; scrolls++) {
@@ -277,13 +430,7 @@ async function scrollUntilConversationEntryVisible(driver, opts = {}) {
       }
       return;
     }
-    try {
-      await driver.execute('mobile: scroll', { direction: 'down' });
-    } catch {
-      try {
-        await driver.execute('mobile: swipe', { direction: 'down' });
-      } catch {}
-    }
+    await swipeConversationList(driver, 'up');
     await driver.pause(pauseMs);
   }
 
@@ -293,16 +440,11 @@ async function scrollUntilConversationEntryVisible(driver, opts = {}) {
 }
 
 async function ensureRoomsSectionReady(driver, maxScrolls = 8) {
+  await waitForConnectivity(driver);
   await resetToHome(driver);
 
   for (let i = 0; i < maxScrolls; i++) {
-    const roomsHeader = await getVisibleRoomsHeader(driver, 800);
-    if (roomsHeader) {
-      const location = await roomsHeader.getLocation().catch(() => null);
-      if (location && location.y >= ROOMS_HEADER_MIN_Y) {
-        return;
-      }
-    }
+    if (await getConversationListRoomsHeader(driver, 800)) return;
 
     if (
       !(await isDisplayed(driver, SELECTORS.peoplePlusButton, 500)) &&
@@ -312,13 +454,7 @@ async function ensureRoomsSectionReady(driver, maxScrolls = 8) {
       await resetToHome(driver);
     }
 
-    try {
-      await swipeViewport(driver, 'down');
-    } catch {
-      try {
-        await driver.execute('mobile: swipe', { direction: 'down' });
-      } catch {}
-    }
+    await swipeConversationList(driver, 'down');
     await driver.pause(500);
   }
 
@@ -330,6 +466,10 @@ module.exports = {
   resetToHome,
   ensureRoomsSectionReady,
   goBack,
+  clipRectToViewport,
+  scopedSwipeCoordinates,
   scrollUntilConversationEntryVisible,
+  swipeConversationList,
+  waitForConnectivity,
   waitForConversationRow,
 };

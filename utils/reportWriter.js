@@ -2,6 +2,15 @@ const fs = require('fs');
 const path = require('path');
 
 const REPORTS_DIR = path.resolve(__dirname, '..', 'reports');
+const PHASE_TIMING_KEYS = [
+  'sessionCreationMs',
+  'loginReadinessMs',
+  'testBodyMs',
+  'screenshotCaptureMs',
+  'recoveryMs',
+  'reportGenerationMs',
+  'roomCreationMs',
+];
 
 function ensureReportsDir() {
   if (!fs.existsSync(REPORTS_DIR)) {
@@ -21,6 +30,37 @@ function formatDurationMs(ms) {
   const s = totalSec % 60;
   if (m > 0) return `${m}m ${s}s`;
   return `${totalSec}s`;
+}
+
+function normalizePhaseTimings(timings = {}) {
+  return Object.fromEntries(
+    PHASE_TIMING_KEYS.map(key => {
+      const value = Number(timings?.[key]);
+      return [key, Number.isFinite(value) && value > 0 ? Math.round(value) : 0];
+    })
+  );
+}
+
+function mergePhaseTimings(...timings) {
+  return timings.reduce((total, item) => {
+    const normalized = normalizePhaseTimings(item);
+    for (const key of PHASE_TIMING_KEYS) {
+      total[key] += normalized[key];
+    }
+    return total;
+  }, normalizePhaseTimings());
+}
+
+function buildTimingSummary({ lanes = [], results = [], reportGenerationMs } = {}) {
+  const phases = mergePhaseTimings(
+    ...lanes.map(lane => lane.timings),
+    ...results.map(result => result.timings),
+    reportGenerationMs == null ? null : { reportGenerationMs }
+  );
+  return {
+    unit: 'milliseconds',
+    phases,
+  };
 }
 
 function buildMarkdown(results, startedAt, meta = {}) {
@@ -91,6 +131,10 @@ function createReportWriter(fileName = 'latest-suite-report.md') {
 }
 
 module.exports = {
+  PHASE_TIMING_KEYS,
+  buildTimingSummary,
   createReportWriter,
   formatDurationMs,
+  mergePhaseTimings,
+  normalizePhaseTimings,
 };

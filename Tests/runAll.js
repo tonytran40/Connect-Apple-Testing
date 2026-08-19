@@ -45,6 +45,21 @@ const tests = [
     run: require('./PinnedMessageEditFlow').run,
   },
   { name: 'Reactions', area: 'Add and remove a message reaction from the long-press picker', run: require('./Reactions').run },
+  {
+    name: 'ComposerTypeahead',
+    area: 'Emoji suggestions in the room composer',
+    run: require('./ComposerTypeahead').run,
+  },
+  {
+    name: 'MessageActions',
+    area: 'Copy and delete actions for a sent message',
+    run: require('./MessageActions').run,
+  },
+  {
+    name: 'RoomNotificationPreferences',
+    area: 'Persist and restore room notification preferences',
+    run: require('./RoomNotificationPreferences').run,
+  },
   { name: 'markdowns', area: 'Markdown and emoji rendering', run: require('./markdowns').run },
   {
     name: 'ConversationList',

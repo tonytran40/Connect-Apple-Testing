@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const path = require('path');
 const fs = require('fs');
+const { performance } = require('perf_hooks');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
@@ -186,15 +187,17 @@ async function createPrivateRoom(driver, roomName, options = {}) {
 
   await togglePrivateRoom(driver, DEFAULT_TIMEOUT);
 
+  const creationStarted = performance.now();
   await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
 
   if (skipAddMembersSheet) {
     console.log(`createPrivateRoom: ${roomName} (Add Members sheet — add invitees then Save)`);
-    return;
+    return { roomName, roomCreationMs: Math.round(performance.now() - creationStarted) };
   }
 
   await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
   await ensureCreatedRoomOpen(driver, roomName);
+  const roomCreationMs = Math.round(performance.now() - creationStarted);
 
   if (sendStarterMessage) {
     await typeComposerMessage(driver, generateRandomMessage());
@@ -207,6 +210,7 @@ async function createPrivateRoom(driver, roomName, options = {}) {
   await tapBackButton(driver);
   await driver.pause(600);
   console.log(`createPrivateRoom: ${roomName}`);
+  return { roomName, roomCreationMs };
 }
 
 /**
@@ -228,9 +232,11 @@ async function createPublicRoom(driver, roomName, options = {}) {
   await roomField.click();
   await roomField.setValue(roomName);
 
+  const creationStarted = performance.now();
   await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
   await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
   await ensureCreatedRoomOpen(driver, roomName);
+  const roomCreationMs = Math.round(performance.now() - creationStarted);
 
   if (sendStarterMessage) {
     await typeComposerMessage(driver, generateRandomMessage());
@@ -241,6 +247,7 @@ async function createPublicRoom(driver, roomName, options = {}) {
   }
 
   console.log(`createPublicRoom: ${roomName}`);
+  return { roomName, roomCreationMs };
 }
 
 async function runTest(driver, options = {}) {
@@ -268,9 +275,12 @@ async function runTest(driver, options = {}) {
   await publicRoomField.setValue(publicRoomName);
   await saveCreateRoomScreenshot(driver, 'public_room_name.png');
 
+  let roomCreationMs = 0;
+  let creationStarted = performance.now();
   await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
   await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
   await ensureCreatedRoomOpen(driver, publicRoomName);
+  roomCreationMs += Math.round(performance.now() - creationStarted);
 
   await maybeSendStarterMessage(driver, 'public_room_sent.png');
 
@@ -280,7 +290,7 @@ async function runTest(driver, options = {}) {
 
   if (CREATE_ROOM_SMOKE) {
     console.log('CreateRoom: CREATE_ROOM_MODE=smoke — skipping private room flow');
-    return;
+    return { timings: { roomCreationMs } };
   }
 
   await openRoomsPlusMenu(driver);
@@ -301,20 +311,23 @@ async function runTest(driver, options = {}) {
   await togglePrivateRoom(driver, DEFAULT_TIMEOUT);
   await saveCreateRoomScreenshot(driver, 'private_room_toggle.png');
 
+  creationStarted = performance.now();
   await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
   await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
   await ensureCreatedRoomOpen(driver, privateRoomName);
+  roomCreationMs += Math.round(performance.now() - creationStarted);
 
   await maybeSendStarterMessage(driver, 'private_room_sent.png');
 
   await tapBackButton(driver);
   console.log('Returned to Rooms list after private room');
+  return { timings: { roomCreationMs } };
 }
 
 async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver, options);
+      return await runTest(activeDriver, options);
     } catch (err) {
       try {
         await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');

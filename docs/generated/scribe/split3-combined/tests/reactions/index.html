@@ -18,7 +18,7 @@
     .hero-meta span { border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:.38rem .68rem; background:rgba(255,255,255,.08); font-weight:800; }
     main { max-width:88rem; margin:-1.7rem auto 0; padding:0 clamp(1rem,5vw,5rem) 4rem; }
     .panel, .step { border:1px solid var(--line); border-radius:1.25rem; background:rgba(255,255,255,.96); box-shadow:var(--shadow); }
-    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; padding:1rem; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(10rem,1fr)); gap:.75rem; padding:1rem; }
     .summary div { min-width:0; border:1px solid var(--line); border-radius:.9rem; padding:.8rem; background:#fbfdff; }
     dt { color:var(--muted); font-size:.7rem; font-weight:900; letter-spacing:.09em; text-transform:uppercase; }
     dd { margin:.2rem 0 0; font-size:1.05rem; font-weight:800; overflow-wrap:anywhere; }
@@ -26,7 +26,9 @@
     .actions a, button { border:1px solid var(--line); border-radius:.75rem; padding:.65rem .85rem; background:#fff; color:var(--blue); font:inherit; font-weight:900; text-decoration:none; cursor:pointer; }
     .actions a:hover, button:hover { border-color:var(--blue); background:#f2f7ff; }
     .command { padding:1rem 1.15rem; }
-    .command h2, .history h2, .failure-focus h2 { margin:0 0 .55rem; font-size:1.15rem; }
+    .command h2, .history h2, .failure-focus h2, .phase-timings h2 { margin:0 0 .55rem; font-size:1.15rem; }
+    .phase-timings { margin:1.25rem 0; padding:1.15rem; }
+    .phase-timings .summary { padding:0; }
     code { display:block; overflow:auto; border-radius:.75rem; padding:.8rem; background:#0e1729; color:#e7efff; white-space:pre-wrap; }
     .failure { margin:1.25rem 0; border:1px solid rgba(217,63,63,.42); border-radius:1rem; padding:1rem; background:#fff7f7; }
     .failure span { color:#a32929; font-size:.76rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
@@ -57,121 +59,130 @@
 <body>
   <header class="hero">
     <a class="back" href="../../index.html">← Back to report</a>
-    <p class="eyebrow">split3-combined · ConversationView</p>
+    <p class="eyebrow">split3-combined · main-suite</p>
     <h1>Reactions</h1>
     <div class="hero-meta">
       <span class="status-pill pass">PASS</span>
-      <span>1m 3s</span>
+      <span>1m 54s</span>
       <span>13 screenshots</span>
-
+      <span>Slow test</span>
     </div>
   </header>
   <main>
     <dl class="summary panel">
-      <div><dt>Lane</dt><dd>ConversationView</dd></div>
-      <div><dt>Device</dt><dd>iPhone 17</dd></div>
-      <div><dt>Appium port</dt><dd>4727</dd></div>
-      <div><dt>Finished</dt><dd>Aug 18, 3:16 PM</dd></div>
+      <div><dt>Lane</dt><dd>main-suite</dd></div>
+      <div><dt>Category</dt><dd>ConversationView</dd></div>
+      <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+      <div><dt>Appium port</dt><dd>4723</dd></div>
+      <div><dt>Finished</dt><dd>Aug 19, 11:15 AM</dd></div>
     </dl>
     <div class="actions">
       <a href="../../Reactions.md">Markdown guide</a>
-      <button type="button" data-copy="APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/Reactions.js">Copy rerun command</button>
+      <button type="button" data-copy="APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/Reactions.js">Copy rerun command</button>
       <button type="button" data-copy-link>Copy page link</button>
     </div>
-    <section class="command panel"><h2>Rerun this test</h2><code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/Reactions.js</code></section>
+    <section class="command panel"><h2>Rerun this test</h2><code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/Reactions.js</code></section>
+    <section class="phase-timings panel"><h2>Phase timing</h2><dl class="summary">
+          <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>20s</dd></div>
+<div><dt>Test body</dt><dd>1m 27s</dd></div>
+<div><dt>Screenshot capture</dt><dd>7s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+        </dl></section>
 
 
-    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill pass">PASS</span><strong>Aug 18, 3:12 PM</strong><small>1m 3s</small></a>
+    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill pass">PASS</span><strong>Aug 19, 11:09 AM</strong><small>1m 54s</small></a>
 <a href="../../../Reactions-latest/index.html"><span class="status-pill pass">PASS</span><strong>Aug 11, 3:06 PM</strong><small>49s</small></a></div></section>
     <div class="steps-heading"><h2>Test steps</h2><span class="muted">13 captured screenshots</span></div>
     <section class="steps-grid">
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/01_room_opened.png">
-                  <img src="../../assets/ConversationView/Reactions/01_room_opened.png" alt="Room Opened" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/01_room_opened.png">
+                  <img src="../../assets/main-suite/Reactions/01_room_opened.png" alt="Room Opened" loading="lazy">
                 </a>
                 <figcaption><strong>Step 1</strong>Room Opened</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/02_message_sent.png">
-                  <img src="../../assets/ConversationView/Reactions/02_message_sent.png" alt="Message Sent" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/02_message_sent.png">
+                  <img src="../../assets/main-suite/Reactions/02_message_sent.png" alt="Message Sent" loading="lazy">
                 </a>
                 <figcaption><strong>Step 2</strong>Message Sent</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/03_reaction_picker_open.png">
-                  <img src="../../assets/ConversationView/Reactions/03_reaction_picker_open.png" alt="Reaction Picker Open" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/03_reaction_picker_open.png">
+                  <img src="../../assets/main-suite/Reactions/03_reaction_picker_open.png" alt="Reaction Picker Open" loading="lazy">
                 </a>
                 <figcaption><strong>Step 3</strong>Reaction Picker Open</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/04_thumbs_up_added.png">
-                  <img src="../../assets/ConversationView/Reactions/04_thumbs_up_added.png" alt="Thumbs Up Added" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/04_thumbs_up_added.png">
+                  <img src="../../assets/main-suite/Reactions/04_thumbs_up_added.png" alt="Thumbs Up Added" loading="lazy">
                 </a>
                 <figcaption><strong>Step 4</strong>Thumbs Up Added</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/05_thumbs_down_added.png">
-                  <img src="../../assets/ConversationView/Reactions/05_thumbs_down_added.png" alt="Thumbs Down Added" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/05_thumbs_down_added.png">
+                  <img src="../../assets/main-suite/Reactions/05_thumbs_down_added.png" alt="Thumbs Down Added" loading="lazy">
                 </a>
                 <figcaption><strong>Step 5</strong>Thumbs Down Added</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/06_smile_added.png">
-                  <img src="../../assets/ConversationView/Reactions/06_smile_added.png" alt="Smile Added" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/06_smile_added.png">
+                  <img src="../../assets/main-suite/Reactions/06_smile_added.png" alt="Smile Added" loading="lazy">
                 </a>
                 <figcaption><strong>Step 6</strong>Smile Added</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/07_heart_added.png">
-                  <img src="../../assets/ConversationView/Reactions/07_heart_added.png" alt="Heart Added" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/07_heart_added.png">
+                  <img src="../../assets/main-suite/Reactions/07_heart_added.png" alt="Heart Added" loading="lazy">
                 </a>
                 <figcaption><strong>Step 7</strong>Heart Added</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/08_laugh_added.png">
-                  <img src="../../assets/ConversationView/Reactions/08_laugh_added.png" alt="Laugh Added" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/08_laugh_added.png">
+                  <img src="../../assets/main-suite/Reactions/08_laugh_added.png" alt="Laugh Added" loading="lazy">
                 </a>
                 <figcaption><strong>Step 8</strong>Laugh Added</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/09_thumbs_up_removed.png">
-                  <img src="../../assets/ConversationView/Reactions/09_thumbs_up_removed.png" alt="Thumbs Up Removed" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/09_thumbs_up_removed.png">
+                  <img src="../../assets/main-suite/Reactions/09_thumbs_up_removed.png" alt="Thumbs Up Removed" loading="lazy">
                 </a>
                 <figcaption><strong>Step 9</strong>Thumbs Up Removed</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/010_thumbs_down_removed.png">
-                  <img src="../../assets/ConversationView/Reactions/010_thumbs_down_removed.png" alt="Thumbs Down Removed" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/010_thumbs_down_removed.png">
+                  <img src="../../assets/main-suite/Reactions/010_thumbs_down_removed.png" alt="Thumbs Down Removed" loading="lazy">
                 </a>
                 <figcaption><strong>Step 10</strong>Thumbs Down Removed</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/011_smile_removed.png">
-                  <img src="../../assets/ConversationView/Reactions/011_smile_removed.png" alt="Smile Removed" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/011_smile_removed.png">
+                  <img src="../../assets/main-suite/Reactions/011_smile_removed.png" alt="Smile Removed" loading="lazy">
                 </a>
                 <figcaption><strong>Step 11</strong>Smile Removed</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/012_heart_removed.png">
-                  <img src="../../assets/ConversationView/Reactions/012_heart_removed.png" alt="Heart Removed" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/012_heart_removed.png">
+                  <img src="../../assets/main-suite/Reactions/012_heart_removed.png" alt="Heart Removed" loading="lazy">
                 </a>
                 <figcaption><strong>Step 12</strong>Heart Removed</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/Reactions/013_laugh_removed.png">
-                  <img src="../../assets/ConversationView/Reactions/013_laugh_removed.png" alt="Laugh Removed" loading="lazy">
+                <a href="../../assets/main-suite/Reactions/013_laugh_removed.png">
+                  <img src="../../assets/main-suite/Reactions/013_laugh_removed.png" alt="Laugh Removed" loading="lazy">
                 </a>
                 <figcaption><strong>Step 13</strong>Laugh Removed</figcaption>
               </figure></section>

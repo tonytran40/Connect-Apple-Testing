@@ -5,7 +5,8 @@ const { saveScreenshot } = require('../utils/screenshots');
 const {
   runWithOptionalDriver,
   resetToHome,
-  scrollUntilConversationEntryVisible,
+  ensureRoomsSectionReady,
+  waitForConversationRow,
 } = require('../utils/testSession');
 const { escapePredicateString, getElementRect, pauseIfNeeded } = require('../utils/uiActions');
 const { createPublicRoom, generateRoomName } = require('./CreateRoom');
@@ -30,21 +31,24 @@ const POST_SCROLL_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_SCROLL_PAUSE_MS', 200, 0
 const POST_SWIPE_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_SWIPE_PAUSE_MS', 200, 0, 1500);
 
 async function holdThenSwipeRight(driver, fromX, toX, y) {
-  await driver.performActions([
-    {
-      type: 'pointer',
-      id: 'favoriteRoomFinger',
-      parameters: { pointerType: 'touch' },
-      actions: [
-        { type: 'pointerMove', duration: 0, x: fromX, y },
-        { type: 'pointerDown', button: 0 },
-        { type: 'pause', duration: SWIPE_HOLD_MS },
-        { type: 'pointerMove', duration: SWIPE_MOVE_MS, x: toX, y },
-        { type: 'pointerUp', button: 0 },
-      ],
-    },
-  ]);
-  await driver.releaseActions();
+  try {
+    await driver.performActions([
+      {
+        type: 'pointer',
+        id: 'favoriteRoomFinger',
+        parameters: { pointerType: 'touch' },
+        actions: [
+          { type: 'pointerMove', duration: 0, x: fromX, y },
+          { type: 'pointerDown', button: 0 },
+          { type: 'pause', duration: SWIPE_HOLD_MS },
+          { type: 'pointerMove', duration: SWIPE_MOVE_MS, x: toX, y },
+          { type: 'pointerUp', button: 0 },
+        ],
+      },
+    ]);
+  } finally {
+    await driver.releaseActions().catch(() => {});
+  }
 }
 
 async function swipeRightOnElement(driver, el) {
@@ -72,36 +76,13 @@ async function swipeRightOnElement(driver, el) {
 }
 
 async function waitForFavoriteRow(driver, roomName) {
-  const esc = escapePredicateString(roomName);
-  const title = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name == "${esc}" OR label == "${esc}")`
-  );
-  const started = Date.now();
-  let scrolls = 0;
-
-  while (Date.now() - started < WAIT_TIMEOUT_MS) {
-    if (await title.isDisplayed().catch(() => false)) {
-      return title;
-    }
-
-    if (scrolls < MAX_LIST_SCROLLS) {
-      try {
-        await driver.execute('mobile: scroll', { direction: 'down' });
-      } catch {
-        try {
-          await driver.execute('mobile: swipe', { direction: 'down' });
-        } catch {}
-      }
-      scrolls++;
-    }
-
-    await driver.pause(WAIT_INTERVAL_MS);
-  }
-
-  throw new Error(
-    `Room "${roomName}" was not found after ${WAIT_TIMEOUT_MS}ms. ` +
-      'Create the room or set FAVORITE_ROOM_NAME. Increase FAVORITE_ROOM_MAX_SCROLLS if it is below the fold.'
-  );
+  const { el } = await waitForConversationRow(driver, roomName, {
+    exact: true,
+    timeout: WAIT_TIMEOUT_MS,
+    maxScrolls: MAX_LIST_SCROLLS,
+    pauseMs: WAIT_INTERVAL_MS,
+  });
+  return el;
 }
 
 async function tapRevealedFavorite(driver, roomName) {
@@ -121,7 +102,7 @@ async function tapRevealedFavorite(driver, roomName) {
 
 async function runTest(driver, options = {}) {
   const { skipLogin = false } = options;
-  const roomName = CONFIGURED_FAVORITE_ROOM_NAME || generateRoomName('Favorite', 'A');
+  const roomName = CONFIGURED_FAVORITE_ROOM_NAME || generateRoomName('00-Favorite', 'A');
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
@@ -135,7 +116,7 @@ async function runTest(driver, options = {}) {
     await createPublicRoom(driver, roomName);
     await resetToHome(driver);
   }
-  await scrollUntilConversationEntryVisible(driver);
+  await ensureRoomsSectionReady(driver);
   await pauseIfNeeded(driver, POST_SCROLL_PAUSE_MS);
 
   const row = await waitForFavoriteRow(driver, roomName);

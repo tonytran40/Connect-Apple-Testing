@@ -48,9 +48,9 @@ async function swipeLeftOnRow(driver, el) {
         ],
       },
     ]);
-    await driver.releaseActions();
   } catch (e) {
     console.warn(`removeRoom: performActions swipe failed (${e?.message || e}), using drag`);
+    await driver.releaseActions().catch(() => {});
     await driver.execute('mobile: dragFromToForDuration', {
       fromX,
       fromY: y,
@@ -58,12 +58,15 @@ async function swipeLeftOnRow(driver, el) {
       toY: y,
       duration: 0.28,
     });
+  } finally {
+    await driver.releaseActions().catch(() => {});
   }
 }
 
 /** First visible title matching any candidate substring; returns element + full title for XPath. */
-async function waitForTargetRow(driver, names) {
+async function waitForTargetRow(driver, names, exact = false) {
   return waitForConversationRow(driver, names, {
+    exact,
     timeout: WAIT_MS,
     pauseMs: POLL_MS,
   });
@@ -87,10 +90,12 @@ async function tapRemoveBesideTitle(driver, roomTitle) {
 
 async function waitUntilTitleGone(driver, roomTitle) {
   const q = esc(roomTitle);
-  const title = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name == "${q}" OR label == "${q}")`
-  );
-  await driver.waitUntil(async () => !(await title.isDisplayed().catch(() => false)), {
+  await driver.waitUntil(async () => {
+    const title = await driver.$(
+      `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name == "${q}" OR label == "${q}")`
+    );
+    return !(await title.isDisplayed().catch(() => false));
+  }, {
     timeout: WAIT_MS,
     interval: POLL_MS,
     timeoutMsg: `removeRoom: "${roomTitle}" still visible`,
@@ -100,9 +105,8 @@ async function waitUntilTitleGone(driver, roomTitle) {
 async function prepareTargetRoom(driver) {
   if (CANDIDATES.length) return CANDIDATES;
 
-  const roomName = `E-RemoveRoom-${Math.random().toString(36).slice(2, 10)}`;
+  const roomName = `A-00-E-RemoveRoom-${Math.random().toString(36).slice(2, 10)}`;
   console.log(`removeRoom: creating isolated room "${roomName}"`);
-  await ensureRoomsSectionReady(driver);
   await createPublicRoom(driver, roomName);
   await goBack(driver, 500);
   await ensureRoomsSectionReady(driver);
@@ -120,7 +124,7 @@ async function runTest(driver, options = {}) {
   await pause(driver, 450);
 
   const candidates = await prepareTargetRoom(driver);
-  const { el, roomTitle } = await waitForTargetRow(driver, candidates);
+  const { el, roomTitle } = await waitForTargetRow(driver, candidates, CANDIDATES.length === 0);
   console.log(`removeRoom: "${roomTitle}"`);
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe_left.png');
