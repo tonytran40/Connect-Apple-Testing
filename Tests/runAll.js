@@ -56,11 +56,21 @@ const tests = [
     run: require('./MessageActions').run,
   },
   {
+    name: 'ConversationSearch',
+    area: 'Search, sort, select, and verify no-result behavior in a room',
+    run: require('./ConversationSearch').run,
+  },
+  {
     name: 'RoomNotificationPreferences',
     area: 'Persist and restore room notification preferences',
     run: require('./RoomNotificationPreferences').run,
   },
   { name: 'markdowns', area: 'Markdown and emoji rendering', run: require('./markdowns').run },
+  {
+    name: 'LinkPreviews',
+    area: 'Render metadata cards for links sent in a room',
+    run: require('./LinkPreviews').run,
+  },
   {
     name: 'ConversationList',
     area: 'User settings: each conversation layout and sort, close, verify list',

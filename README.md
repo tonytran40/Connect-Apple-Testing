@@ -11,7 +11,7 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 | **Login** | Auto-login when `loginView` is shown (localhost server, credentials from `.env`) |
 | **Rooms** | Create public/private rooms (`CreateRoom.js`); edit room settings (`editRoom.js`); remove room rows (`removeRoom.js`); manage room members (`membersRoom.js`) |
 | **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); mark unread/read (`markAsRead.js`); swipe-left remove (`removeRoom.js`) |
-| **Messaging** | New DM; reactions; emoji typeahead; Copy/Delete actions; markdown rendering; pin/edit/unpin; attachment entry points |
+| **Messaging** | New DM; conversation search/sort; reactions; emoji typeahead; Copy/Delete actions; markdown and link-preview rendering; pin/edit/unpin; photo, file, and GIF attachments |
 | **Notifications** | Push a simulator notification and verify app re-entry (`notifications.js`) |
 | **Settings** | Room notification preferences; conversation layout & sort; sign out |
 | **System flows** | Opt-in draft persistence across app background/foreground (`DraftPersistence.js`) |
@@ -134,11 +134,13 @@ npm run test:suite
 3. `Reactions` — add and remove message reactions
 4. `ComposerTypeahead` — emoji suggestions
 5. `MessageActions` — copy and delete a sent message
-6. `RoomNotificationPreferences` — persist and restore a room preference
-7. `markdowns` — markdown / emoji in composer
-8. `ConversationList` — layout and sort in user settings
-9. `newMessage` — new direct message, intentionally late because it can leave the app in a DM
-10. `Login_Signout` — sign out
+6. `ConversationSearch` — search, sort, open a result, and verify no-results behavior
+7. `RoomNotificationPreferences` — persist and restore a room preference
+8. `markdowns` — markdown / emoji in composer
+9. `LinkPreviews` — render YouTube, Open Graph, and Google Maps metadata cards
+10. `ConversationList` — layout and sort in user settings
+11. `newMessage` — new direct message, intentionally late because it can leave the app in a DM
+12. `Login_Signout` — sign out
 
 Report: `reports/latest-suite-report.md` (pass/fail, durations, options).
 
@@ -255,7 +257,7 @@ Default three-lane split:
 |-------|-----------|--------|-----|-------|
 | `main-suite` | iPhone 17 Pro | `4723` | `8100` | `CreateRoom`, `PinnedMessageEditFlow`, `Reactions`, `newMessage` |
 | `Conversation-List` | iPhone 17 Pro Max | `4725` | `8200` | List tests plus `ComposerTypeahead`, `MessageActions`, `RoomNotificationPreferences` |
-| `ConversationView` | iPhone 17 | `4727` | `8300` | `markdowns`, `attachments`, `editRoom`, `membersRoom` |
+| `ConversationView` | iPhone 17 | `4727` | `8300` | `markdowns`, `LinkPreviews`, `attachments`, `editRoom`, `membersRoom`, `ConversationSearch` |
 | Exclusive settings phase | iPhone 17 Pro Max | `4725` | `8200` | `ConversationList` after all concurrent feature lanes finish |
 
 Run all three groups with:
@@ -436,6 +438,8 @@ node Tests/removeAllrooms.js
 node Tests/newMessage.js
 node Tests/ComposerTypeahead.js
 node Tests/MessageActions.js
+node Tests/ConversationSearch.js
+node Tests/LinkPreviews.js
 node Tests/RoomNotificationPreferences.js
 node Tests/DraftPersistence.js
 ```
@@ -483,6 +487,8 @@ npm run selectors:audit
 
 - `ComposerTypeahead.js` creates an isolated room, selects the `:grinning_face:` suggestion, sends the result, and verifies the rendered message. Mention suggestions are intentionally excluded until test environments provide deterministic room members.
 - `MessageActions.js` verifies Copy through the simulator clipboard when supported, then confirms Delete removes the unique message.
+- `ConversationSearch.js` creates an isolated `A-Search-*` room, seeds two searchable messages with different reactions plus an unrelated control message, verifies filtering, reaction rendering, and both sort orders, opens a result in timeline context, and checks the no-results state. It retries only while the search backend indexes the new events rather than sleeping for a fixed interval.
+- `LinkPreviews.js` sends three formatted HTTPS links in an isolated room and verifies separate YouTube, Apple Open Graph, and Google Maps preview cards. Each case waits for its preview-only simplified host label and saves sent/loaded screenshots, so a plain rendered link cannot create a false pass.
 - `RoomNotificationPreferences.js` changes a room preference, verifies it after reopening, and restores `ROOM_NOTIFICATION_RESTORE_LABEL` in cleanup.
 - `DraftPersistence.js` is opt-in: it backgrounds Connect with an unsent draft, reactivates the app, verifies the exact draft, clears it, and restores the Rooms list.
 - Later system flows and their deterministic prerequisites are documented in [`docs/system-tests.md`](docs/system-tests.md).
@@ -576,6 +582,8 @@ Connect-Apple-Testing/
 │   ├── newMessage.js
 │   ├── ComposerTypeahead.js
 │   ├── MessageActions.js
+│   ├── ConversationSearch.js
+│   ├── LinkPreviews.js
 │   ├── RoomNotificationPreferences.js
 │   ├── DraftPersistence.js       # opt-in system flow
 │   ├── editRoom.js          # standalone room settings flow
@@ -671,6 +679,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:attachments` | Create room, validate attachment entry points, and generate a report |
 | `npm run test:composer-typeahead` | Verify emoji composer suggestions |
 | `npm run test:message-actions` | Verify message Copy and Delete actions |
+| `npm run test:link-previews` | Verify YouTube, Open Graph, and Google Maps preview cards |
 | `npm run test:room-notification-preferences` | Persist and restore a room notification setting |
 | `npm run test:draft-persistence` | Run the opt-in background/foreground draft test |
 | `npm run test:remove-all-rooms` | Clean up matching rooms and generate a report |

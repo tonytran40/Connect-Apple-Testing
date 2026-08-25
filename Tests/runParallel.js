@@ -22,8 +22,10 @@ const MAIN_SUITE_TESTS = [
   'Reactions',
   'ComposerTypeahead',
   'MessageActions',
+  'ConversationSearch',
   'RoomNotificationPreferences',
   'markdowns',
+  'LinkPreviews',
   'ConversationList',
   'newMessage',
 ];

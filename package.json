@@ -28,6 +28,8 @@
     "test:reactions": "npm run test:one -- Reactions",
     "test:composer-typeahead": "npm run test:one -- ComposerTypeahead",
     "test:message-actions": "npm run test:one -- MessageActions",
+    "test:conversation-search": "npm run test:one -- ConversationSearch",
+    "test:link-previews": "npm run test:one -- LinkPreviews",
     "test:room-notification-preferences": "npm run test:one -- RoomNotificationPreferences",
     "test:draft-persistence": "npm run test:one -- DraftPersistence",
     "test:remove-all-rooms": "npm run test:one -- removeAllrooms",

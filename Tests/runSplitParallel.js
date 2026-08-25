@@ -14,10 +14,10 @@ const {
 const { resolveLaneUdids } = require('../utils/simulatorConfig');
 
 const MAIN_TESTS = 'CreateRoom,PinnedMessageEditFlow,markdowns,newMessage';
-const STANDALONE_TESTS = 'attachments,editRoom,membersRoom,favoriteRoom,markAsRead,removeRoom,notifications,Reactions,ComposerTypeahead,MessageActions,RoomNotificationPreferences';
+const STANDALONE_TESTS = 'attachments,editRoom,membersRoom,favoriteRoom,markAsRead,removeRoom,notifications,Reactions,ComposerTypeahead,MessageActions,ConversationSearch,RoomNotificationPreferences,LinkPreviews';
 const THREE_LANE_MAIN_TESTS = 'CreateRoom,newMessage';
 const THREE_LANE_CONVERSATION_LIST_TESTS = 'favoriteRoom,markAsRead,notifications,removeRoom';
-const THREE_LANE_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,Reactions,markdowns,attachments,editRoom,membersRoom,ComposerTypeahead,MessageActions,RoomNotificationPreferences';
+const THREE_LANE_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,Reactions,markdowns,LinkPreviews,attachments,editRoom,membersRoom,ComposerTypeahead,MessageActions,ConversationSearch,RoomNotificationPreferences';
 const EXCLUSIVE_SETTINGS_TESTS = 'ConversationList';
 const DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,Reactions';
 const DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS = 'ComposerTypeahead,MessageActions,RoomNotificationPreferences';
@@ -30,6 +30,7 @@ const SAFE_CONVERSATION_VIEW_BALANCE_TESTS = new Set([
   'membersRoom',
   'ComposerTypeahead',
   'MessageActions',
+  'ConversationSearch',
   'RoomNotificationPreferences',
 ]);
 const DEFAULT_SESSION_STAGGER_MS = 6000;

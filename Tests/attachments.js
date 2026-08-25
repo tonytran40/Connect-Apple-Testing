@@ -11,6 +11,12 @@ const {
   waitForAttachmentDraftInComposer,
   waitForPhotoPicker,
 } = require('../utils/attachmentPhotoPicker');
+const {
+  DEFAULT_FILE_NAME,
+  selectConnectDocument,
+  waitForDocumentPicker,
+  waitForSentFile,
+} = require('../utils/attachmentFilePicker');
 const { SELECTORS } = require('../utils/selectors');
 const { createPublicRoom } = require('./CreateRoom');
 const {
@@ -248,17 +254,44 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '06_after_send_attachment.png');
 
   await tapShareOptionsButton(driver);
+  await pauseIfNeeded(driver, 250);
+  await waitForShareOptionsDialog(driver);
+  await saveScreenshot(driver, TEST_NAME, '07_share_options_dialog_for_file.png');
+
+  await tapShareOption(driver, 'Attach Files');
+  await waitForDocumentPicker(driver);
+  await saveScreenshot(driver, TEST_NAME, '08_file_picker_open.png');
+
+  await selectConnectDocument(driver, {
+    onStep: async step => {
+      const screenshots = {
+        browse: '09_files_browse.png',
+        'local-storage': '10_files_on_my_iphone.png',
+        'app-folder': '11_files_connect_ios.png',
+        'file-selected': '12_file_selected.png',
+      };
+      await saveScreenshot(driver, TEST_NAME, screenshots[step]);
+    },
+  });
+  await waitForAttachmentDraftInComposer(driver);
+  await saveScreenshot(driver, TEST_NAME, '13_file_attachment_in_composer.png');
+
+  await sendComposerDraft(driver);
+  await waitForSentFile(driver, DEFAULT_FILE_NAME);
+  await saveScreenshot(driver, TEST_NAME, '14_after_send_file_attachment.png');
+
+  await tapShareOptionsButton(driver);
   await pauseIfNeeded(driver, 400);
   await waitForShareOptionsDialog(driver);
-  await saveScreenshot(driver, TEST_NAME, '07_share_options_dialog_for_gif.png');
+  await saveScreenshot(driver, TEST_NAME, '15_share_options_dialog_for_gif.png');
 
   await tapShareOption(driver, 'Send GIF');
   await pauseIfNeeded(driver, GIF_PICKER_SETTLE_MS);
-  await saveScreenshot(driver, TEST_NAME, '08_gif_picker_open.png');
+  await saveScreenshot(driver, TEST_NAME, '16_gif_picker_open.png');
 
   await selectLoadedGif(driver);
   await pauseIfNeeded(driver, GIF_SEND_SETTLE_MS);
-  await saveScreenshot(driver, TEST_NAME, '09_after_send_gif.png');
+  await saveScreenshot(driver, TEST_NAME, '17_after_send_gif.png');
 }
 
 async function run(driver, options = {}) {

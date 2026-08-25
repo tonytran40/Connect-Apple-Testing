@@ -142,6 +142,20 @@ async function waitForReactionState(driver, message, reaction, expectedPresent, 
   throw new Error(`Expected ${reaction.name} reaction to ${expectation} the message bubble`);
 }
 
+async function addQuickReaction(driver, message, reactionName, timeout = DEFAULT_TIMEOUT) {
+  const reaction = QUICK_REACTIONS.find(item => item.name === reactionName);
+  if (!reaction) {
+    throw new Error(`Unknown quick reaction "${reactionName}"`);
+  }
+
+  const bubble = await findMessageBubble(driver, message, timeout);
+  await longPress(driver, bubble);
+  const choice = await accessibleReactionButton(driver, reaction, timeout);
+  await choice.button.click();
+  await waitForReactionState(driver, message, reaction, true, timeout);
+  return reaction;
+}
+
 async function visibleReactionChip(driver, reaction, timeout = DEFAULT_TIMEOUT) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
@@ -225,7 +239,7 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run };
+module.exports = { addQuickReaction, run };
 
 if (require.main === module) {
   const { runCliTimed } = require('../utils/cliTestTiming');

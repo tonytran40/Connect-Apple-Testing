@@ -13,13 +13,58 @@ const {
 } = require('../utils/conversationFeatureFlows');
 const ComposerTypeahead = require('../Tests/ComposerTypeahead');
 const MessageActions = require('../Tests/MessageActions');
+const ConversationSearch = require('../Tests/ConversationSearch');
+const LinkPreviews = require('../Tests/LinkPreviews');
 const RoomNotificationPreferences = require('../Tests/RoomNotificationPreferences');
 
 test('conversation feature modules expose suite and standalone test entry points', () => {
-  for (const module of [ComposerTypeahead, MessageActions, RoomNotificationPreferences]) {
+  for (const module of [
+    ComposerTypeahead,
+    MessageActions,
+    ConversationSearch,
+    LinkPreviews,
+    RoomNotificationPreferences,
+  ]) {
     assert.equal(typeof module.run, 'function');
     assert.equal(typeof module.runTest, 'function');
   }
+});
+
+test('builds a preview-only host selector from a URL', () => {
+  assert.equal(
+    LinkPreviews.simplifiedHost('https://www.youtube.com/watch?v=test'),
+    'youtube.com'
+  );
+  assert.match(
+    LinkPreviews.previewHostSelector('preview "host"'),
+    /name == "preview \\"host\\""/
+  );
+
+  const previewCases = LinkPreviews.resolvePreviewCases({});
+  assert.equal(previewCases.length, 3);
+  assert.deepEqual(
+    previewCases.map(previewCase => previewCase.expectedHost),
+    ['youtube.com', 'apple.com', 'google.com']
+  );
+});
+
+test('supports independent URL and host overrides for all link preview cases', () => {
+  const previewCases = LinkPreviews.resolvePreviewCases({
+    LINK_PREVIEW_URL_1: 'https://video.example/one',
+    LINK_PREVIEW_URL_2: 'https://open-graph.example/two',
+    LINK_PREVIEW_URL_3: 'https://maps.example/three',
+    LINK_PREVIEW_EXPECTED_HOST_3: 'custom-maps-host',
+  });
+
+  assert.deepEqual(
+    previewCases.map(previewCase => previewCase.expectedHost),
+    ['video.example', 'open-graph.example', 'custom-maps-host']
+  );
+});
+
+test('builds an escaped accessibility predicate for conversation search result text', () => {
+  const predicate = ConversationSearch.visibleTextPredicate('needle "quoted" \\ value');
+  assert.match(predicate, /name CONTAINS "needle \\"quoted\\" \\\\ value"/);
 });
 
 test('builds deterministic A-prefixed room names and unique message markers', () => {
