@@ -15,32 +15,23 @@ const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { ensureRoomsSectionReady } = require('../utils/testSession');
 const { resolveLaneUdids } = require('../utils/simulatorConfig');
+const { coverageFor, manifestEntry, testsFor } = require('./testManifest');
 
-const MAIN_SUITE_TESTS = [
-  'CreateRoom',
-  'PinnedMessageEditFlow',
-  'Reactions',
-  'ComposerTypeahead',
-  'MessageActions',
-  'ConversationSearch',
-  'RoomNotificationPreferences',
-  'markdowns',
-  'LinkPreviews',
-  'ConversationList',
-  'newMessage',
-];
+const MAIN_SUITE_TESTS = testsFor('parallel').map(test => test.name);
+const STANDALONE_TESTS = testsFor('parallelAll').map(test => test.name);
+const ACCOUNT_SETTINGS_TESTS = new Set(
+  testsFor('parallel').filter(test => test.exclusive).map(test => test.name)
+);
+const RESULT_STATUSES = new Set(['PASS', 'FAIL', 'SKIPPED', 'BLOCKED', 'INCONCLUSIVE']);
 
-const STANDALONE_TESTS = [
-  ...MAIN_SUITE_TESTS,
-  'attachments',
-  'editRoom',
-  'membersRoom',
-  'favoriteRoom',
-  'markAsRead',
-  'removeRoom',
-  //'notifications',
-];
-const ACCOUNT_SETTINGS_TESTS = new Set(['ConversationList']);
+function resolvedStatus(error, ownedResult) {
+  if (error) {
+    const errorStatus = String(error.status || '').toUpperCase();
+    return RESULT_STATUSES.has(errorStatus) ? errorStatus : 'FAIL';
+  }
+  const returnedStatus = String(ownedResult?.status || '').toUpperCase();
+  return RESULT_STATUSES.has(returnedStatus) ? returnedStatus : 'PASS';
+}
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -190,11 +181,16 @@ function phaseTimingRows(timings) {
 function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, startedAt, tests }) {
   const passed = results.filter(result => result.status === 'PASS').length;
   const failed = results.filter(result => result.status === 'FAIL').length;
+  const skipped = results.filter(result => result.status === 'SKIPPED').length;
+  const blocked = results.filter(result => result.status === 'BLOCKED').length;
+  const inconclusive = results.filter(result => result.status === 'INCONCLUSIVE').length;
   const dryRun = results.filter(result => result.status === 'DRY_RUN').length;
   const total = (tests || results).length;
   const completed = results.length;
   const executed = results.filter(result => result.status !== 'DRY_RUN');
-  const failures = results.filter(result => result.status === 'FAIL');
+  const failures = results.filter(result =>
+    ['FAIL', 'BLOCKED', 'INCONCLUSIVE'].includes(result.status)
+  );
   const slowest = [...results]
     .filter(result => result.status !== 'DRY_RUN' && Number.isFinite(result.durationMs))
     .sort((a, b) => b.durationMs - a.durationMs)
@@ -203,8 +199,8 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
   const rerunFailures = failures.length
     ? `PARALLEL_TESTS=${failures.map(result => result.name).join(',')} npm run test:parallel`
     : '';
-  const overallStatus = failed
-    ? `**Status: FAIL** (${failed} failing)`
+  const overallStatus = failed || blocked || inconclusive || skipped
+    ? `**Status: NEEDS ATTENTION** (${failed} failed, ${blocked} blocked, ${inconclusive} inconclusive, ${skipped} skipped)`
     : dryRun === total
       ? '**Status: DRY RUN**'
       : completed < total
@@ -214,6 +210,15 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
     ? `- Result: dry run only (${total} tests selected)`
     : `- Result: ${passed}/${executed.length} executed passed (${formatPercent(passed, executed.length)})`;
   const timings = buildTimingSummary({ lanes, results });
+  const evidenceStatus = failed
+    ? 'FAIL'
+    : blocked || inconclusive || skipped
+      ? 'INCOMPLETE'
+      : dryRun === total
+        ? 'DRY_RUN'
+        : completed < total
+          ? 'RUNNING'
+          : 'PASS';
 
   const lines = [
     '# Parallel iOS Automation Report',
@@ -226,6 +231,7 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
     `- Total duration: ${formatDurationMs(durationMs)}`,
     resultSummary,
     `- Completed: ${completed}/${total}`,
+    `- Skipped: ${skipped}; blocked: ${blocked}; inconclusive: ${inconclusive}`,
     `- Workers: ${lanes.length}`,
     `- Tests: ${(tests || results.map(result => result.name)).join(', ')}`,
     '',
@@ -308,7 +314,7 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
     reportPath.replace(/\.md$/, '.json'),
     `${JSON.stringify({
       runId,
-      status: failed ? 'FAIL' : dryRun === total ? 'DRY_RUN' : completed < total ? 'RUNNING' : 'PASS',
+      status: evidenceStatus,
       startedAt,
       updatedAt: finishedAt,
       durationMs,
@@ -317,9 +323,13 @@ function writeAggregateReport({ reportPath, runId, results, durationMs, lanes, s
         completed,
         passed,
         failed,
+        skipped,
+        blocked,
+        inconclusive,
         dryRun,
       },
       tests: tests || results.map(result => result.name),
+      coverage: coverageFor(tests || results.map(result => result.name)),
       lanes,
       results,
       timings,
@@ -452,6 +462,9 @@ function runOneTest({
 }
 
 function testModule(testName) {
+  if (!manifestEntry(testName)) {
+    throw new Error(`Test "${testName}" is not classified in Tests/testManifest.js`);
+  }
   const testPath = path.resolve(__dirname, `${testName}.js`);
   if (!fs.existsSync(testPath)) {
     throw new Error(`Test file not found: ${testPath}`);
@@ -480,6 +493,7 @@ async function runInstrumentedChild(testName) {
   const started = performance.now();
   let driver;
   let error;
+  let ownedResult;
 
   resetScreenshotMetrics(testName, { resultDir });
   try {
@@ -490,7 +504,6 @@ async function runInstrumentedChild(testName) {
     await measurePhase(timings, 'loginReadinessMs', () => ensureRoomsSectionReady(driver));
 
     const bodyStarted = performance.now();
-    let ownedResult;
     try {
       ownedResult = await testModule(testName).run(driver, { skipLogin: true });
     } finally {
@@ -510,9 +523,10 @@ async function runInstrumentedChild(testName) {
 
   const durationMs = Math.round(performance.now() - started);
   const screenshot = readScreenshotMetrics(testName, { resultDir });
+  const status = resolvedStatus(error, ownedResult);
   const result = {
     name: testName,
-    status: error ? 'FAIL' : 'PASS',
+    status,
     durationMs,
     duration: formatDurationMs(durationMs),
     logicalCategory,
@@ -520,10 +534,11 @@ async function runInstrumentedChild(testName) {
     finishedAt: new Date().toISOString(),
     timings: mergePhaseTimings(timings, { screenshotCaptureMs: screenshot.captureMs }),
     screenshotMetrics: screenshot,
+    ...(ownedResult?.notes ? { notes: ownedResult.notes } : {}),
     ...(error ? { error: error?.message || String(error) } : {}),
   };
   writeResultFile(resultDir, result);
-  if (error) throw error;
+  if (error && status === 'FAIL') throw error;
 }
 
 async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir, logicalCategory }) {
@@ -559,9 +574,10 @@ async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir,
   });
 
   const durationMs = Math.round(performance.now() - started);
+  const status = resolvedStatus(error, ownedResult);
   const result = {
     name: testName,
-    status: error ? 'FAIL' : 'PASS',
+    status,
     durationMs,
     duration: formatDurationMs(durationMs),
     workerIndex: lane.index,
@@ -577,6 +593,7 @@ async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir,
     logPath,
     timings: mergedTimings,
     screenshotMetrics: screenshot,
+    ...(ownedResult?.notes ? { notes: ownedResult.notes } : {}),
     ...(error ? { error: error?.message || String(error) } : {}),
   };
   writeResultFile(resultDir, result);

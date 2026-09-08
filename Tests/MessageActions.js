@@ -28,6 +28,23 @@ async function openMessageActions(driver, message, requiredAction) {
   await findVisibleLabeledControl(driver, requiredAction, { timeout: DEFAULT_TIMEOUT });
 }
 
+function clipboardVerificationMetadata(copied) {
+  if (copied.available) {
+    return {
+      status: 'PASS',
+      notes: 'Copy placed the exact message body on the clipboard',
+    };
+  }
+
+  return {
+    status: 'INCONCLUSIVE',
+    notes:
+      `Clipboard verification unavailable: ${copied.reason}. ` +
+      'The Copy action closed and the source message remained visible.',
+    inconclusiveReason: copied.reason,
+  };
+}
+
 async function runTest(driver, options = {}) {
   if (!options.skipLogin) {
     await ensureLoggedIn(driver);
@@ -46,6 +63,7 @@ async function runTest(driver, options = {}) {
   await waitForLabeledControlHidden(driver, 'Copy', { timeout: DEFAULT_TIMEOUT });
 
   const copied = await readClipboardText(driver);
+  const clipboardMetadata = clipboardVerificationMetadata(copied);
   if (copied.available) {
     assert.equal(copied.text, message, 'Copy did not place the exact message body on the clipboard');
   } else {
@@ -67,7 +85,10 @@ async function runTest(driver, options = {}) {
   await waitForLabeledControlHidden(driver, 'Delete Message', { timeout: DEFAULT_TIMEOUT });
   await waitForMessageAbsent(driver, message, DEFAULT_TIMEOUT);
   await saveScreenshot(driver, TEST_NAME, '05_message_deleted.png');
-  return { timings: { roomCreationMs: creation.roomCreationMs } };
+  return {
+    ...clipboardMetadata,
+    timings: { roomCreationMs: creation.roomCreationMs },
+  };
 }
 
 async function run(driver, options = {}) {
@@ -81,7 +102,7 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run, runTest };
+module.exports = { clipboardVerificationMetadata, run, runTest };
 
 if (require.main === module) {
   const { runCliTimed } = require('../utils/cliTestTiming');

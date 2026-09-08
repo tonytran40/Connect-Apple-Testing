@@ -36,7 +36,7 @@ async function runOne(testName) {
     await ensureRoomsSectionReady(driver);
 
     const test = loadTestModule(testName);
-    await test.run(driver, { skipLogin: true });
+    return await test.run(driver, { skipLogin: true });
   } finally {
     if (driver) {
       await driver.deleteSession().catch(() => {});

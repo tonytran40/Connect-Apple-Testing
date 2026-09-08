@@ -1,13 +1,19 @@
 # membersRoom
 
-- Status: PASS
-- Duration: 1m 6s
+- Status: FAIL
+- Duration: 44s
 - Lane: ConversationView
 - Logical category: ConversationView
 - Device: iPhone 17
 - Appium port: 4727
-- Started: 2026-08-19T15:29:44.671Z
-- Finished: 2026-08-19T15:30:50.784Z
+- Started: 2026-09-01T18:58:37.221Z
+- Finished: 2026-09-01T18:59:20.979Z
+
+## Failure
+
+```text
+membersRoom: could not find Add Individuals TextField
+```
 
 ## Phase Timings
 
@@ -15,9 +21,9 @@
 | --- | --- |
 | Session creation | 0ms |
 | Login/readiness | 19s |
-| Test body | 46s |
-| Screenshot capture | 2s |
-| Recovery | 0ms |
+| Test body | 24s |
+| Screenshot capture | 764ms |
+| Recovery | 46s |
 | Report generation | 0ms |
 
 ## Steps
@@ -42,26 +48,12 @@
 
 ![After Remove X](assets/ConversationView/membersRoom/05_after_remove_x.png)
 
-### Step 6: After Type Invitee
+### Step 6: ERROR - Failed here
 
-![After Type Invitee](assets/ConversationView/membersRoom/06_after_type_invitee.png)
+![ERROR](assets/ConversationView/membersRoom/ERROR.png)
 
-### Step 7: After Select Invitee
+**Failure at this step:**
 
-![After Select Invitee](assets/ConversationView/membersRoom/07_after_select_invitee.png)
-
-### Step 8: After Cancel
-
-![After Cancel](assets/ConversationView/membersRoom/08_after_cancel.png)
-
-### Step 9: After Back
-
-![After Back](assets/ConversationView/membersRoom/09_after_back.png)
-
-### Step 10: After Close
-
-![After Close](assets/ConversationView/membersRoom/10_after_close.png)
-
-### Step 11: After Back To List
-
-![After Back To List](assets/ConversationView/membersRoom/11_after_back_to_list.png)
+```text
+membersRoom: could not find Add Individuals TextField
+```

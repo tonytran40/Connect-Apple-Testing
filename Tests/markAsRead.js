@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+const crypto = require('node:crypto');
+
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const {
@@ -81,6 +83,59 @@ async function waitForTargetRow(driver, names, exact = false) {
   });
 }
 
+async function elementVisualSignature(driver, element) {
+  if (!element?.elementId || typeof driver.takeElementScreenshot !== 'function') {
+    throw new Error(
+      'markAsRead: element screenshots are required to verify the unread/read visual state'
+    );
+  }
+
+  const screenshot = await driver.takeElementScreenshot(element.elementId, true);
+  if (!screenshot) {
+    throw new Error('markAsRead: Appium returned an empty room-title screenshot');
+  }
+  return crypto.createHash('sha256').update(Buffer.from(screenshot, 'base64')).digest('hex');
+}
+
+function visualStateTransition(initialReadSignature, unreadSignature, restoredReadSignature) {
+  return {
+    unreadChanged: Boolean(
+      initialReadSignature && unreadSignature && unreadSignature !== initialReadSignature
+    ),
+    readRestored: Boolean(
+      initialReadSignature && restoredReadSignature === initialReadSignature
+    ),
+  };
+}
+
+async function waitForTitleVisualSignature(driver, roomTitle, predicate, description) {
+  const deadline = Date.now() + WAIT_MS;
+  let lastSignature = '';
+
+  while (Date.now() < deadline) {
+    try {
+      const row = await waitForConversationRow(driver, [roomTitle], {
+        exact: true,
+        timeout: Math.min(2000, Math.max(250, deadline - Date.now())),
+        maxScrolls: 0,
+        pauseMs: POLL_MS,
+      });
+      lastSignature = await elementVisualSignature(driver, row.el);
+      if (predicate(lastSignature)) return { ...row, signature: lastSignature };
+    } catch (error) {
+      if (/element screenshots are required|empty room-title screenshot/.test(error?.message || '')) {
+        throw error;
+      }
+    }
+    await pause(driver, POLL_MS);
+  }
+
+  throw new Error(
+    `markAsRead: ${description} was not visually observable for "${roomTitle}" ` +
+      `within ${WAIT_MS}ms (last signature: ${lastSignature || 'unavailable'})`
+  );
+}
+
 async function tapMarkAsUnreadBesideTitle(driver, roomTitle) {
   const q = esc(roomTitle);
   const xp = `//XCUIElementTypeStaticText[@name="${q}" or @label="${q}"]/preceding::XCUIElementTypeButton[@name="${A11Y.markAsUnreadButton}" or @label="message-dot"][1]`;
@@ -124,27 +179,55 @@ async function runTest(driver, options = {}) {
   const exact = CANDIDATES.length === 0;
   const target = await waitForTargetRow(driver, candidates, exact);
   console.log(`markAsRead: "${target.roomTitle}"`);
+  const initialReadSignature = await elementVisualSignature(driver, target.el);
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe_right.png');
   await swipeRightOnRow(driver, target.el);
   await pause(driver, 200);
   await saveScreenshot(driver, TEST_NAME, '02_after_swipe_right.png');
   await tapMarkAsUnreadBesideTitle(driver, target.roomTitle);
+  const unread = await waitForTitleVisualSignature(
+    driver,
+    target.roomTitle,
+    signature => signature !== initialReadSignature,
+    'read-to-unread title styling transition'
+  );
   await saveScreenshot(driver, TEST_NAME, '03_after_mark_unread.png');
 
   // Toggle back to read (same button after second swipe).
-  const again = await waitForTargetRow(driver, candidates, exact);
   await pause(driver, 400);
-  await swipeRightOnRow(driver, again.el);
+  await swipeRightOnRow(driver, unread.el);
   await pause(driver, 200);
-  await tapMarkAsUnreadBesideTitle(driver, again.roomTitle);
+  await tapMarkAsUnreadBesideTitle(driver, unread.roomTitle);
+  const restored = await waitForTitleVisualSignature(
+    driver,
+    target.roomTitle,
+    signature => signature === initialReadSignature,
+    'unread-to-read title styling transition'
+  );
+  const transition = visualStateTransition(
+    initialReadSignature,
+    unread.signature,
+    restored.signature
+  );
+  if (!transition.unreadChanged || !transition.readRestored) {
+    throw new Error(
+      `markAsRead: visual state assertion failed (${JSON.stringify(transition)})`
+    );
+  }
   await saveScreenshot(driver, TEST_NAME, '04_after_mark_read.png');
+
+  return {
+    status: 'PASS',
+    notes: 'Verified read → unread → read room-title styling transitions',
+    evidence: transition,
+  };
 }
 
 async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver, options);
+      return await runTest(activeDriver, options);
     } catch (err) {
       try {
         await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
@@ -154,7 +237,7 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run };
+module.exports = { elementVisualSignature, run, visualStateTransition };
 
 if (require.main === module) {
   const { runCliTimed } = require('../utils/cliTestTiming');

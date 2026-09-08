@@ -16,6 +16,7 @@ test('conversation search and bookmarks selectors match source-backed identifier
 
 test('selector metadata documents aliases and non-literal selector contracts', () => {
   assert.equal(SELECTOR_METADATA.conversationSearch.source, 'alias');
+  assert.deepEqual(SELECTOR_METADATA.browseRoomsButton.platforms, ['macOS']);
   assert.equal(SELECTOR_METADATA.roomsSectionHeader.source, 'dynamic');
   assert.equal(SELECTOR_METADATA.roomsHeaderButton.source, 'text');
   assert.deepEqual(SELECTOR_METADATA.messageActionsMore.platforms, ['macOS']);

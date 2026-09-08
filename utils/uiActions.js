@@ -54,19 +54,26 @@ async function tapByText(driver, text, timeout = 20000) {
 async function openRoomsPlusMenu(driver, timeout = 20000) {
   const plusButton = await driver.$(SELECTORS.plusButton);
   if (await plusButton.isDisplayed().catch(() => false)) {
-    await plusButton.click();
+    const rect = await getElementRect(plusButton);
+    await driver.execute('mobile: tap', {
+      x: Math.round(rect.x + rect.width / 2),
+      y: Math.round(rect.y + rect.height / 2),
+    });
     const createRoom = await driver.$(SELECTORS.createRoomButton);
     if (await createRoom.waitForDisplayed({ timeout: Math.min(timeout, 1800) }).then(() => true).catch(() => false)) {
       return;
     }
   }
 
-  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
-  await roomsHeader.waitForDisplayed({ timeout });
+  let roomsHeader = await driver.$(SELECTORS.roomsSectionHeader);
+  if (!(await roomsHeader.isDisplayed().catch(() => false))) {
+    roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
+    await roomsHeader.waitForDisplayed({ timeout });
+  }
   const rect = await getElementRect(roomsHeader);
   const windowRect = await driver.getWindowRect();
   await driver.execute('mobile: tap', {
-    x: Math.min(windowRect.width - 20, Math.round(rect.x + rect.width + 8)),
+    x: Math.round(windowRect.width * 0.945),
     y: Math.round(rect.y + rect.height / 2),
   });
 

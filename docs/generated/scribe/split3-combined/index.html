@@ -13,6 +13,9 @@
       --panel: #ffffff;
       --pass: #0f9f6e;
       --fail: #d93f3f;
+      --skipped: #64748b;
+      --blocked: #b45309;
+      --inconclusive: #7c3aed;
       --unknown: #7c8798;
       --navy: #090222;
       --blue: #0e61d8;
@@ -203,7 +206,7 @@
     main { padding: 2rem clamp(1rem, 4vw, 4rem) 4rem; }
     .stats {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 1rem;
       margin-top: -3.5rem;
     }
@@ -452,14 +455,19 @@
     }
     .test-card {
       display: block;
-      min-height: 11rem;
-      padding: 1rem;
       text-decoration: none;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 1.2rem;
       transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
     }
+    .test-card-summary { min-height: 11rem; padding: 1rem; cursor: pointer; list-style: none; }
+    .test-card-summary::-webkit-details-marker { display: none; }
+    .test-card-evidence { display: grid; gap: .75rem; padding: 1rem; border-top: 1px solid var(--line); }
+    .test-card-evidence p { margin: 0; white-space: pre-wrap; }
+    .test-card-evidence code { overflow-x: auto; border-radius: .65rem; padding: .65rem; background: #101828; color: #e9f1ff; white-space: nowrap; }
+    .test-card-evidence a { justify-self: start; color: var(--blue); font-weight: 800; text-decoration: none; }
+    .test-card-evidence .evidence-error { color: #8f2424; font-weight: 700; }
     .test-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: rgba(14, 97, 216, 0.4); }
     .test-card.fail { border-color: rgba(217, 63, 63, 0.45); }
     .test-card.slow { border-color: rgba(245, 158, 11, 0.55); }
@@ -481,6 +489,9 @@
     }
     .status-pill.pass { background: var(--pass); }
     .status-pill.fail { background: var(--fail); }
+    .status-pill.skipped { background: var(--skipped); }
+    .status-pill.blocked { background: var(--blocked); }
+    .status-pill.inconclusive { background: var(--inconclusive); }
     .status-pill.unknown { background: var(--unknown); }
     .slow-pill { background: #d97706; margin-left: 0.35rem; }
     .duration, .muted, .test-card p, .screenshot-count { color: var(--muted); }
@@ -500,6 +511,22 @@
       background: #f4f7fb;
     }
     .panel { padding: 1.25rem; margin-bottom: 1.5rem; }
+    .evidence-decision { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 1rem; align-items: center; }
+    .decision-badge { display: grid; place-items: center; min-width: 8rem; min-height: 5rem; border-radius: 1rem; color: white; font-size: 1.05rem; font-weight: 900; letter-spacing: .05em; }
+    .decision-badge.pass { background: var(--pass); }
+    .decision-badge.fail { background: var(--fail); }
+    .decision-badge.warning { background: var(--blocked); }
+    .decision-badge.unknown { background: var(--inconclusive); }
+    .decision-copy h2 { margin: 0 0 .25rem; }
+    .decision-copy p { margin: 0; color: var(--muted); font-weight: 700; }
+    .decision-facts { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .75rem; }
+    .decision-facts span { border-radius: 999px; padding: .28rem .58rem; background: #eef3f9; color: var(--ink); font-size: .82rem; font-weight: 800; }
+    .coverage-panel table { width: 100%; border-collapse: collapse; }
+    .coverage-panel th, .coverage-panel td { padding: .65rem; border-top: 1px solid var(--line); text-align: left; }
+    .coverage-panel thead th { border-top: 0; color: var(--muted); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
+    .coverage-scroll { overflow-x: auto; }
+    .coverage-class { border-radius: 999px; padding: .2rem .5rem; background: #eef3f9; font-size: .78rem; font-weight: 800; text-transform: capitalize; white-space: nowrap; }
+    .coverage-fallback > p { margin-bottom: 0; color: var(--muted); }
     .failures a {
       display: grid;
       gap: 0.25rem;
@@ -773,6 +800,7 @@
       .section-summary { display: block; }
       .summary-meta { justify-content: start; margin-top: 1rem; }
       .markdown-link { display: inline-block; margin-top: 1rem; }
+      .evidence-decision { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -784,11 +812,13 @@
         <p>Scribe-style browser report generated from Appium screenshots and runner results.</p>
         <div class="hero-meta">
           <span>Run: split3-combined</span>
-          <span>Branch: main</span>
-          <span>Commit: 0444142</span>
+          <span>App branch: main</span>
+          <span>App commit: c53a191a3</span>
+          <span>App build: 1</span>
+
           <span>Source: summary.json</span>
-          <span>Started: Aug 19, 11:25 AM</span>
-          <span>Updated: Aug 19, 11:32 AM</span>
+          <span>Started: Sep 1, 2:53 PM</span>
+          <span>Updated: Sep 1, 3:02 PM</span>
           <span class="">Report age: 0m ago</span>
         </div>
       </div>
@@ -825,7 +855,7 @@
           <span class="report-switcher-copy">
             <span class="report-switcher-eyebrow">Viewing now</span>
             <strong>Full Suite</strong>
-            <small>Aug 19, 11:25 AM</small>
+            <small>Sep 1, 2:53 PM</small>
           </span>
           <span class="status-pill fail">FAIL</span>
           <span class="report-switcher-toggle" aria-hidden="true">v</span>
@@ -835,14 +865,21 @@
           <a class="report-latest is-viewing" href="index.html">
               <span class="report-run-copy">
                 <strong>Full Suite</strong>
-                <small>Aug 19, 11:25 AM</small>
+                <small>Sep 1, 2:53 PM</small>
               </span>
               <span class="status-pill fail">FAIL</span>
             </a>
 
-          <div class="report-menu-heading archived-heading">Saved runs <span>1</span></div>
+          <div class="report-menu-heading archived-heading">Saved runs <span>2</span></div>
           <div class="report-run-list">
-            <a class="report-run" href="../Reactions-latest/index.html">
+            <a class="report-run" href="../AudienceFilters-latest/index.html">
+              <span class="report-run-copy">
+                <strong>AudienceFilters-latest</strong>
+                <small>Sep 1, 2:47 PM</small>
+              </span>
+              <span class="status-pill blocked">BLOCKED</span>
+            </a>
+<a class="report-run" href="../archive/2026-08-11T19-06-27Z-Reactions-latest/index.html">
               <span class="report-run-copy">
                 <strong>Reactions-latest</strong>
                 <small>Aug 11, 3:06 PM</small>
@@ -856,17 +893,32 @@
   </header>
 
   <main>
+    <section class="panel evidence-decision" aria-label="Release evidence decision">
+      <div class="decision-badge fail">NOT READY</div>
+      <div class="decision-copy">
+        <h2>Release evidence</h2>
+        <p>5 failed</p>
+        <div class="decision-facts">
+          <span>Fresh</span>
+          <span>17/17 eligible required completed</span>
+          <span>FAIL test result</span>
+        </div>
+      </div>
+    </section>
+
     <section class="stats" aria-label="Run summary">
-      <div class="stat"><span>Status</span><strong>FAIL</strong></div>
-      <div class="stat"><span>Passed</span><strong>15</strong></div>
-      <div class="stat"><span>Failed</span><strong>1</strong></div>
-      <div class="stat"><span>Total</span><strong>16</strong></div>
+      <div class="stat"><span>Passed</span><strong>12</strong></div>
+      <div class="stat"><span>Failed</span><strong>5</strong></div>
+      <div class="stat"><span>Skipped</span><strong>0</strong></div>
+      <div class="stat"><span>Blocked</span><strong>0</strong></div>
+      <div class="stat"><span>Inconclusive</span><strong>0</strong></div>
+      <div class="stat"><span>Total</span><strong>17</strong></div>
     </section>
 
     <section class="sticky-summary" aria-label="Sticky run summary">
       <strong>FAIL</strong>
-      <span>6m 58s elapsed</span>
-      <span>14m 50s aggregate test time</span>
+      <span>8m 46s elapsed</span>
+      <span>15m 46s aggregate test time</span>
       <button type="button" data-copy-link="">Copy report link</button>
     </section>
 
@@ -874,20 +926,207 @@
       <section class="panel failures">
         <h2>Failures</h2>
 
+              <a href="tests/markasread/index.html">
+                <strong>markAsRead</strong>
+                <em>Unknown</em>
+                <span>None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)</span>
+              </a>
+
+              <a href="tests/removeroom/index.html">
+                <strong>removeRoom</strong>
+                <em>Unknown</em>
+                <span>None of [A-00-E-RemoveRoom-trffrnb4] became visible after 24 list scroll(s)</span>
+              </a>
+
               <a href="tests/composertypeahead/index.html">
                 <strong>ComposerTypeahead</strong>
                 <em>Unknown</em>
                 <span>Visible control with source label &quot;:grinning_face:&quot; did not appear</span>
               </a>
+
+              <a href="tests/roomnotificationpreferences/index.html">
+                <strong>RoomNotificationPreferences</strong>
+                <em>Permission</em>
+                <span>element (&quot;~notificationPreferencesButton&quot;) still not displayed after 20000ms</span>
+              </a>
+
+              <a href="tests/membersroom/index.html">
+                <strong>membersRoom</strong>
+                <em>Unknown</em>
+                <span>membersRoom: could not find Add Individuals TextField</span>
+              </a>
       </section>
 
-    <section class="panel phase-panel"><div class="panel-heading"><h2>Phase timing</h2><p>Aggregate workload time</p></div><dl class="meta-grid compact"><div><dt>Session creation</dt><dd>18s</dd></div>
-<div><dt>Login/readiness</dt><dd>3m 20s</dd></div>
-<div><dt>Test body</dt><dd>11m 41s</dd></div>
-<div><dt>Screenshot capture</dt><dd>18s</dd></div>
-<div><dt>Recovery</dt><dd>21s</dd></div>
-<div><dt>Report generation</dt><dd>420ms</dd></div>
-<div><dt>Room creation (test-owned)</dt><dd>21s</dd></div></dl></section>
+    <section class="panel coverage-panel">
+        <div class="panel-heading">
+          <h2>Coverage</h2>
+          <p>17/17 eligible required tests completed</p>
+        </div>
+        <div class="coverage-scroll"><table>
+          <thead><tr><th>Feature</th><th>Class</th><th>Scheduled</th><th>Completed</th><th>Passed</th><th>Attention</th></tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row">Room creation</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/1</td>
+              <td>1/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Direct messaging</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/1</td>
+              <td>1/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Conversation list</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>3/3</td>
+              <td>3/3</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Notifications</th>
+              <td><span class="coverage-class">partial</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Conversation view</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>5/5</td>
+              <td>5/5</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Room settings</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>2/2</td>
+              <td>2/2</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Room membership</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/1</td>
+              <td>1/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Composer</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/1</td>
+              <td>1/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Message actions</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/1</td>
+              <td>1/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Conversation search</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/1</td>
+              <td>1/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">User settings</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/1</td>
+              <td>1/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">System lifecycle</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Authentication</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">User settings</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Message actions</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Pinned messages</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Cleanup</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr></tbody>
+        </table></div>
+      </section>
+
+    <section class="panel phase-panel"><div class="panel-heading"><h2>Phase timing</h2><p>Aggregate workload time</p></div><dl class="meta-grid compact"><div><dt>Session creation</dt><dd>26s</dd></div>
+<div><dt>Login/readiness</dt><dd>2m 11s</dd></div>
+<div><dt>Test body</dt><dd>13m 29s</dd></div>
+<div><dt>Screenshot capture</dt><dd>19s</dd></div>
+<div><dt>Recovery</dt><dd>1m 25s</dd></div>
+<div><dt>Report generation</dt><dd>2s</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>39s</dd></div></dl></section>
 
 
     <section class="toolbar" aria-label="Report filters">
@@ -896,6 +1135,9 @@
         <option value="">All statuses</option>
         <option value="PASS">Pass</option>
         <option value="FAIL">Fail</option>
+        <option value="SKIPPED">Skipped</option>
+        <option value="BLOCKED">Blocked</option>
+        <option value="INCONCLUSIVE">Inconclusive</option>
         <option value="UNKNOWN">Unknown</option>
       </select>
       <select id="laneFilter">
@@ -912,10 +1154,187 @@
 
     <section class="test-grid" aria-label="Tests">
 
-        <a class="test-card pass" href="tests/createroom/index.html" data-test-card data-name="createroom" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+        <details class="test-card fail" data-test-card data-name="composertypeahead" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill fail">FAIL</span>
+            <span class="duration">38s</span>
+          </div>
+          <h3>ComposerTypeahead</h3>
+          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>2 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">Visible control with source label &quot;:grinning_face:&quot; did not appear</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ComposerTypeahead.js</code>
+            <a href="tests/composertypeahead/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="markasread" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill fail">FAIL</span>
+            <span class="duration">1m 5s</span>
+          </div>
+          <h3>markAsRead</h3>
+          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>1 screenshot</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js</code>
+            <a href="tests/markasread/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="membersroom" data-status="FAIL" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0" open>
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill fail">FAIL</span>
+            <span class="duration">44s</span>
+          </div>
+          <h3>membersRoom</h3>
+          <p>ConversationView / ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>6 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">membersRoom: could not find Add Individuals TextField</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/membersRoom.js</code>
+            <a href="tests/membersroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="removeroom" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill fail">FAIL</span>
+            <span class="duration">55s</span>
+          </div>
+          <h3>removeRoom</h3>
+          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>1 screenshot</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">None of [A-00-E-RemoveRoom-trffrnb4] became visible after 24 list scroll(s)</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js</code>
+            <a href="tests/removeroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="roomnotificationpreferences" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill fail">FAIL</span>
+            <span class="duration">1m 10s</span>
+          </div>
+          <h3>RoomNotificationPreferences</h3>
+          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>5 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">element (&quot;~notificationPreferencesButton&quot;) still not displayed after 20000ms</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/RoomNotificationPreferences.js</code>
+            <a href="tests/roomnotificationpreferences/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass slow" data-test-card data-name="attachments" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
           <div class="test-card-top">
             <span class="status-pill pass">PASS</span>
-            <span class="duration">55s</span>
+            <span class="duration">1m 43s</span>
+          </div>
+          <h3>attachments</h3>
+          <p>ConversationView / ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>17 screenshots</span>
+            <span>Slow</span>
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js</code>
+            <a href="tests/attachments/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="conversationlist" data-status="PASS" data-lane="Conversation-List-settings" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">36s</span>
+          </div>
+          <h3>ConversationList</h3>
+          <p>Conversation-List / Conversation-List-settings / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>15 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js</code>
+            <a href="tests/conversationlist/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="conversationsearch" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">1m 5s</span>
+          </div>
+          <h3>ConversationSearch</h3>
+          <p>ConversationView / ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>8 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/ConversationSearch.js</code>
+            <a href="tests/conversationsearch/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="createroom" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">44s</span>
           </div>
           <h3>CreateRoom</h3>
           <p>main-suite / main-suite / iPhone 17 Pro</p>
@@ -923,26 +1342,172 @@
             <span>5 screenshots</span>
 
 
-            <span class="open-details">Open details →</span>
+            <span class="open-details">Evidence</span>
           </div>
-        </a>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js</code>
+            <a href="tests/createroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
 
-        <a class="test-card pass slow" href="tests/pinnedmessageeditflow/index.html" data-test-card data-name="pinnedmessageeditflow" data-status="PASS" data-lane="main-suite" data-slow="1" data-screenshots="1" data-flaky="0">
+        <details class="test-card pass" data-test-card data-name="editroom" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
           <div class="test-card-top">
             <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 17s</span>
+            <span class="duration">48s</span>
+          </div>
+          <h3>editRoom</h3>
+          <p>ConversationView / ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>8 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/editRoom.js</code>
+            <a href="tests/editroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">38s</span>
+          </div>
+          <h3>favoriteRoom</h3>
+          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js</code>
+            <a href="tests/favoriteroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="linkpreviews" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">53s</span>
+          </div>
+          <h3>LinkPreviews</h3>
+          <p>ConversationView / ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>7 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/LinkPreviews.js</code>
+            <a href="tests/linkpreviews/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass slow" data-test-card data-name="markdowns" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">1m 33s</span>
+          </div>
+          <h3>markdowns</h3>
+          <p>ConversationView / ConversationView / iPhone 17</p>
+          <div class="card-tags">
+            <span>11 screenshots</span>
+            <span>Slow</span>
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/markdowns.js</code>
+            <a href="tests/markdowns/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="messageactions" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">33s</span>
+          </div>
+          <h3>MessageActions</h3>
+          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
+          <div class="card-tags">
+            <span>5 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/MessageActions.js</code>
+            <a href="tests/messageactions/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="newmessage" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">35s</span>
+          </div>
+          <h3>newMessage</h3>
+          <p>main-suite / main-suite / iPhone 17 Pro</p>
+          <div class="card-tags">
+            <span>4 screenshots</span>
+
+
+            <span class="open-details">Evidence</span>
+          </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js</code>
+            <a href="tests/newmessage/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="pinnedmessageeditflow" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+          <div class="test-card-top">
+            <span class="status-pill pass">PASS</span>
+            <span class="duration">1m 3s</span>
           </div>
           <h3>PinnedMessageEditFlow</h3>
           <p>ConversationView / main-suite / iPhone 17 Pro</p>
           <div class="card-tags">
             <span>4 screenshots</span>
-            <span>Slow</span>
 
-            <span class="open-details">Open details →</span>
+
+            <span class="open-details">Evidence</span>
           </div>
-        </a>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/PinnedMessageEditFlow.js</code>
+            <a href="tests/pinnedmessageeditflow/index.html">Open full evidence →</a>
+          </div>
+        </details>
 
-        <a class="test-card pass" href="tests/reactions/index.html" data-test-card data-name="reactions" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+        <details class="test-card pass" data-test-card data-name="reactions" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
           <div class="test-card-top">
             <span class="status-pill pass">PASS</span>
             <span class="duration">1m 7s</span>
@@ -953,204 +1518,15 @@
             <span>13 screenshots</span>
 
 
-            <span class="open-details">Open details →</span>
+            <span class="open-details">Evidence</span>
           </div>
-        </a>
-
-        <a class="test-card pass" href="tests/newmessage/index.html" data-test-card data-name="newmessage" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">47s</span>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/Reactions.js</code>
+            <a href="tests/reactions/index.html">Open full evidence →</a>
           </div>
-          <h3>newMessage</h3>
-          <p>main-suite / main-suite / iPhone 17 Pro</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/favoriteroom/index.html" data-test-card data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">46s</span>
-          </div>
-          <h3>favoriteRoom</h3>
-          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/markasread/index.html" data-test-card data-name="markasread" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">38s</span>
-          </div>
-          <h3>markAsRead</h3>
-          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/notifications/index.html" data-test-card data-name="notifications" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">17s</span>
-          </div>
-          <h3>notifications</h3>
-          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/removeroom/index.html" data-test-card data-name="removeroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">37s</span>
-          </div>
-          <h3>removeRoom</h3>
-          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card fail" href="tests/composertypeahead/index.html" data-test-card data-name="composertypeahead" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill fail">FAIL</span>
-            <span class="duration">44s</span>
-          </div>
-          <h3>ComposerTypeahead</h3>
-          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>2 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/messageactions/index.html" data-test-card data-name="messageactions" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">37s</span>
-          </div>
-          <h3>MessageActions</h3>
-          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>5 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/roomnotificationpreferences/index.html" data-test-card data-name="roomnotificationpreferences" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 8s</span>
-          </div>
-          <h3>RoomNotificationPreferences</h3>
-          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>5 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="tests/markdowns/index.html" data-test-card data-name="markdowns" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 32s</span>
-          </div>
-          <h3>markdowns</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>11 screenshots</span>
-            <span>Slow</span>
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="tests/attachments/index.html" data-test-card data-name="attachments" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 21s</span>
-          </div>
-          <h3>attachments</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>9 screenshots</span>
-            <span>Slow</span>
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/editroom/index.html" data-test-card data-name="editroom" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">49s</span>
-          </div>
-          <h3>editRoom</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>8 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass" href="tests/membersroom/index.html" data-test-card data-name="membersroom" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 6s</span>
-          </div>
-          <h3>membersRoom</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>11 screenshots</span>
-
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
-
-        <a class="test-card pass slow" href="tests/conversationlist/index.html" data-test-card data-name="conversationlist" data-status="PASS" data-lane="Conversation-List-settings" data-slow="1" data-screenshots="1" data-flaky="0">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 10s</span>
-          </div>
-          <h3>ConversationList</h3>
-          <p>Conversation-List / Conversation-List-settings / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>15 screenshots</span>
-            <span>Slow</span>
-
-            <span class="open-details">Open details →</span>
-          </div>
-        </a>
+        </details>
     </section>
 
     <section class="overview-grid">
@@ -1169,7 +1545,7 @@
             <div><dt>Port</dt><dd>4723</dd></div>
             <div><dt>Passed</dt><dd>4</dd></div>
             <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Test time</dt><dd>4m 5s</dd></div>
+            <div><dt>Test time</dt><dd>3m 28s</dd></div>
           </dl>
         </article>
 
@@ -1180,22 +1556,22 @@
           </div>
           <dl>
             <div><dt>Port</dt><dd>4725</dd></div>
-            <div><dt>Passed</dt><dd>6</dd></div>
-            <div><dt>Failed</dt><dd>1</dd></div>
-            <div><dt>Test time</dt><dd>4m 46s</dd></div>
+            <div><dt>Passed</dt><dd>2</dd></div>
+            <div><dt>Failed</dt><dd>4</dd></div>
+            <div><dt>Test time</dt><dd>4m 57s</dd></div>
           </dl>
         </article>
 
-        <article class="lane-card pass">
+        <article class="lane-card fail">
           <div>
             <span class="eyebrow">ConversationView</span>
             <h3>iPhone 17</h3>
           </div>
           <dl>
             <div><dt>Port</dt><dd>4727</dd></div>
-            <div><dt>Passed</dt><dd>4</dd></div>
-            <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Test time</dt><dd>4m 48s</dd></div>
+            <div><dt>Passed</dt><dd>5</dd></div>
+            <div><dt>Failed</dt><dd>1</dd></div>
+            <div><dt>Test time</dt><dd>6m 45s</dd></div>
           </dl>
         </article>
 
@@ -1208,7 +1584,7 @@
             <div><dt>Port</dt><dd>4725</dd></div>
             <div><dt>Passed</dt><dd>1</dd></div>
             <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Test time</dt><dd>1m 10s</dd></div>
+            <div><dt>Test time</dt><dd>36s</dd></div>
           </dl>
         </article></div>
       </div>
@@ -1218,24 +1594,14 @@
           <p>Average: 56s</p>
         </div>
         <div class="slow-list">
-            <a href="tests/markdowns/index.html">
-              <strong>markdowns</strong>
-              <span>1m 32s · ConversationView</span>
-            </a>
-
             <a href="tests/attachments/index.html">
               <strong>attachments</strong>
-              <span>1m 21s · ConversationView</span>
+              <span>1m 43s · ConversationView</span>
             </a>
 
-            <a href="tests/pinnedmessageeditflow/index.html">
-              <strong>PinnedMessageEditFlow</strong>
-              <span>1m 17s · main-suite</span>
-            </a>
-
-            <a href="tests/conversationlist/index.html">
-              <strong>ConversationList</strong>
-              <span>1m 10s · Conversation-List-settings</span>
+            <a href="tests/markdowns/index.html">
+              <strong>markdowns</strong>
+              <span>1m 33s · ConversationView</span>
             </a></div>
       </div>
     </section>
@@ -1246,32 +1612,34 @@
         <div class="comparison-panel">
           <div class="panel-heading">
             <h2>Run Comparison</h2>
-            <p>Compared with Aug 11, 3:06 PM</p>
+            <p>Compared with Sep 1, 2:47 PM</p>
           </div>
 
       <div class="comparison-grid">
         <div><dt>New failures</dt><dd>0</dd></div>
         <div><dt>New fixes</dt><dd>0</dd></div>
-        <div><dt>Slower</dt><dd>1</dd></div>
+        <div><dt>Slower</dt><dd>0</dd></div>
         <div><dt>Faster</dt><dd>0</dd></div>
       </div>
       <div class="comparison-list">
-
-              <a class="slow" href="tests/reactions/index.html">
-                <strong>Reactions</strong>
-                <span>18s slower</span>
-              </a>
+        <p class="muted">No major changes from the previous comparable run.</p>
       </div>
         </div>
         <div class="category-panel">
           <div class="panel-heading">
             <h2>Failure Categories</h2>
-            <p>1 failed test</p>
+            <p>5 failed tests</p>
           </div>
           <div class="category-list">
             <div class="category-row">
               <span>Unknown</span>
-              <div><i style="width: 100%"></i></div>
+              <div><i style="width: 80%"></i></div>
+              <strong>4</strong>
+            </div>
+
+            <div class="category-row">
+              <span>Permission</span>
+              <div><i style="width: 20%"></i></div>
               <strong>1</strong>
             </div></div>
         </div>
@@ -1280,8 +1648,13 @@
             <h2>Environment</h2>
             <p>Run context</p>
           </div>
-          <dl class="meta-grid compact"><div><dt>Branch</dt><dd>main</dd></div>
-<div><dt>Commit</dt><dd>0444142</dd></div>
+          <dl class="meta-grid compact"><div><dt>App branch</dt><dd>main</dd></div>
+<div><dt>App commit</dt><dd>c53a191a3</dd></div>
+<div><dt>Connect version</dt><dd>1.2</dd></div>
+<div><dt>Connect build</dt><dd>1</dd></div>
+<div><dt>Bundle ID</dt><dd>com.powerhrg.connect.v3.debug</dd></div>
+<div><dt>Automation branch</dt><dd>main</dd></div>
+<div><dt>Automation commit</dt><dd>af6bf0a</dd></div>
 <div><dt>Node</dt><dd>v24.14.0</dd></div>
 <div><dt>Devices</dt><dd>iPhone 17 Pro, iPhone 17 Pro Max, iPhone 17</dd></div>
 <div><dt>Appium ports</dt><dd>4723, 4725, 4727</dd></div>

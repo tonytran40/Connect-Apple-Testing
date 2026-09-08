@@ -15,6 +15,7 @@ const ComposerTypeahead = require('../Tests/ComposerTypeahead');
 const MessageActions = require('../Tests/MessageActions');
 const ConversationSearch = require('../Tests/ConversationSearch');
 const LinkPreviews = require('../Tests/LinkPreviews');
+const BrowseRooms = require('../Tests/BrowseRooms');
 const RoomNotificationPreferences = require('../Tests/RoomNotificationPreferences');
 
 test('conversation feature modules expose suite and standalone test entry points', () => {
@@ -23,11 +24,20 @@ test('conversation feature modules expose suite and standalone test entry points
     MessageActions,
     ConversationSearch,
     LinkPreviews,
+    BrowseRooms,
     RoomNotificationPreferences,
   ]) {
     assert.equal(typeof module.run, 'function');
     assert.equal(typeof module.runTest, 'function');
   }
+});
+
+test('builds escaped Browse Rooms selectors for iOS text-backed controls', () => {
+  assert.match(BrowseRooms.SEARCH_FIELD_SELECTOR, /XCUIElementTypeTextField/);
+  assert.match(
+    BrowseRooms.exactVisibleTextSelector('Room "quoted" \\ name'),
+    /name == "Room \\"quoted\\" \\\\ name"/
+  );
 });
 
 test('builds a preview-only host selector from a URL', () => {

@@ -6,16 +6,16 @@
 - Logical category: ConversationView
 - Device: iPhone 17 Pro
 - Appium port: 4723
-- Started: 2026-08-19T15:28:02.358Z
-- Finished: 2026-08-19T15:29:09.254Z
+- Started: 2026-09-01T18:55:13.971Z
+- Finished: 2026-09-01T18:56:21.144Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 12s |
-| Test body | 53s |
+| Login/readiness | 9s |
+| Test body | 56s |
 | Screenshot capture | 2s |
 | Recovery | 0ms |
 | Report generation | 0ms |

@@ -216,10 +216,11 @@ async function createPrivateRoom(driver, roomName, options = {}) {
 /**
  * From the main list (Rooms visible): open Rooms +, create a **public** room named `roomName`, then **Create**.
  * By default: Skip for now → stays in the room (caller taps nav title, etc.).
+ * With `skipAddMembersSheet: true`: leaves Add Members open so the caller can invite users.
  * With `sendStarterMessage: true`: sends one message before returning (still in room).
  */
 async function createPublicRoom(driver, roomName, options = {}) {
-  const { sendStarterMessage = false } = options;
+  const { sendStarterMessage = false, skipAddMembersSheet = false } = options;
 
   await openRoomsPlusMenu(driver);
 
@@ -234,6 +235,12 @@ async function createPublicRoom(driver, roomName, options = {}) {
 
   const creationStarted = performance.now();
   await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
+
+  if (skipAddMembersSheet) {
+    console.log(`createPublicRoom: ${roomName} (Add Members sheet — add invitees then Save)`);
+    return { roomName, roomCreationMs: Math.round(performance.now() - creationStarted) };
+  }
+
   await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
   await ensureCreatedRoomOpen(driver, roomName);
   const roomCreationMs = Math.round(performance.now() - creationStarted);

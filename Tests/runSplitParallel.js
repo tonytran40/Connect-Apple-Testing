@@ -12,27 +12,26 @@ const {
   normalizePhaseTimings,
 } = require('../utils/reportWriter');
 const { resolveLaneUdids } = require('../utils/simulatorConfig');
+const { TESTS, coverageFor, splitLaneTests, testsFor } = require('./testManifest');
 
-const MAIN_TESTS = 'CreateRoom,PinnedMessageEditFlow,markdowns,newMessage';
-const STANDALONE_TESTS = 'attachments,editRoom,membersRoom,favoriteRoom,markAsRead,removeRoom,notifications,Reactions,ComposerTypeahead,MessageActions,ConversationSearch,RoomNotificationPreferences,LinkPreviews';
-const THREE_LANE_MAIN_TESTS = 'CreateRoom,newMessage';
-const THREE_LANE_CONVERSATION_LIST_TESTS = 'favoriteRoom,markAsRead,notifications,removeRoom';
-const THREE_LANE_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,Reactions,markdowns,LinkPreviews,attachments,editRoom,membersRoom,ComposerTypeahead,MessageActions,ConversationSearch,RoomNotificationPreferences';
-const EXCLUSIVE_SETTINGS_TESTS = 'ConversationList';
-const DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS = 'PinnedMessageEditFlow,Reactions';
-const DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS = 'ComposerTypeahead,MessageActions,RoomNotificationPreferences';
-const PHOTO_READY_TESTS = new Set(['attachments']);
-const SAFE_CONVERSATION_VIEW_BALANCE_TESTS = new Set([
-  'PinnedMessageEditFlow',
-  'Reactions',
-  'markdowns',
-  'editRoom',
-  'membersRoom',
-  'ComposerTypeahead',
-  'MessageActions',
-  'ConversationSearch',
-  'RoomNotificationPreferences',
-]);
+const csv = tests => tests.map(test => test.name).join(',');
+const splitTwoTests = testsFor('split2');
+const MAIN_TESTS = csv(splitTwoTests.filter(test => test.split2Lane === 'main'));
+const STANDALONE_TESTS = csv(splitTwoTests.filter(test => test.split2Lane === 'standalone'));
+const THREE_LANE_MAIN_TESTS = csv(splitLaneTests('main'));
+const THREE_LANE_CONVERSATION_LIST_TESTS = csv(splitLaneTests('conversationList'));
+const THREE_LANE_CONVERSATION_VIEW_TESTS = csv(splitLaneTests('conversationView'));
+const EXCLUSIVE_SETTINGS_TESTS = csv(testsFor('exclusive'));
+const DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS = csv(
+  TESTS.filter(test => test.balanceTarget === 'main')
+);
+const DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS = csv(
+  TESTS.filter(test => test.balanceTarget === 'conversationList')
+);
+const PHOTO_READY_TESTS = new Set(TESTS.filter(test => test.photoReady).map(test => test.name));
+const SAFE_CONVERSATION_VIEW_BALANCE_TESTS = new Set(
+  TESTS.filter(test => test.balanceSafe).map(test => test.name)
+);
 const DEFAULT_SESSION_STAGGER_MS = 6000;
 const BUNDLE_ID = process.env.CONNECT_BUNDLE_ID || 'com.powerhrg.connect.v3.debug';
 
@@ -304,23 +303,36 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
   const passed = results.filter(result => result.status === 'PASS').length;
   const failed = results.filter(result => result.status === 'FAIL').length;
   const unknown = results.filter(result => result.status === 'UNKNOWN').length;
+  const skipped = results.filter(result => result.status === 'SKIPPED').length;
+  const blocked = results.filter(result => result.status === 'BLOCKED').length;
+  const inconclusive = results.filter(result => result.status === 'INCONCLUSIVE').length;
   const dryRun = results.filter(result => result.status === 'DRY_RUN').length;
   const total = results.length;
   const executed = results.filter(result => result.status !== 'DRY_RUN');
-  const failures = results.filter(result => result.status === 'FAIL' || result.status === 'UNKNOWN');
+  const failures = results.filter(result =>
+    ['FAIL', 'UNKNOWN', 'BLOCKED', 'INCONCLUSIVE'].includes(result.status)
+  );
   const slowest = [...results]
     .filter(result => Number.isFinite(result.durationMs))
     .sort((a, b) => b.durationMs - a.durationMs)
     .slice(0, 8);
   const finishedAt = new Date().toISOString();
-  const productStatus = failed || unknown ? 'FAIL' : dryRun === total ? 'DRY_RUN' : 'PASS';
+  const productStatus = failed || unknown
+    ? 'FAIL'
+    : blocked || inconclusive || skipped
+      ? 'INCOMPLETE'
+      : dryRun === total
+        ? 'DRY_RUN'
+        : 'PASS';
   const cleanupFailedStrictly = cleanup?.strict && cleanup.status === 'FAIL';
   const statusCode = cleanupFailedStrictly ? 'FAIL' : productStatus;
   const status = statusCode === 'FAIL'
     ? cleanupFailedStrictly && productStatus !== 'FAIL'
       ? '**Status: FAIL** (strict post-suite cleanup failed; product tests passed)'
       : `**Status: FAIL** (${failed} failing, ${unknown} unknown)`
-    : statusCode === 'DRY_RUN'
+    : statusCode === 'INCOMPLETE'
+      ? `**Status: INCOMPLETE** (${blocked} blocked, ${inconclusive} inconclusive, ${skipped} skipped)`
+      : statusCode === 'DRY_RUN'
       ? '**Status: DRY RUN**'
       : '**Status: PASS**';
 
@@ -337,6 +349,7 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
     dryRun === total
       ? `- Result: dry run only (${total} tests selected)`
       : `- Result: ${passed}/${executed.length} executed tests passed`,
+    `- Skipped: ${skipped}; blocked: ${blocked}; inconclusive: ${inconclusive}`,
     `- Lanes: ${lanes.map(lane => `${lane.label} (${lane.deviceName}, :${lane.appiumPort})`).join(' + ')}`,
     '',
     '## Lane Summaries',
@@ -417,7 +430,7 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
       startedAt,
       updatedAt: finishedAt,
       durationMs,
-      counts: { total, passed, failed, unknown, dryRun },
+      counts: { total, passed, failed, unknown, skipped, blocked, inconclusive, dryRun },
       lanes: reportedLanes.map(lane => ({
         label: lane.label,
         runId: lane.runId,
@@ -432,12 +445,13 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
         timings: lane.timings,
       })),
       results,
+      coverage: coverageFor(results.map(result => result.name)),
       timings,
       cleanup,
     }, null, 2)}\n`,
     'utf8'
   );
-  return { passed, failed, unknown, dryRun, total };
+  return { passed, failed, unknown, skipped, blocked, inconclusive, dryRun, total };
 }
 
 function appiumStatus(port) {

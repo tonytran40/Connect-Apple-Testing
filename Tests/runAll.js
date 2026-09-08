@@ -5,6 +5,7 @@ const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { ensureRoomsSectionReady } = require('../utils/testSession');
 const { createReportWriter, formatDurationMs } = require('../utils/reportWriter');
+const { testsFor } = require('./testManifest');
 
 function skipResetBetweenFirstAndRest() {
   const v = process.env.CONNECT_SKIP_RESET_BETWEEN_TESTS;
@@ -37,48 +38,11 @@ function buildSuiteOptionsLine() {
   return parts.length ? parts.join(' · ') : 'default (unset env = full behavior)';
 }
 
-const tests = [
-  { name: 'CreateRoom', area: 'Public and private room creation', run: require('./CreateRoom').run },
-  {
-    name: 'PinnedMessageEditFlow',
-    area: 'Pin message, verify sheet, edit, verify pin, unpin, verify cleared',
-    run: require('./PinnedMessageEditFlow').run,
-  },
-  { name: 'Reactions', area: 'Add and remove a message reaction from the long-press picker', run: require('./Reactions').run },
-  {
-    name: 'ComposerTypeahead',
-    area: 'Emoji suggestions in the room composer',
-    run: require('./ComposerTypeahead').run,
-  },
-  {
-    name: 'MessageActions',
-    area: 'Copy and delete actions for a sent message',
-    run: require('./MessageActions').run,
-  },
-  {
-    name: 'ConversationSearch',
-    area: 'Search, sort, select, and verify no-result behavior in a room',
-    run: require('./ConversationSearch').run,
-  },
-  {
-    name: 'RoomNotificationPreferences',
-    area: 'Persist and restore room notification preferences',
-    run: require('./RoomNotificationPreferences').run,
-  },
-  { name: 'markdowns', area: 'Markdown and emoji rendering', run: require('./markdowns').run },
-  {
-    name: 'LinkPreviews',
-    area: 'Render metadata cards for links sent in a room',
-    run: require('./LinkPreviews').run,
-  },
-  {
-    name: 'ConversationList',
-    area: 'User settings: each conversation layout and sort, close, verify list',
-    run: require('./ConversationList').run,
-  },
-  { name: 'newMessage', area: 'New direct message flow', run: require('./newMessage').run },
-  { name: 'Login_Signout', area: 'Sign out via user settings', run: require('./Login_Signout').run },
-];
+const tests = testsFor('runAll').map(test => ({
+  name: test.name,
+  area: test.feature,
+  run: require(`./${test.name}`).run,
+}));
 
 async function run() {
   let driver;
@@ -122,15 +86,22 @@ async function run() {
         if (!(skipResetBetweenFirstAndRest() && index > 0)) {
           await ensureRoomsSectionReady(driver);
         }
-        await test.run(driver, { skipLogin: true });
+        const outcome = await test.run(driver, { skipLogin: true });
         const durationMs = Math.round(performance.now() - testStart);
+        const status = String(outcome?.status || 'PASS').toUpperCase();
         results[index] = {
           ...results[index],
-          status: 'PASS',
-          notes: 'Completed successfully',
+          status,
+          notes: outcome?.notes || (status === 'PASS' ? 'Completed successfully' : 'Needs attention'),
           durationMs,
         };
         console.log(`  ${test.name} completed in ${formatDurationMs(durationMs)}`);
+        if (!['PASS', 'SKIPPED'].includes(status)) {
+          failures.push({
+            test: test.name,
+            error: new Error(`${test.name} finished with status ${status}: ${results[index].notes}`),
+          });
+        }
       } catch (err) {
         const durationMs = Math.round(performance.now() - testStart);
         results[index] = {

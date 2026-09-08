@@ -7,6 +7,7 @@ const {
   clipRectToViewport,
   resetToHome,
   scopedSwipeCoordinates,
+  scrollConversationListToTop,
   scrollUntilConversationEntryVisible,
   swipeConversationList,
   waitForConversationRow,
@@ -186,9 +187,9 @@ test('conversation entry lookup uses a scoped upward list gesture', async () => 
   assert.ok(start.y > end.y);
 });
 
-test('room-section readiness pulls down inside the scoped list', async () => {
+test('room-section readiness uses the iOS status bar to restore Rooms controls', async () => {
   let headerLocationChecks = 0;
-  let performed;
+  let tap;
   const hidden = {
     isDisplayed: async () => false,
     isExisting: async () => false,
@@ -197,7 +198,7 @@ test('room-section readiness pulls down inside the scoped list', async () => {
     },
   };
   const header = visibleElement({
-    getLocation: async () => ({ y: ++headerLocationChecks > 1 ? 150 : 50 }),
+    getLocation: async () => ({ y: ++headerLocationChecks > 2 ? 150 : 50 }),
   });
   const driver = {
     $: async selector => {
@@ -211,17 +212,55 @@ test('room-section readiness pulls down inside the scoped list', async () => {
       }
       return hidden;
     },
+    execute: async (command, args) => {
+      tap = { command, args };
+    },
+    getWindowRect: async () => ({ x: 0, y: 0, width: 300, height: 700 }),
+    pause: async () => {},
+  };
+
+  await ensureRoomsSectionReady(driver, 2);
+
+  assert.equal(tap.command, 'mobile: tap');
+  assert.equal(tap.args.x, 36);
+  assert.ok(tap.args.y <= 20);
+});
+
+test('scroll-to-top uses fast scoped swipes when the status-bar tap is ignored', async () => {
+  let swipeCount = 0;
+  let performed;
+  const hiddenHeader = visibleElement({
+    getLocation: async () => ({ y: swipeCount > 0 ? 150 : 50 }),
+  });
+  const driver = {
+    $: async selector => {
+      if (selector === PREDICATES.roomsHeaderButton || selector === SELECTORS.roomsSectionHeader) {
+        return hiddenHeader;
+      }
+      if (selector === SELECTORS.bookmarksScrollView) {
+        return visibleElement({
+          getRect: async () => ({ x: 0, y: 100, width: 300, height: 500 }),
+        });
+      }
+      throw new Error(`Unexpected selector: ${selector}`);
+    },
+    execute: async () => {},
     performActions: async actions => {
       performed = actions;
+      swipeCount++;
     },
     getWindowRect: async () => ({ x: 0, y: 0, width: 300, height: 700 }),
     releaseActions: async () => {},
     pause: async () => {},
   };
 
-  await ensureRoomsSectionReady(driver, 2);
+  assert.equal(
+    await scrollConversationListToTop(driver, { maxSwipes: 2, settleMs: 0, swipePauseMs: 0 }),
+    true
+  );
 
   const [start, end] = actionCoordinates(performed);
   assert.equal(performed[0].id, 'conversationListSwipe');
   assert.ok(start.y < end.y);
+  assert.equal(end.duration, 180);
 });

@@ -1,25 +1,25 @@
 # CreateRoom
 
 - Status: PASS
-- Duration: 55s
+- Duration: 44s
 - Lane: main-suite
 - Logical category: main-suite
 - Device: iPhone 17 Pro
 - Appium port: 4723
-- Started: 2026-08-19T15:25:50.535Z
-- Finished: 2026-08-19T15:26:45.568Z
+- Started: 2026-09-01T18:53:27.290Z
+- Finished: 2026-09-01T18:54:11.352Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 3s |
-| Test body | 50s |
+| Login/readiness | 2s |
+| Test body | 40s |
 | Screenshot capture | 2s |
 | Recovery | 0ms |
 | Report generation | 0ms |
-| Room creation (test-owned) | 11s |
+| Room creation (test-owned) | 16s |
 
 ## Steps
 

@@ -16,3 +16,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run validate
+      - name: Audit selectors when the app source checkout is available
+        run: |
+          if [ -d ../connect-apple ]; then
+            npm run selectors:audit
+          else
+            echo "Skipping source-backed selector audit: ../connect-apple is not checked out in CI."
+          fi

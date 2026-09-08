@@ -129,8 +129,8 @@ npm run test:suite
 
 **Order in `runAll.js`:**
 
-1. `CreateRoom` — public and private room creation  
-2. `PinnedMessageEditFlow` — pin, edit, unpin  
+1. `CreateRoom` — public and private room creation
+2. `PinnedMessageEditFlow` — pin, edit, unpin
 3. `Reactions` — add and remove message reactions
 4. `ComposerTypeahead` — emoji suggestions
 5. `MessageActions` — copy and delete a sent message
@@ -266,6 +266,18 @@ Run all three groups with:
 npm run test:parallel:split3
 ```
 
+To include required QA-only coverage (`BrowseRooms`, `AudienceFilters`, and
+`CorporateDirectory`) from the central manifest, use:
+
+```bash
+npm run test:parallel:split3:qa
+```
+
+`Tests/testManifest.js` is the single source of truth for default suites. It
+records each test's logical feature, environment eligibility, required/partial/
+opt-in classification, lane, timeout class, and cleanup contract. Adding a new
+directly runnable test without classifying it fails `npm test`.
+
 Raw Node equivalent:
 
 ```bash
@@ -347,9 +359,18 @@ npm run test:one -- favoriteRoom
 
 That writes the latest report to `docs/generated/scribe/favoriteRoom-latest/`. Existing shortcuts such as `npm run test:attachments`, `npm run test:members-room`, and `npm run test:reactions` use the same behavior.
 
-The report contains status cards, search/filter controls, lane/device health, slow-test callouts, latest-vs-previous run comparison, failure categories, rerun commands, copyable share links, Connect build metadata, run environment details, per-test history, failure timelines, screenshot compare panels, failure snippets, and step-by-step screenshots.
+The report contains status cards, search/filter controls, lane/device health, slow-test callouts, failure categories, rerun commands, copyable share links, Connect build metadata, run environment details, coverage completeness, freshness, failure timelines, screenshot compare panels, failure snippets, and step-by-step screenshots. Passing details stay collapsed while failures open first.
 
-The report shows the current git branch and commit in the header and report history cards. If the Connect app build came from a different branch than this automation repo, set `TEST_REPORT_BRANCH=feature/my-branch` and optionally `TEST_REPORT_COMMIT=abc1234` before running `npm run docs:scribe`.
+App-under-test identity is kept separate from the automation repository identity. The automation branch and commit are detected from Git. Set `APP_BRANCH`, `APP_COMMIT`, `CONNECT_APP_VERSION`, and `CONNECT_APP_BUILD` when the installed build cannot provide those values automatically. Set `TEST_REPORT_ENVIRONMENT` or `CONNECT_SERVER_NAME` to identify the server under test.
+
+Report outcomes are `PASS`, `FAIL`, `SKIPPED`, `BLOCKED`, and `INCONCLUSIVE`.
+Only a fresh report with known app identity/environment, complete eligible
+required coverage, and no failure/blocker/inconclusive result is marked ready
+as release evidence.
+
+Notification deep-link routing remains partial/opt-in until
+`NOTIFICATION_ROOM_ID` and `NOTIFICATION_TARGET_ROOM_NAME` identify a real QA
+fixture. Run it explicitly with `npm run test:notifications`.
 
 For the normal three-simulator run, one command runs the tests and creates the report:
 
@@ -391,6 +412,9 @@ npm run test:parallel:split3:publish
 ```
 
 That command runs the tests, generates the latest report, stages only the current Pages report, commits it, and pushes to GitHub. It still publishes when tests fail so the shared page shows the failure details. It refuses to start when unrelated changes are staged or when a Pages target already has local edits, preventing user work from entering the automated report commit. Use `PUBLISH_REPORT_SKIP_PUSH=1 npm run test:parallel:split3:publish` to exercise the flow locally without pushing.
+
+Use `npm run test:parallel:split3:qa:publish` for the same flow with the
+QA-only required tests included.
 
 `markdowns` creates a unique `A-Markdown Room-*` by default so repeated and parallel runs do not share timeline data. Set `MARKDOWN_ROOM_NAME` only when you intentionally want to exercise an existing fixture room.
 
@@ -440,6 +464,11 @@ node Tests/ComposerTypeahead.js
 node Tests/MessageActions.js
 node Tests/ConversationSearch.js
 node Tests/LinkPreviews.js
+CONNECT_SERVER_NAME=QA node Tests/BrowseRooms.js
+CONNECT_SERVER_NAME=QA node Tests/AudienceFilters.js
+CONNECT_SERVER_NAME=QA node Tests/CorporateDirectory.js
+CONNECT_SERVER_NAME=QA APPOINTMENT_CARD_ENABLED=1 node Tests/AppointmentCards.js
+node Tests/User_Settings.js
 node Tests/RoomNotificationPreferences.js
 node Tests/DraftPersistence.js
 ```
@@ -465,6 +494,10 @@ npm run test:members-room
 npm run test:attachments
 npm run test:composer-typeahead
 npm run test:message-actions
+npm run test:audience-filters
+npm run test:corporate-directory
+npm run test:appointment-cards
+npm run test:user-settings
 npm run test:room-notification-preferences
 npm run test:draft-persistence
 npm run test:remove-all-rooms
@@ -489,6 +522,11 @@ npm run selectors:audit
 - `MessageActions.js` verifies Copy through the simulator clipboard when supported, then confirms Delete removes the unique message.
 - `ConversationSearch.js` creates an isolated `A-Search-*` room, seeds two searchable messages with different reactions plus an unrelated control message, verifies filtering, reaction rendering, and both sort orders, opens a result in timeline context, and checks the no-results state. It retries only while the search backend indexes the new events rather than sleeping for a fixed interval.
 - `LinkPreviews.js` sends three formatted HTTPS links in an isolated room and verifies separate YouTube, Apple Open Graph, and Google Maps preview cards. Each case waits for its preview-only simplified host label and saves sent/loaded screenshots, so a plain rendered link cannot create a false pass.
+- `BrowseRooms.js` is QA-only because the public directory and real user data are unavailable on localhost. Its dedicated command selects QA, then the test creates a deterministic public room, searches `Levy` and adds the exact `Jonathan Levy` result, transfers admin ownership from `Tony Tran` to Jonathan, leaves from Room Settings, finds and rejoins the room through Browse Rooms, verifies filtering, and returns home. The simulator must already have a valid Nitro SSO session; set `BROWSE_ROOMS_TARGET_ROOM` to run only the browse/search checks against an existing room.
+- `AudienceFilters.js` is QA-only and verifies create, edit, and delete using the configured territory, department, and title. Missing deterministic fixture values produce `BLOCKED`, not a fake pass.
+- `CorporateDirectory.js` is QA-only and opens a deterministic exact user result and its contact card. Configure `CORPORATE_DIRECTORY_USER_QUERY` and `CORPORATE_DIRECTORY_EXPECTED_USER`.
+- `AppointmentCards.js` is an opt-in QA fixture test. It proves that a known `A#<digits>` appointment card loads and displays a configured business detail; absent fixture data is reported as `BLOCKED`.
+- `User_Settings.js` verifies layout and sorting persistence across reopening and restores both settings. Logout/login is isolated behind `USER_SETTINGS_INCLUDE_LOGOUT=1`.
 - `RoomNotificationPreferences.js` changes a room preference, verifies it after reopening, and restores `ROOM_NOTIFICATION_RESTORE_LABEL` in cleanup.
 - `DraftPersistence.js` is opt-in: it backgrounds Connect with an unsent draft, reactivates the app, verifies the exact draft, clears it, and restores the Rooms list.
 - Later system flows and their deterministic prerequisites are documented in [`docs/system-tests.md`](docs/system-tests.md).
@@ -672,7 +710,9 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:parallel` | Parallel runner for one or more simulator lanes, then generate its report |
 | `npm run test:parallel:split` | Run main suite and standalone group on two simulator lanes, then generate its report |
 | `npm run test:parallel:split3` | Run the three-simulator split, then generate its report |
+| `npm run test:parallel:split3:qa` | Run the three-simulator split with required QA-only coverage |
 | `npm run test:parallel:split3:publish` | Run the three-simulator split, commit only the current Pages report, and push |
+| `npm run test:parallel:split3:qa:publish` | Run and publish the QA three-simulator split |
 | `npm run test:time` | Timing helper test |
 | `npm run test:notifications` | Push simulator notification, verify app re-entry, and generate a report |
 | `npm run test:members-room` | Create room, exercise Members edit flow, and generate a report |
@@ -680,6 +720,12 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:composer-typeahead` | Verify emoji composer suggestions |
 | `npm run test:message-actions` | Verify message Copy and Delete actions |
 | `npm run test:link-previews` | Verify YouTube, Open Graph, and Google Maps preview cards |
+| `npm run test:browse-rooms` | Run the QA-only room-directory and ownership-transfer flow |
+| `npm run test:audience-filters` | Run the QA-only audience-filter lifecycle |
+| `npm run test:corporate-directory` | Run the QA-only deterministic directory lookup |
+| `npm run test:appointment-cards` | Run the opt-in QA appointment-card fixture test |
+| `npm run test:user-settings` | Verify and restore persisted user settings in isolation |
+| `npm run test:user-settings:logout` | Add isolated logout/login coverage to User Settings |
 | `npm run test:room-notification-preferences` | Persist and restore a room notification setting |
 | `npm run test:draft-persistence` | Run the opt-in background/foreground draft test |
 | `npm run test:remove-all-rooms` | Clean up matching rooms and generate a report |

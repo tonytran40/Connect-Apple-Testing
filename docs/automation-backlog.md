@@ -1,28 +1,31 @@
 # Automation Backlog
 
-The automation expansion in `docs/automation-expansion-spec.md` is implemented. These follow-ups are intentionally deferred.
+The active release-evidence work is defined in
+`docs/release-evidence-upgrade-spec.md`. Keep only externally blocked or
+simulator-backed follow-ups here; completed feature modules belong in the test
+manifest instead of this list.
 
 ## Full-Suite Stability
 
-- Retry and verify the Rooms plus menu before waiting for `createRoomButton`. `CreateRoom` passed its earlier flow but failed once under three-lane load because the menu did not open.
 - Stabilize emoji typeahead under three-lane load. `ComposerTypeahead` passes alone and in a reused targeted lane, but one full run did not render `:grinning_face:` within the timeout.
-- Reach a clean 16/16 split run and regenerate the checked-in browser report.
+- Reach a clean required-suite split run on QA and regenerate the shared browser report with exact Connect build metadata.
 
 ## List Actions
 
 - Add deterministic two-direction room lookup for non-alphabetical sort modes.
 - Select revealed row actions by nearest row Y coordinate instead of global XPath proximity.
-- Assert the unread/read state transitions in `markAsRead`, not only the completed taps and screenshots.
 - Validate advisory and strict post-suite cleanup modes on a disposable test account.
 
 ## Feature Hardening
 
-- Add a strict clipboard-verification mode for `MessageActions`; report unsupported clipboard endpoints as inconclusive instead of silently weakening coverage.
 - Record and restore the room's actual initial notification preference if tests later support existing rooms.
 - Expand the selector audit beyond centralized selectors to optional hardcoded labels and predicates in test files.
-- Align default suite membership across runners, including `notifications` where appropriate.
+- Validate the central test manifest against a simulator-backed QA run whenever a new required test is added.
 
 ## Deferred Coverage
 
 - Add `@` mention typeahead only after the environment provides deterministic real users.
-- Keep Browse Rooms excluded until requested.
+- Notification deep links require a deterministic QA room ID and matching `room_id` push payload.
+- Attachment download/cancel requires a controlled slow media endpoint.
+- Offline retry requires lane-scoped network fault injection that cannot disrupt the other two simulators.
+- Share-extension coverage requires a host fixture app and deterministic app-group state.

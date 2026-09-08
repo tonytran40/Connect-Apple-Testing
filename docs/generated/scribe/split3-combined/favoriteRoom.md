@@ -1,22 +1,22 @@
 # favoriteRoom
 
 - Status: PASS
-- Duration: 46s
+- Duration: 38s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:25:56.297Z
-- Finished: 2026-08-19T15:26:41.904Z
+- Started: 2026-09-01T18:53:33.811Z
+- Finished: 2026-09-01T18:54:11.370Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 3s |
-| Test body | 41s |
-| Screenshot capture | 812ms |
+| Login/readiness | 2s |
+| Test body | 34s |
+| Screenshot capture | 810ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
 

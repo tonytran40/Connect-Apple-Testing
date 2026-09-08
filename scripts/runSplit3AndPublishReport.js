@@ -117,6 +117,7 @@ function main() {
   const metaPath = path.join(REPO_ROOT, 'docs', 'generated', 'scribe', RUN_ID, '_report-meta.json');
   const meta = fs.existsSync(metaPath) ? readJson(metaPath) : {};
   const status = meta.status || (test.status === 0 ? 'PASS' : 'FAIL');
+  const evidenceDecision = meta.evidenceDecision || 'UNKNOWN';
   const passed = meta.passed ?? '?';
   const total = meta.total ?? '?';
   const failed = meta.failed ?? '?';
@@ -136,7 +137,8 @@ function main() {
   } else {
     const message =
       process.env.PUBLISH_REPORT_COMMIT_MESSAGE ||
-      `Update test report: ${status} (${passed}/${total} passed, ${failed} failed)`;
+      `Update test report: ${status}, evidence ${evidenceDecision} ` +
+        `(${passed}/${total} passed, ${failed} failed)`;
     run('git', ['commit', '-m', message]);
   }
 
@@ -148,6 +150,7 @@ function main() {
   }
 
   console.log('[publish-report] Done');
+  console.log(`[publish-report] Release evidence: ${evidenceDecision}`);
   console.log('[publish-report] Pages URL: https://tonytran40.github.io/Connect-Apple-Testing/');
 
   if (test.status !== 0) {

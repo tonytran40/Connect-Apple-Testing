@@ -8,7 +8,8 @@ const {
   ensureRoomsSectionReady,
   goBack,
 } = require('../utils/testSession');
-const { SELECTORS, PREDICATES } = require('../utils/selectors');
+const { SELECTORS } = require('../utils/selectors');
+const { openRoomsPlusMenu: tapRoomsPlusMenu } = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'PinnedMessages';
@@ -109,17 +110,7 @@ async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGE
 /** Rooms row “+” — same as CreateRoom.openRoomsPlusMenu */
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
   await ensureRoomsSectionReady(driver);
-
-  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
-  await roomsHeader.waitForDisplayed({ timeout });
-
-  const headerLocation = await roomsHeader.getLocation();
-  const headerSize = await roomsHeader.getSize();
-  const windowRect = await driver.getWindowRect();
-  await driver.execute('mobile: tap', {
-    x: Math.min(windowRect.width - 20, Math.round(headerLocation.x + headerSize.width + 8)),
-    y: Math.round(headerLocation.y + headerSize.height / 2),
-  });
+  await tapRoomsPlusMenu(driver, timeout);
   console.log('Clicked Rooms plus');
 }
 

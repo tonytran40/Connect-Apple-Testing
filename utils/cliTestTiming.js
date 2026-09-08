@@ -30,30 +30,35 @@ async function runCliTimed(label, runAsync) {
   const start = performance.now();
   const startedAt = new Date().toISOString();
   try {
-    await runAsync();
+    const outcome = await runAsync();
     const ms = Math.round(performance.now() - start);
+    const status = String(outcome?.status || 'PASS').toUpperCase();
     writeTimingResult({
       name: label,
-      status: 'PASS',
+      status,
       durationMs: ms,
       duration: formatDurationMs(ms),
       startedAt,
       finishedAt: new Date().toISOString(),
+      ...(outcome?.notes ? { notes: outcome.notes } : {}),
     });
-    console.log(`\n✓ ${label} finished in ${formatDurationMs(ms)}`);
+    console.log(`\n${status === 'PASS' ? '✓' : '!'} ${label} ${status} in ${formatDurationMs(ms)}`);
+    return outcome;
   } catch (err) {
     const ms = Math.round(performance.now() - start);
+    const status = String(err?.status || 'FAIL').toUpperCase();
     writeTimingResult({
       name: label,
-      status: 'FAIL',
+      status,
       durationMs: ms,
       duration: formatDurationMs(ms),
       startedAt,
       finishedAt: new Date().toISOString(),
       error: err?.message || String(err),
     });
-    console.error(`\n✗ ${label} failed after ${formatDurationMs(ms)}: ${err?.message || err}`);
-    throw err;
+    console.error(`\n✗ ${label} ${status} after ${formatDurationMs(ms)}: ${err?.message || err}`);
+    if (status === 'FAIL') throw err;
+    return { status, notes: err?.message || String(err) };
   }
 }
 

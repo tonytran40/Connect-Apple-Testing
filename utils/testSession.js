@@ -1,6 +1,7 @@
 const { createDriver } = require('../Login_Flow/Open_App');
 const { SELECTORS, PREDICATES } = require('./selectors');
 const { boundedInt, escapePredicateString, getElementRect } = require('./uiActions');
+const { continueWebAuthenticationIfNeeded } = require('./systemPrompts');
 
 const ROOMS_HEADER_SELECTOR = PREDICATES.roomsHeaderButton;
 const LOST_CONNECTIVITY_SELECTOR =
@@ -14,6 +15,18 @@ const DEFAULT_CONNECTIVITY_RECOVERY_TIMEOUT_MS = boundedInt(
 // A room's navigation Back button can also be labeled "Rooms". The real
 // conversation-list disclosure header is lower in the viewport.
 const ROOMS_HEADER_MIN_Y = boundedInt(process.env.CONNECT_ROOMS_HEADER_MIN_Y, 120, 100, 240);
+const DEFAULT_ROOMS_TOP_SETTLE_MS = boundedInt(
+  process.env.CONNECT_ROOMS_TOP_SETTLE_MS,
+  350,
+  100,
+  1200
+);
+const DEFAULT_ROOMS_TOP_SWIPE_PAUSE_MS = boundedInt(
+  process.env.CONNECT_ROOMS_TOP_SWIPE_PAUSE_MS,
+  100,
+  0,
+  500
+);
 
 async function isDisplayed(driver, selector, timeout = 1000) {
   try {
@@ -140,11 +153,13 @@ async function goBack(driver, pauseMs = 500) {
   await driver.pause(pauseMs);
 }
 
-async function swipeViewport(driver, direction) {
+async function swipeViewport(driver, direction, options = {}) {
   const rect = await driver.getWindowRect();
   const x = Math.round(rect.width * 0.5);
   const startY = Math.round(rect.height * (direction === 'down' ? 0.35 : 0.75));
   const endY = Math.round(rect.height * (direction === 'down' ? 0.78 : 0.35));
+  const holdMs = options.holdMs ?? 100;
+  const durationMs = options.durationMs ?? 450;
 
   await driver.performActions([
     {
@@ -154,8 +169,8 @@ async function swipeViewport(driver, direction) {
       actions: [
         { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
         { type: 'pointerDown', button: 0 },
-        { type: 'pause', duration: 100 },
-        { type: 'pointerMove', duration: 450, origin: 'viewport', x, y: endY },
+        { type: 'pause', duration: holdMs },
+        { type: 'pointerMove', duration: durationMs, origin: 'viewport', x, y: endY },
         { type: 'pointerUp', button: 0 },
       ],
     },
@@ -208,7 +223,9 @@ function clipRectToViewport(rect, viewport) {
   return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
-async function performScopedSwipe(driver, coordinates) {
+async function performScopedSwipe(driver, coordinates, options = {}) {
+  const holdMs = options.holdMs ?? 100;
+  const durationMs = options.durationMs ?? 450;
   try {
     await driver.performActions([
       {
@@ -224,10 +241,10 @@ async function performScopedSwipe(driver, coordinates) {
             y: coordinates.startY,
           },
           { type: 'pointerDown', button: 0 },
-          { type: 'pause', duration: 100 },
+          { type: 'pause', duration: holdMs },
           {
             type: 'pointerMove',
-            duration: 450,
+            duration: durationMs,
             origin: 'viewport',
             x: coordinates.x,
             y: coordinates.endY,
@@ -245,7 +262,7 @@ async function performScopedSwipe(driver, coordinates) {
  * Swipe within the conversation-list accessibility element when possible.
  * Returns true for a scoped gesture and false when the viewport fallback was used.
  */
-async function swipeConversationList(driver, direction) {
+async function swipeConversationList(driver, direction, options = {}) {
   if (direction !== 'up' && direction !== 'down') {
     throw new Error(`Unsupported swipe direction: ${direction}`);
   }
@@ -259,13 +276,51 @@ async function swipeConversationList(driver, direction) {
       );
       const coordinates = scopedSwipeCoordinates(visibleRect, direction);
       if (coordinates) {
-        await performScopedSwipe(driver, coordinates);
+        await performScopedSwipe(driver, coordinates, options);
         return true;
       }
     }
   } catch {}
 
-  await swipeViewport(driver, direction);
+  await swipeViewport(driver, direction, options);
+  return false;
+}
+
+/**
+ * Return a deeply scrolled conversation list to the Rooms controls quickly.
+ * iOS scrolls the active list to the top when its status bar is tapped. The
+ * scoped swipe fallback covers simulator/runtime versions that ignore it.
+ */
+async function scrollConversationListToTop(driver, options = {}) {
+  const maxSwipes = options.maxSwipes ?? 8;
+  const settleMs = options.settleMs ?? DEFAULT_ROOMS_TOP_SETTLE_MS;
+  const swipePauseMs = options.swipePauseMs ?? DEFAULT_ROOMS_TOP_SWIPE_PAUSE_MS;
+
+  if (await getConversationListRoomsHeader(driver, 300)) return true;
+
+  try {
+    const rect = await driver.getWindowRect();
+    await driver.execute('mobile: tap', {
+      // Avoid the Dynamic Island while remaining inside the status bar.
+      x: Math.round(rect.x + rect.width * 0.12),
+      y: Math.round(rect.y + Math.max(8, Math.min(20, rect.height * 0.02))),
+    });
+    await driver.pause(settleMs);
+    if (await getConversationListRoomsHeader(driver, 500)) {
+      console.log('scrollConversationListToTop: Rooms controls restored with status-bar tap');
+      return true;
+    }
+  } catch {}
+
+  for (let i = 0; i < maxSwipes; i++) {
+    await swipeConversationList(driver, 'down', { holdMs: 20, durationMs: 180 });
+    if (swipePauseMs > 0) await driver.pause(swipePauseMs);
+    if (await getConversationListRoomsHeader(driver, 300)) {
+      console.log(`scrollConversationListToTop: Rooms controls restored after ${i + 1} fast swipe(s)`);
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -440,23 +495,24 @@ async function scrollUntilConversationEntryVisible(driver, opts = {}) {
 }
 
 async function ensureRoomsSectionReady(driver, maxScrolls = 8) {
+  await continueWebAuthenticationIfNeeded(driver);
   await waitForConnectivity(driver);
   await resetToHome(driver);
 
-  for (let i = 0; i < maxScrolls; i++) {
-    if (await getConversationListRoomsHeader(driver, 800)) return;
-
-    if (
-      !(await isDisplayed(driver, SELECTORS.peoplePlusButton, 500)) &&
-      !(await isDisplayed(driver, SELECTORS.newConversationButton, 500)) &&
-      !(await isDisplayed(driver, SELECTORS.settingsButton, 500))
-    ) {
-      await resetToHome(driver);
-    }
-
-    await swipeConversationList(driver, 'down');
-    await driver.pause(500);
+  if (await continueWebAuthenticationIfNeeded(driver)) {
+    await resetToHome(driver);
   }
+
+  if (
+    !(await getConversationListRoomsHeader(driver, 300)) &&
+    !(await isDisplayed(driver, SELECTORS.peoplePlusButton, 500)) &&
+    !(await isDisplayed(driver, SELECTORS.newConversationButton, 500)) &&
+    !(await isDisplayed(driver, SELECTORS.settingsButton, 500))
+  ) {
+    await resetToHome(driver);
+  }
+
+  if (await scrollConversationListToTop(driver, { maxSwipes: maxScrolls })) return;
 
   throw new Error('Rooms section header was not visible from the conversation list');
 }
@@ -468,6 +524,7 @@ module.exports = {
   goBack,
   clipRectToViewport,
   scopedSwipeCoordinates,
+  scrollConversationListToTop,
   scrollUntilConversationEntryVisible,
   swipeConversationList,
   waitForConnectivity,

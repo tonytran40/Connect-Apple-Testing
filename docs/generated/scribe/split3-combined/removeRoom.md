@@ -1,39 +1,39 @@
 # removeRoom
 
-- Status: PASS
-- Duration: 37s
+- Status: FAIL
+- Duration: 55s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:27:36.912Z
-- Finished: 2026-08-19T15:28:13.781Z
+- Started: 2026-09-01T18:55:18.807Z
+- Finished: 2026-09-01T18:56:13.364Z
+
+## Failure
+
+```text
+None of [A-00-E-RemoveRoom-trffrnb4] became visible after 24 list scroll(s)
+```
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 3s |
-| Test body | 33s |
-| Screenshot capture | 715ms |
-| Recovery | 0ms |
+| Login/readiness | 2s |
+| Test body | 53s |
+| Screenshot capture | 157ms |
+| Recovery | 3s |
 | Report generation | 0ms |
 
 ## Steps
 
-### Step 1: Before Swipe Left
+### Step 1: ERROR - Failed here
 
-![Before Swipe Left](assets/Conversation-List/removeRoom/01_before_swipe_left.png)
+![ERROR](assets/Conversation-List/removeRoom/ERROR.png)
 
-### Step 2: After Swipe Left
+**Failure at this step:**
 
-![After Swipe Left](assets/Conversation-List/removeRoom/02_after_swipe_left.png)
-
-### Step 3: After Tap Remove
-
-![After Tap Remove](assets/Conversation-List/removeRoom/03_after_tap_remove.png)
-
-### Step 4: After Room Removed
-
-![After Room Removed](assets/Conversation-List/removeRoom/04_after_room_removed.png)
+```text
+None of [A-00-E-RemoveRoom-trffrnb4] became visible after 24 list scroll(s)
+```

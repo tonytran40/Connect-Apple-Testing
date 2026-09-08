@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>markdowns · split3-combined</title>
   <style>
-    :root { --ink:#162033; --muted:#6c7789; --line:#dfe6ef; --paper:#f7f9fc; --panel:#fff; --pass:#0f9f6e; --fail:#d93f3f; --unknown:#7c8798; --blue:#0e61d8; --navy:#090222; --shadow:0 18px 60px rgba(22,32,51,.12); }
+    :root { --ink:#162033; --muted:#6c7789; --line:#dfe6ef; --paper:#f7f9fc; --panel:#fff; --pass:#0f9f6e; --fail:#d93f3f; --skipped:#64748b; --blocked:#b45309; --inconclusive:#7c3aed; --unknown:#7c8798; --blue:#0e61d8; --navy:#090222; --shadow:0 18px 60px rgba(22,32,51,.12); }
     * { box-sizing:border-box; }
     body { margin:0; color:var(--ink); background:radial-gradient(circle at top left,rgba(14,97,216,.17),transparent 34rem),var(--paper); font:16px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
     a { color:inherit; }
@@ -46,7 +46,12 @@
     .history-list a:hover { border-color:var(--blue); }
     .history-list small { color:var(--muted); }
     .status-pill { display:inline-flex; justify-self:start; border-radius:999px; padding:.22rem .52rem; color:#fff; font-size:.72rem; font-weight:900; letter-spacing:.05em; }
-    .status-pill.pass { background:var(--pass); } .status-pill.fail { background:var(--fail); } .status-pill.unknown { background:var(--unknown); }
+    .status-pill.pass { background:var(--pass); }
+    .status-pill.fail { background:var(--fail); }
+    .status-pill.skipped { background:var(--skipped); }
+    .status-pill.blocked { background:var(--blocked); }
+    .status-pill.inconclusive { background:var(--inconclusive); }
+    .status-pill.unknown { background:var(--unknown); }
     .steps-heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; margin:2rem 0 1rem; }
     .steps-heading h2 { margin:0; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.04em; }
     .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(18rem,1fr)); gap:1rem; }
@@ -63,7 +68,7 @@
     <h1>markdowns</h1>
     <div class="hero-meta">
       <span class="status-pill pass">PASS</span>
-      <span>1m 32s</span>
+      <span>1m 33s</span>
       <span>11 screenshots</span>
       <span>Slow test</span>
     </div>
@@ -74,7 +79,7 @@
       <div><dt>Category</dt><dd>ConversationView</dd></div>
       <div><dt>Device</dt><dd>iPhone 17</dd></div>
       <div><dt>Appium port</dt><dd>4727</dd></div>
-      <div><dt>Finished</dt><dd>Aug 19, 11:27 AM</dd></div>
+      <div><dt>Finished</dt><dd>Sep 1, 2:55 PM</dd></div>
     </dl>
     <div class="actions">
       <a href="../../markdowns.md">Markdown guide</a>
@@ -84,15 +89,15 @@
     <section class="command panel"><h2>Rerun this test</h2><code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/markdowns.js</code></section>
     <section class="phase-timings panel"><h2>Phase timing</h2><dl class="summary">
           <div><dt>Session creation</dt><dd>0ms</dd></div>
-<div><dt>Login/readiness</dt><dd>4s</dd></div>
-<div><dt>Test body</dt><dd>1m 26s</dd></div>
+<div><dt>Login/readiness</dt><dd>3s</dd></div>
+<div><dt>Test body</dt><dd>1m 28s</dd></div>
 <div><dt>Screenshot capture</dt><dd>2s</dd></div>
 <div><dt>Recovery</dt><dd>0ms</dd></div>
 <div><dt>Report generation</dt><dd>0ms</dd></div>
         </dl></section>
 
 
-    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill pass">PASS</span><strong>Aug 19, 11:25 AM</strong><small>1m 32s</small></a></div></section>
+    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill pass">PASS</span><strong>Sep 1, 2:53 PM</strong><small>1m 33s</small></a></div></section>
     <div class="steps-heading"><h2>Test steps</h2><span class="muted">11 captured screenshots</span></div>
     <section class="steps-grid">
               <figure class="step">

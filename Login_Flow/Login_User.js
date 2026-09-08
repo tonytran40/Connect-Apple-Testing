@@ -3,6 +3,7 @@ require('dotenv').config();
 const { SELECTORS, PREDICATES } = require('../utils/selectors');
 const { allowNotificationPromptIfNeeded } = require('../utils/permissions');
 const { resetToHome } = require('../utils/testSession');
+const { continueWebAuthenticationIfNeeded } = require('../utils/systemPrompts');
 
 function intEnv(name, fallback, min, max) {
   const n = Number.parseInt(process.env[name], 10);
@@ -17,6 +18,7 @@ const LOGIN_POLL_MS = intEnv('LOGIN_POLL_MS', 500, 100, 3000);
 const APP_ENTRY_TIMEOUT_MS = intEnv('APP_ENTRY_TIMEOUT_MS', 30000, 3000, 120000);
 const APP_ENTRY_POLL_MS = intEnv('APP_ENTRY_POLL_MS', 250, 100, 1000);
 const APP_ENTRY_RECOVERY_MS = intEnv('APP_ENTRY_RECOVERY_MS', 4000, 1000, 15000);
+const CONNECT_SERVER_NAME = process.env.CONNECT_SERVER_NAME || 'localhost';
 
 async function isOnLoginScreen(driver) {
   return visible(driver, SELECTORS.loginView, 250);
@@ -56,6 +58,7 @@ async function waitForAppEntryState(driver) {
   let recoveryAttempted = false;
 
   while (Date.now() < deadline) {
+    if (await continueWebAuthenticationIfNeeded(driver)) continue;
     if (await isOnLoginScreen(driver)) return 'login';
     if (await isLoggedInSignalVisible(driver)) return 'home';
 
@@ -141,6 +144,7 @@ async function waitForLoginSuccess(driver) {
   const started = Date.now();
 
   while (Date.now() - started < LOGIN_SUCCESS_TIMEOUT_MS) {
+    if (await continueWebAuthenticationIfNeeded(driver)) continue;
     if (await isLoggedInSignalVisible(driver)) {
       console.log('✅ Login confirmed');
       return;
@@ -168,34 +172,49 @@ async function ensureLoggedIn(driver) {
 
   console.log('ℹ️ On login screen. Running login flow...');
 
-  // double-tap logo area to reveal Servers button
-  const logoArea = await driver.$(SELECTORS.loginView);
-  await logoArea.waitForDisplayed({ timeout: 15000 });
-
-  // tap Servers
-  const serversButton = await revealServersButton(driver, logoArea);
-  await serversButton.click();
-
-  // select localhost
-  const localhostRow = await driver.$(
-    '//XCUIElementTypeCell[.//XCUIElementTypeStaticText[@name="localhost"]]'
+  const currentServer = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeStaticText" AND ` +
+    `(name == "${CONNECT_SERVER_NAME}" OR label == "${CONNECT_SERVER_NAME}")`
   );
-  await localhostRow.waitForDisplayed({ timeout: 15000 });
-  await localhostRow.click();
+  if (await currentServer.isDisplayed().catch(() => false)) {
+    console.log(`Login server already selected: ${CONNECT_SERVER_NAME}`);
+  } else {
+    const logoArea = await driver.$(SELECTORS.loginView);
+    await logoArea.waitForDisplayed({ timeout: 15000 });
 
-  // fill email + password
-  const emailInput = await driver.$('//XCUIElementTypeTextField');
-  await emailInput.waitForDisplayed({ timeout: 15000 });
-  await emailInput.setValue(process.env.Connect_username);
+    const serversButton = await revealServersButton(driver, logoArea);
+    await serversButton.click();
 
-  const passwordInput = await driver.$('//XCUIElementTypeSecureTextField');
-  await passwordInput.waitForDisplayed({ timeout: 15000 });
-  await passwordInput.setValue(process.env.Connect_password);
+    const serverRow = await driver.$(
+      `//XCUIElementTypeCell[.//XCUIElementTypeStaticText[@name="${CONNECT_SERVER_NAME}" or @label="${CONNECT_SERVER_NAME}"]]`
+    );
+    await serverRow.waitForDisplayed({ timeout: 15000 });
+    await serverRow.click();
+    console.log(`Login server selected: ${CONNECT_SERVER_NAME}`);
+  }
 
-  // tap login
+  if (!CONNECT_SERVER_NAME.toLowerCase().startsWith('localhost')) {
+    await continueWebAuthenticationIfNeeded(driver, { timeout: 3000 });
+  }
+
   const loginBtn = await driver.$(SELECTORS.loginButton);
   await loginBtn.waitForEnabled({ timeout: 15000 });
+
+  if (CONNECT_SERVER_NAME.toLowerCase().startsWith('localhost')) {
+    const emailInput = await driver.$('//XCUIElementTypeTextField');
+    await emailInput.waitForDisplayed({ timeout: 15000 });
+    await emailInput.setValue(process.env.Connect_username);
+
+    const passwordInput = await driver.$('//XCUIElementTypeSecureTextField');
+    await passwordInput.waitForDisplayed({ timeout: 15000 });
+    await passwordInput.setValue(process.env.Connect_password);
+  }
+
+  // QA and production use Nitro SSO; localhost exposes direct credential fields.
   await loginBtn.click();
+  if (!CONNECT_SERVER_NAME.toLowerCase().startsWith('localhost')) {
+    await continueWebAuthenticationIfNeeded(driver, { timeout: 5000 });
+  }
 
   console.log('✅ Login submitted');
   await waitForLoginSuccess(driver);

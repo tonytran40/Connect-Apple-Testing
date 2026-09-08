@@ -1,22 +1,22 @@
 # PinnedMessageEditFlow
 
 - Status: PASS
-- Duration: 1m 17s
+- Duration: 1m 3s
 - Lane: main-suite
 - Logical category: ConversationView
 - Device: iPhone 17 Pro
 - Appium port: 4723
-- Started: 2026-08-19T15:26:45.573Z
-- Finished: 2026-08-19T15:28:02.354Z
+- Started: 2026-09-01T18:54:11.422Z
+- Finished: 2026-09-01T18:55:13.968Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 22s |
-| Test body | 54s |
-| Screenshot capture | 491ms |
+| Login/readiness | 3s |
+| Test body | 59s |
+| Screenshot capture | 564ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
 

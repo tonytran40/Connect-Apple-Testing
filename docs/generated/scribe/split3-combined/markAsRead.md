@@ -1,39 +1,39 @@
 # markAsRead
 
-- Status: PASS
-- Duration: 38s
+- Status: FAIL
+- Duration: 1m 5s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-08-19T15:26:41.927Z
-- Finished: 2026-08-19T15:27:20.219Z
+- Started: 2026-09-01T18:54:11.422Z
+- Finished: 2026-09-01T18:55:16.300Z
+
+## Failure
+
+```text
+None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)
+```
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 4s |
-| Test body | 34s |
-| Screenshot capture | 611ms |
-| Recovery | 0ms |
+| Login/readiness | 9s |
+| Test body | 56s |
+| Screenshot capture | 133ms |
+| Recovery | 3s |
 | Report generation | 0ms |
 
 ## Steps
 
-### Step 1: Before Swipe Right
+### Step 1: ERROR - Failed here
 
-![Before Swipe Right](assets/Conversation-List/markAsRead/01_before_swipe_right.png)
+![ERROR](assets/Conversation-List/markAsRead/ERROR.png)
 
-### Step 2: After Swipe Right
+**Failure at this step:**
 
-![After Swipe Right](assets/Conversation-List/markAsRead/02_after_swipe_right.png)
-
-### Step 3: After Mark Unread
-
-![After Mark Unread](assets/Conversation-List/markAsRead/03_after_mark_unread.png)
-
-### Step 4: After Mark Read
-
-![After Mark Read](assets/Conversation-List/markAsRead/04_after_mark_read.png)
+```text
+None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)
+```

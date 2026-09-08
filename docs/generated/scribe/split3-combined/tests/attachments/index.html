@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>attachments · split3-combined</title>
   <style>
-    :root { --ink:#162033; --muted:#6c7789; --line:#dfe6ef; --paper:#f7f9fc; --panel:#fff; --pass:#0f9f6e; --fail:#d93f3f; --unknown:#7c8798; --blue:#0e61d8; --navy:#090222; --shadow:0 18px 60px rgba(22,32,51,.12); }
+    :root { --ink:#162033; --muted:#6c7789; --line:#dfe6ef; --paper:#f7f9fc; --panel:#fff; --pass:#0f9f6e; --fail:#d93f3f; --skipped:#64748b; --blocked:#b45309; --inconclusive:#7c3aed; --unknown:#7c8798; --blue:#0e61d8; --navy:#090222; --shadow:0 18px 60px rgba(22,32,51,.12); }
     * { box-sizing:border-box; }
     body { margin:0; color:var(--ink); background:radial-gradient(circle at top left,rgba(14,97,216,.17),transparent 34rem),var(--paper); font:16px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
     a { color:inherit; }
@@ -46,7 +46,12 @@
     .history-list a:hover { border-color:var(--blue); }
     .history-list small { color:var(--muted); }
     .status-pill { display:inline-flex; justify-self:start; border-radius:999px; padding:.22rem .52rem; color:#fff; font-size:.72rem; font-weight:900; letter-spacing:.05em; }
-    .status-pill.pass { background:var(--pass); } .status-pill.fail { background:var(--fail); } .status-pill.unknown { background:var(--unknown); }
+    .status-pill.pass { background:var(--pass); }
+    .status-pill.fail { background:var(--fail); }
+    .status-pill.skipped { background:var(--skipped); }
+    .status-pill.blocked { background:var(--blocked); }
+    .status-pill.inconclusive { background:var(--inconclusive); }
+    .status-pill.unknown { background:var(--unknown); }
     .steps-heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; margin:2rem 0 1rem; }
     .steps-heading h2 { margin:0; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.04em; }
     .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(18rem,1fr)); gap:1rem; }
@@ -63,8 +68,8 @@
     <h1>attachments</h1>
     <div class="hero-meta">
       <span class="status-pill pass">PASS</span>
-      <span>1m 21s</span>
-      <span>9 screenshots</span>
+      <span>1m 43s</span>
+      <span>17 screenshots</span>
       <span>Slow test</span>
     </div>
   </header>
@@ -74,7 +79,7 @@
       <div><dt>Category</dt><dd>ConversationView</dd></div>
       <div><dt>Device</dt><dd>iPhone 17</dd></div>
       <div><dt>Appium port</dt><dd>4727</dd></div>
-      <div><dt>Finished</dt><dd>Aug 19, 11:28 AM</dd></div>
+      <div><dt>Finished</dt><dd>Sep 1, 2:57 PM</dd></div>
     </dl>
     <div class="actions">
       <a href="../../attachments.md">Markdown guide</a>
@@ -84,16 +89,16 @@
     <section class="command panel"><h2>Rerun this test</h2><code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js</code></section>
     <section class="phase-timings panel"><h2>Phase timing</h2><dl class="summary">
           <div><dt>Session creation</dt><dd>0ms</dd></div>
-<div><dt>Login/readiness</dt><dd>14s</dd></div>
-<div><dt>Test body</dt><dd>1m 5s</dd></div>
-<div><dt>Screenshot capture</dt><dd>2s</dd></div>
+<div><dt>Login/readiness</dt><dd>12s</dd></div>
+<div><dt>Test body</dt><dd>1m 28s</dd></div>
+<div><dt>Screenshot capture</dt><dd>3s</dd></div>
 <div><dt>Recovery</dt><dd>0ms</dd></div>
 <div><dt>Report generation</dt><dd>0ms</dd></div>
         </dl></section>
 
 
-    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill pass">PASS</span><strong>Aug 19, 11:25 AM</strong><small>1m 21s</small></a></div></section>
-    <div class="steps-heading"><h2>Test steps</h2><span class="muted">9 captured screenshots</span></div>
+    <section class="history panel"><h2>Recent history</h2><div class="history-list"><a href="../../index.html"><span class="status-pill pass">PASS</span><strong>Sep 1, 2:53 PM</strong><small>1m 43s</small></a></div></section>
+    <div class="steps-heading"><h2>Test steps</h2><span class="muted">17 captured screenshots</span></div>
     <section class="steps-grid">
               <figure class="step">
                 <a href="../../assets/ConversationView/attachments/01_in_room.png">
@@ -138,24 +143,80 @@
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/attachments/07_share_options_dialog_for_gif.png">
-                  <img src="../../assets/ConversationView/attachments/07_share_options_dialog_for_gif.png" alt="Share Options Dialog For Gif" loading="lazy">
+                <a href="../../assets/ConversationView/attachments/07_share_options_dialog_for_file.png">
+                  <img src="../../assets/ConversationView/attachments/07_share_options_dialog_for_file.png" alt="Share Options Dialog For File" loading="lazy">
                 </a>
-                <figcaption><strong>Step 7</strong>Share Options Dialog For Gif</figcaption>
+                <figcaption><strong>Step 7</strong>Share Options Dialog For File</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/attachments/08_gif_picker_open.png">
-                  <img src="../../assets/ConversationView/attachments/08_gif_picker_open.png" alt="Gif Picker Open" loading="lazy">
+                <a href="../../assets/ConversationView/attachments/08_file_picker_open.png">
+                  <img src="../../assets/ConversationView/attachments/08_file_picker_open.png" alt="File Picker Open" loading="lazy">
                 </a>
-                <figcaption><strong>Step 8</strong>Gif Picker Open</figcaption>
+                <figcaption><strong>Step 8</strong>File Picker Open</figcaption>
               </figure>
 
               <figure class="step">
-                <a href="../../assets/ConversationView/attachments/09_after_send_gif.png">
-                  <img src="../../assets/ConversationView/attachments/09_after_send_gif.png" alt="After Send Gif" loading="lazy">
+                <a href="../../assets/ConversationView/attachments/09_files_browse.png">
+                  <img src="../../assets/ConversationView/attachments/09_files_browse.png" alt="Files Browse" loading="lazy">
                 </a>
-                <figcaption><strong>Step 9</strong>After Send Gif</figcaption>
+                <figcaption><strong>Step 9</strong>Files Browse</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/10_files_on_my_iphone.png">
+                  <img src="../../assets/ConversationView/attachments/10_files_on_my_iphone.png" alt="Files On My Iphone" loading="lazy">
+                </a>
+                <figcaption><strong>Step 10</strong>Files On My Iphone</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/11_files_connect_ios.png">
+                  <img src="../../assets/ConversationView/attachments/11_files_connect_ios.png" alt="Files Connect Ios" loading="lazy">
+                </a>
+                <figcaption><strong>Step 11</strong>Files Connect Ios</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/12_file_selected.png">
+                  <img src="../../assets/ConversationView/attachments/12_file_selected.png" alt="File Selected" loading="lazy">
+                </a>
+                <figcaption><strong>Step 12</strong>File Selected</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/13_file_attachment_in_composer.png">
+                  <img src="../../assets/ConversationView/attachments/13_file_attachment_in_composer.png" alt="File Attachment In Composer" loading="lazy">
+                </a>
+                <figcaption><strong>Step 13</strong>File Attachment In Composer</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/14_after_send_file_attachment.png">
+                  <img src="../../assets/ConversationView/attachments/14_after_send_file_attachment.png" alt="After Send File Attachment" loading="lazy">
+                </a>
+                <figcaption><strong>Step 14</strong>After Send File Attachment</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/15_share_options_dialog_for_gif.png">
+                  <img src="../../assets/ConversationView/attachments/15_share_options_dialog_for_gif.png" alt="Share Options Dialog For Gif" loading="lazy">
+                </a>
+                <figcaption><strong>Step 15</strong>Share Options Dialog For Gif</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/16_gif_picker_open.png">
+                  <img src="../../assets/ConversationView/attachments/16_gif_picker_open.png" alt="Gif Picker Open" loading="lazy">
+                </a>
+                <figcaption><strong>Step 16</strong>Gif Picker Open</figcaption>
+              </figure>
+
+              <figure class="step">
+                <a href="../../assets/ConversationView/attachments/17_after_send_gif.png">
+                  <img src="../../assets/ConversationView/attachments/17_after_send_gif.png" alt="After Send Gif" loading="lazy">
+                </a>
+                <figcaption><strong>Step 17</strong>After Send Gif</figcaption>
               </figure></section>
   </main>
   <script>

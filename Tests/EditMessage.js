@@ -2,8 +2,13 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
-const { SELECTORS, PREDICATES } = require('../utils/selectors');
+const {
+  ensureRoomsSectionReady,
+  runWithOptionalDriver,
+  scrollUntilConversationEntryVisible,
+} = require('../utils/testSession');
+const { SELECTORS } = require('../utils/selectors');
+const { openRoomsPlusMenu: tapRoomsPlusMenu } = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'EditMessage';
@@ -94,14 +99,8 @@ async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGE
 
 /** Rooms row “+” — same as CreateRoom.openRoomsPlusMenu */
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
-  const roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
-  await roomsHeader.waitForDisplayed({ timeout });
-
-  const roomsPlus = await driver.$(
-    `//XCUIElementTypeButton[contains(@label,"Rooms")]/following-sibling::XCUIElementTypeButton[1]`
-  );
-  await roomsPlus.waitForDisplayed({ timeout });
-  await roomsPlus.click();
+  await ensureRoomsSectionReady(driver);
+  await tapRoomsPlusMenu(driver, timeout);
   console.log('Clicked Rooms plus');
 }
 

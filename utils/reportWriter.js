@@ -67,6 +67,9 @@ function buildMarkdown(results, startedAt, meta = {}) {
   const { suiteDurationMs, loginSetupMs, suiteOptions } = meta;
   const passed = results.filter(result => result.status === 'PASS').length;
   const failed = results.filter(result => result.status === 'FAIL').length;
+  const skipped = results.filter(result => result.status === 'SKIPPED').length;
+  const blocked = results.filter(result => result.status === 'BLOCKED').length;
+  const inconclusive = results.filter(result => result.status === 'INCONCLUSIVE').length;
   const running = results.filter(result => result.status === 'RUNNING').length;
   const showDurationCol = results.some(result => result.durationMs != null);
 
@@ -77,6 +80,9 @@ function buildMarkdown(results, startedAt, meta = {}) {
     `- Last Updated: ${new Date().toISOString()}`,
     `- Passed: ${passed}`,
     `- Failed: ${failed}`,
+    `- Skipped: ${skipped}`,
+    `- Blocked: ${blocked}`,
+    `- Inconclusive: ${inconclusive}`,
     `- Running: ${running}`,
   ];
 

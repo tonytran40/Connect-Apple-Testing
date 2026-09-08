@@ -1,4 +1,5 @@
 const { remote } = require('webdriverio');
+const { continueWebAuthenticationIfNeeded } = require('../utils/systemPrompts');
 
 async function createDriver() {
     const appiumPort = Number.parseInt(process.env.APPIUM_PORT, 10) || 4723;
@@ -42,6 +43,7 @@ async function createDriver() {
 
     await driver.activateApp(bundleId);
     await driver.pause(Number.parseInt(process.env.APP_LAUNCH_SETTLE_MS, 10) || 1500);
+    await continueWebAuthenticationIfNeeded(driver);
     return driver;
 }
 

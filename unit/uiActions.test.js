@@ -1,7 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { escapePredicateString, getElementRect, tapByText } = require('../utils/uiActions');
+const { SELECTORS } = require('../utils/selectors');
+const {
+  escapePredicateString,
+  getElementRect,
+  openRoomsPlusMenu,
+  tapByText,
+} = require('../utils/uiActions');
 
 test('escapePredicateString protects quotes and backslashes', () => {
   assert.equal(escapePredicateString('A\\B "Room"'), 'A\\\\B \\"Room\\"');
@@ -41,4 +47,29 @@ test('tapByText falls back to the parent button when the text node is not clicka
 
   assert.equal(await tapByText(driver, 'Favorite Room'), parent);
   assert.equal(parentClicked, true);
+});
+
+test('openRoomsPlusMenu aligns the iOS plus tap with the exact Rooms header', async () => {
+  const taps = [];
+  const driver = {
+    $: async selector => {
+      if (selector === SELECTORS.plusButton) return { isDisplayed: async () => false };
+      if (selector === SELECTORS.roomsSectionHeader) {
+        return {
+          isDisplayed: async () => true,
+          getRect: async () => ({ x: 12, y: 220, width: 250, height: 32 }),
+        };
+      }
+      if (selector === SELECTORS.createRoomButton) return { waitForDisplayed: async () => {} };
+      throw new Error(`Unexpected selector: ${selector}`);
+    },
+    getWindowRect: async () => ({ x: 0, y: 0, width: 400, height: 800 }),
+    execute: async (command, coordinates) => taps.push({ command, coordinates }),
+  };
+
+  await openRoomsPlusMenu(driver);
+
+  assert.deepEqual(taps, [
+    { command: 'mobile: tap', coordinates: { x: 378, y: 236 } },
+  ]);
 });

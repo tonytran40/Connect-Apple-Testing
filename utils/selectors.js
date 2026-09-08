@@ -74,6 +74,11 @@ const PREDICATES = Object.freeze({
 });
 
 const SELECTOR_METADATA = Object.freeze({
+  browseRoomsButton: Object.freeze({
+    source: 'exact',
+    platforms: Object.freeze(['macOS']),
+    note: 'iOS exposes Browse Rooms as menu text without this identifier.',
+  }),
   conversationSearchField: Object.freeze({
     source: 'exact',
     platforms: Object.freeze(['macOS']),

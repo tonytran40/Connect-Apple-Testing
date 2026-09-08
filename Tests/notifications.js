@@ -23,6 +23,8 @@ const NOTIFICATION_BODY =
 const NOTIFICATION_PAYLOAD_PATH =
   process.env.NOTIFICATION_PAYLOAD_PATH ||
   path.join(__dirname, 'fixtures', 'connect-notification.apns');
+const ROUTE_MODE = 'route';
+const BANNER_MODE = 'banner';
 
 function esc(s) {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -32,26 +34,65 @@ async function pause(driver, ms) {
   if (ms > 0) await driver.pause(ms);
 }
 
-function buildPayloadFromEnv() {
+function buildPayloadFromEnv(env = process.env) {
   const custom = {};
-  if (process.env.NOTIFICATION_ROOM_ID) {
-    custom.roomId = process.env.NOTIFICATION_ROOM_ID;
+  if (env.NOTIFICATION_ROOM_ID) {
+    custom.room_id = env.NOTIFICATION_ROOM_ID;
   }
-  if (process.env.NOTIFICATION_EVENT_TYPE) {
-    custom.eventType = process.env.NOTIFICATION_EVENT_TYPE;
+  if (env.NOTIFICATION_EVENT_TYPE) {
+    custom.event_type = env.NOTIFICATION_EVENT_TYPE;
   }
 
   return {
     aps: {
       alert: {
-        title: NOTIFICATION_TITLE,
-        body: NOTIFICATION_BODY,
+        title: env.NOTIFICATION_TITLE || NOTIFICATION_TITLE,
+        body: env.NOTIFICATION_BODY || NOTIFICATION_BODY,
       },
-      badge: Number.parseInt(process.env.NOTIFICATION_BADGE, 10) || 1,
-      sound: process.env.NOTIFICATION_SOUND || 'default',
+      badge: Number.parseInt(env.NOTIFICATION_BADGE, 10) || 1,
+      sound: env.NOTIFICATION_SOUND || 'default',
     },
     ...custom,
   };
+}
+
+function isMissingDeterministicValue(value) {
+  const normalized = String(value || '').trim();
+  return !normalized || /^(automation-|replace-|your-)/i.test(normalized);
+}
+
+function resolveNotificationPlan(payload, env = process.env) {
+  const mode = String(env.NOTIFICATION_MODE || ROUTE_MODE).trim().toLowerCase();
+  if (![ROUTE_MODE, BANNER_MODE].includes(mode)) {
+    throw new Error(
+      `notifications: NOTIFICATION_MODE must be "${ROUTE_MODE}" or "${BANNER_MODE}" (received "${mode}")`
+    );
+  }
+
+  if (mode === BANNER_MODE) {
+    return { mode };
+  }
+
+  const roomId = String(payload?.room_id || '').trim();
+  const targetRoomName = String(
+    env.NOTIFICATION_TARGET_ROOM_NAME || payload?.automation_target_room_name || ''
+  ).trim();
+  const missing = [];
+  if (isMissingDeterministicValue(roomId)) missing.push('payload room_id / NOTIFICATION_ROOM_ID');
+  if (isMissingDeterministicValue(targetRoomName)) {
+    missing.push('NOTIFICATION_TARGET_ROOM_NAME');
+  }
+  if (missing.length) {
+    const error = new Error(
+      `notifications: deterministic route coverage requires ${missing.join(' and ')}. ` +
+        'Configure a real QA room ID and its exact visible name, or explicitly set ' +
+        'NOTIFICATION_MODE=banner for banner-delivery-only coverage.'
+    );
+    error.status = 'BLOCKED';
+    throw error;
+  }
+
+  return { mode, roomId, targetRoomName };
 }
 
 function loadPayload() {
@@ -100,33 +141,28 @@ async function foregroundApp(driver) {
   console.log(`notifications: foregrounded ${BUNDLE_ID}`);
 }
 
-async function tapNotificationBanner(driver, title, body) {
+function notificationBannerSelectors(title, body) {
   const safeTitle = esc(title);
   const safeBody = esc(body);
-
-  const selectors = [
-    '-ios predicate string:type == "XCUIElementTypeButton" AND name == "ShortLook.Platter.Content.Seamless"',
-    `-ios predicate string:(label CONTAINS "${safeBody}" OR name CONTAINS "${safeBody}")`,
-    `-ios predicate string:(label CONTAINS "${safeTitle}" OR name CONTAINS "${safeTitle}")`,
+  return [
+    '-ios predicate string:' +
+      '(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton") AND ' +
+      `(label CONTAINS "${safeBody}" OR name CONTAINS "${safeBody}")`,
+    '-ios predicate string:type == "XCUIElementTypeStaticText" AND ' +
+      `(label CONTAINS "${safeTitle}" OR name CONTAINS "${safeTitle}")`,
   ];
+}
+
+async function waitForNotificationBanner(driver, title, body) {
+  const selectors = notificationBannerSelectors(title, body);
 
   const deadline = Date.now() + BANNER_TIMEOUT;
   while (Date.now() < deadline) {
     for (const selector of selectors) {
       const el = await driver.$(selector);
       if (await el.isDisplayed().catch(() => false)) {
-        if (selector.includes('ShortLook.Platter.Content.Seamless')) {
-          await el.click();
-          console.log('notifications: tapped native notification button');
-        } else {
-          const rect = await getElementRect(el);
-          await driver.execute('mobile: tap', {
-            x: Math.round(rect.x + rect.width / 2),
-            y: Math.round(rect.y + rect.height / 2),
-          });
-          console.log('notifications: tapped notification banner center by text');
-        }
-        return true;
+        console.log(`notifications: native notification banner visible (${selector})`);
+        return { el, selector };
       }
     }
     await pause(driver, 200);
@@ -135,30 +171,50 @@ async function tapNotificationBanner(driver, title, body) {
   throw new Error(`notifications: notification banner was not visible within ${BANNER_TIMEOUT}ms`);
 }
 
-async function waitForInAppAfterNotification(driver, hints = [], timeout = DEFAULT_TIMEOUT) {
-  const checks = [
-    SELECTORS.mainAppView,
-    SELECTORS.openRoomSettingsButton,
-    SELECTORS.sendMessageButton,
-    SELECTORS.peoplePlusButton,
-    SELECTORS.roomsSectionHeader,
-    ...hints.map(h => `~${h}`),
-  ];
+async function tapNotificationBanner(driver, title, body) {
+  const { el } = await waitForNotificationBanner(driver, title, body);
+  const rect = await getElementRect(el);
+  await driver.execute('mobile: tap', {
+    x: Math.round(rect.x + rect.width / 2),
+    y: Math.round(rect.y + rect.height / 2),
+  });
+  console.log('notifications: tapped notification banner center by text');
+}
+
+function exactRoomTitleSelector(roomName) {
+  const safe = esc(roomName);
+  return (
+    '-ios predicate string:' +
+    '(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton") AND ' +
+    `(name == "${safe}" OR label == "${safe}")`
+  );
+}
+
+async function waitForExactTargetRoom(driver, roomName, timeout = DEFAULT_TIMEOUT) {
+  const selector = exactRoomTitleSelector(roomName);
+  const composer = await driver.$(SELECTORS.sendMessageButton);
 
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    for (const selector of checks) {
-      const el = await driver.$(selector);
-      if (await el.isDisplayed().catch(() => false)) {
-        console.log(`notifications: in-app UI visible (${selector})`);
-        return selector;
+    const candidates = await driver.$$(selector);
+    const windowRect = await driver.getWindowRect();
+    const composerVisible = await composer.isDisplayed().catch(() => false);
+    for (const candidate of candidates) {
+      if (await candidate.isDisplayed().catch(() => false)) {
+        const rect = await getElementRect(candidate);
+        const inHeader = rect.y + rect.height / 2 < windowRect.height * 0.35;
+        if (inHeader && composerVisible) {
+          console.log(`notifications: routed to exact target room "${roomName}"`);
+          return candidate;
+        }
       }
     }
     await pause(driver, 400);
   }
 
   throw new Error(
-    `notifications: expected in-app UI after tapping notification within ${timeout}ms`
+    `notifications: notification did not navigate to exact target room "${roomName}" ` +
+      `with a visible composer within ${timeout}ms`
   );
 }
 
@@ -173,6 +229,7 @@ async function runTest(driver, options = {}) {
   await pause(driver, 450);
 
   const payload = loadPayload();
+  const plan = resolveNotificationPlan(payload);
   const title = payload?.aps?.alert?.title || NOTIFICATION_TITLE;
   const body =
     typeof payload?.aps?.alert === 'string'
@@ -188,18 +245,36 @@ async function runTest(driver, options = {}) {
   await pause(driver, 1200);
   await saveScreenshot(driver, TEST_NAME, '02_after_push.png');
 
+  if (plan.mode === BANNER_MODE) {
+    await waitForNotificationBanner(driver, title, body);
+    await saveScreenshot(driver, TEST_NAME, '03_banner_delivery_verified.png');
+    await foregroundApp(driver);
+    return {
+      status: 'INCONCLUSIVE',
+      notes: 'Banner delivery verified; exact room routing was intentionally not exercised',
+      coverageMode: BANNER_MODE,
+    };
+  }
+
   await tapNotificationBanner(driver, title, body);
   await pause(driver, 800);
   await saveScreenshot(driver, TEST_NAME, '03_after_tap_notification.png');
 
-  await waitForInAppAfterNotification(driver);
+  await waitForExactTargetRoom(driver, plan.targetRoomName);
   await saveScreenshot(driver, TEST_NAME, '04_in_app_after_notification.png');
+  return {
+    status: 'PASS',
+    notes: `Notification routed to exact room "${plan.targetRoomName}"`,
+    coverageMode: ROUTE_MODE,
+    targetRoomId: plan.roomId,
+    targetRoomName: plan.targetRoomName,
+  };
 }
 
 async function run(driver, options = {}) {
   return runWithOptionalDriver(async activeDriver => {
     try {
-      await runTest(activeDriver, options);
+      return await runTest(activeDriver, options);
     } catch (err) {
       try {
         await foregroundApp(activeDriver);
@@ -210,7 +285,16 @@ async function run(driver, options = {}) {
   }, driver);
 }
 
-module.exports = { run, pushSimulatorNotification, loadPayload };
+module.exports = {
+  buildPayloadFromEnv,
+  exactRoomTitleSelector,
+  loadPayload,
+  pushSimulatorNotification,
+  resolveNotificationPlan,
+  run,
+  waitForNotificationBanner,
+  waitForExactTargetRoom,
+};
 
 if (require.main === module) {
   const { runCliTimed } = require('../utils/cliTestTiming');

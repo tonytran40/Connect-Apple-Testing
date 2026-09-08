@@ -3,6 +3,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const {
+  buildEvidenceDecision,
   buildEnvironmentSummary,
   buildLaneStats,
   buildRunComparison,
@@ -13,8 +14,10 @@ const {
   formatDate,
   formatDurationMs,
   laneForResult,
+  normalizeStatus,
   rerunCommandForResult,
   resultDurationMs,
+  statusForSummary,
 } = require('./report/reportAnalysis');
 const {
   argValue,
@@ -27,6 +30,7 @@ const {
   titleFromFileName,
 } = require('./report/reportUtils');
 const {
+  enforceReportRetention,
   ensureDir,
   gitTracksFile,
   readJsonIfExists,
@@ -197,6 +201,14 @@ function loadRunSummary(runId) {
       results: summaryJson.results || [],
       timings: summaryJson.timings || {},
       cleanup: summaryJson.cleanup || null,
+      coverage: summaryJson.coverage || null,
+      registry: summaryJson.registry || summaryJson.testRegistry || null,
+      requiredSuite: summaryJson.requiredSuite || null,
+      environment: summaryJson.environment || null,
+      app: summaryJson.app || null,
+      automation: summaryJson.automation || null,
+      appBranch: summaryJson.appBranch || '',
+      appCommit: summaryJson.appCommit || '',
       productStatus: summaryJson.productStatus || summaryJson.status || '',
     };
   }
@@ -378,19 +390,22 @@ function writeTestDoc({ outDir, runId, result }) {
 
 function writeIndex({ outDir, runId, summary, testDocs }) {
   const file = path.join(outDir, 'index.md');
-  const counts = summary.counts || {};
-  const failures = summary.results.filter(result => result.status === 'FAIL');
+  const counts = countsForSummary(summary);
+  const failures = summary.results.filter(result => normalizeStatus(result.status) === 'FAIL');
   const lines = [
     '# Scribe-Style Test Documentation',
     '',
     `- Run ID: ${runId}`,
     `- Source: ${summary.source}`,
-    `- Status: ${summary.status || ''}`,
+    `- Status: ${statusForSummary(summary)}`,
     `- Started: ${summary.startedAt || ''}`,
     `- Updated: ${summary.updatedAt || ''}`,
-    `- Passed: ${counts.passed ?? summary.results.filter(result => result.status === 'PASS').length}`,
-    `- Failed: ${counts.failed ?? failures.length}`,
-    `- Total tests: ${counts.total ?? summary.results.length}`,
+    `- Passed: ${counts.passed}`,
+    `- Failed: ${counts.failed}`,
+    `- Skipped: ${counts.skipped}`,
+    `- Blocked: ${counts.blocked}`,
+    `- Inconclusive: ${counts.inconclusive}`,
+    `- Total tests: ${counts.total}`,
   ];
 
   if (summary.timings) {
@@ -509,7 +524,7 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(result.name)} · ${escapeHtml(runId)}</title>
   <style>
-    :root { --ink:#162033; --muted:#6c7789; --line:#dfe6ef; --paper:#f7f9fc; --panel:#fff; --pass:#0f9f6e; --fail:#d93f3f; --unknown:#7c8798; --blue:#0e61d8; --navy:#090222; --shadow:0 18px 60px rgba(22,32,51,.12); }
+    :root { --ink:#162033; --muted:#6c7789; --line:#dfe6ef; --paper:#f7f9fc; --panel:#fff; --pass:#0f9f6e; --fail:#d93f3f; --skipped:#64748b; --blocked:#b45309; --inconclusive:#7c3aed; --unknown:#7c8798; --blue:#0e61d8; --navy:#090222; --shadow:0 18px 60px rgba(22,32,51,.12); }
     * { box-sizing:border-box; }
     body { margin:0; color:var(--ink); background:radial-gradient(circle at top left,rgba(14,97,216,.17),transparent 34rem),var(--paper); font:16px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
     a { color:inherit; }
@@ -550,7 +565,12 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
     .history-list a:hover { border-color:var(--blue); }
     .history-list small { color:var(--muted); }
     .status-pill { display:inline-flex; justify-self:start; border-radius:999px; padding:.22rem .52rem; color:#fff; font-size:.72rem; font-weight:900; letter-spacing:.05em; }
-    .status-pill.pass { background:var(--pass); } .status-pill.fail { background:var(--fail); } .status-pill.unknown { background:var(--unknown); }
+    .status-pill.pass { background:var(--pass); }
+    .status-pill.fail { background:var(--fail); }
+    .status-pill.skipped { background:var(--skipped); }
+    .status-pill.blocked { background:var(--blocked); }
+    .status-pill.inconclusive { background:var(--inconclusive); }
+    .status-pill.unknown { background:var(--unknown); }
     .steps-heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; margin:2rem 0 1rem; }
     .steps-heading h2 { margin:0; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.04em; }
     .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(18rem,1fr)); gap:1rem; }
@@ -752,6 +772,7 @@ function reportSwitcherMarkup(reportNav) {
 
 function refreshReportNavigation(reports) {
   for (const report of reports) {
+    if (report.reportType === 'archive') continue;
     const file = reportFile(report);
     const html = readTextIfExists(file);
     if (!html) continue;
@@ -822,16 +843,23 @@ function formatReportAge(value) {
   return `${Math.round(ageHours / 24)}d ago`;
 }
 
+function reportFreshnessMs() {
+  const hours = Number.parseFloat(process.env.SCRIBE_REPORT_FRESHNESS_HOURS || '24');
+  return Number.isFinite(hours) && hours >= 0 ? hours * 60 * 60 * 1000 : undefined;
+}
+
 function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], allReports = [] }) {
   const file = path.join(outDir, 'index.html');
-  const counts = summary.counts || {};
   const results = summary.results || [];
-  const passed = counts.passed ?? results.filter(result => result.status === 'PASS').length;
-  const failed = counts.failed ?? results.filter(result => result.status === 'FAIL').length;
-  const total = counts.total ?? results.length;
-  const failures = results.filter(result => result.status === 'FAIL');
+  const environment = buildEnvironmentSummary(summary, results);
+  const evidence = buildEvidenceDecision(summary, {
+    freshnessMs: reportFreshnessMs(),
+    environment,
+  });
+  const { passed, failed, skipped, blocked, inconclusive, total } = evidence.counts;
+  const failures = results.filter(result => normalizeStatus(result.status) === 'FAIL');
   const lanes = [...new Set(results.map(result => laneForResult(result, runId)).filter(Boolean))];
-  const status = summary.status || (failed ? 'FAIL' : 'PASS');
+  const status = statusForSummary(summary);
   const started = formatDate(summary.startedAt);
   const updated = formatDate(summary.updatedAt);
   const aggregateTestDurationMs = results.reduce((sum, result) => sum + resultDurationMs(result), 0);
@@ -842,7 +870,6 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     .filter(result => resultDurationMs(result) > slowThresholdMs && resultDurationMs(result) > 0)
     .sort((a, b) => resultDurationMs(b) - resultDurationMs(a));
   const laneStats = buildLaneStats(results, runId);
-  const environment = buildEnvironmentSummary(summary, results);
   const testHistory = buildTestHistory(allReports);
   const previousReport = findPreviousComparableReport(allReports, summary);
   const runComparison = buildRunComparison(results, previousReport);
@@ -850,7 +877,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     [...runComparison.slower, ...runComparison.faster].map(item => [item.result.name, item.diffMs])
   );
   const reportAge = formatReportAge(summary.updatedAt || summary.startedAt);
-  const staleReport = Date.now() - Date.parse(summary.updatedAt || summary.startedAt || 0) > 24 * 60 * 60 * 1000;
+  const staleReport = !evidence.freshness.fresh;
   const categoryCounts = failures.reduce((countsByCategory, result) => {
     const category = failureCategory(result);
     countsByCategory[category] = (countsByCategory[category] || 0) + 1;
@@ -871,8 +898,16 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
       </section>`
     : '';
 
+  const statusPriority = { FAIL: 0, BLOCKED: 1, INCONCLUSIVE: 2, SKIPPED: 3, UNKNOWN: 4, PASS: 5 };
   const testCards = results
+    .slice()
+    .sort(
+      (a, b) =>
+        (statusPriority[normalizeStatus(a.status)] ?? 4) -
+          (statusPriority[normalizeStatus(b.status)] ?? 4) || a.name.localeCompare(b.name)
+    )
     .map(result => {
+      const resultStatus = normalizeStatus(result.status);
       const laneRunId = laneForResult(result, runId);
       const screenshots = listScreenshots(laneRunId, result.name, result);
       const detailHref = relativeLink(file, testDetailFile(outDir, result));
@@ -881,10 +916,13 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
       const history = testHistory.get(result.name) || [];
       const flake = flakeSummary(history);
       const isFlaky = isFlakyHistory(history);
+      const failure = resultStatus === 'FAIL' ? failureSnippet(result) : '';
+      const rerunCommand = rerunCommandForResult(result);
       return `
-        <a class="test-card ${statusClass(result.status)}${isSlow ? ' slow' : ''}" href="${escapeHtml(detailHref)}" data-test-card data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(result.status || 'UNKNOWN')}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshots.length ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}">
+        <details class="test-card ${statusClass(resultStatus)}${isSlow ? ' slow' : ''}" data-test-card data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(resultStatus)}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshots.length ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}"${resultStatus === 'FAIL' ? ' open' : ''}>
+          <summary class="test-card-summary">
           <div class="test-card-top">
-            <span class="status-pill ${statusClass(result.status)}">${escapeHtml(result.status || 'UNKNOWN')}</span>
+            <span class="status-pill ${statusClass(resultStatus)}">${escapeHtml(resultStatus)}</span>
             <span class="duration">${escapeHtml(result.duration || formatDurationMs(durationMs))}</span>
           </div>
           <h3>${escapeHtml(result.name)}</h3>
@@ -893,9 +931,15 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
             <span>${screenshots.length} screenshot${screenshots.length === 1 ? '' : 's'}</span>
             ${isSlow ? '<span>Slow</span>' : ''}
             ${isFlaky ? `<span>Flaky: ${escapeHtml(flake)}</span>` : ''}
-            <span class="open-details">Open details →</span>
+            <span class="open-details">Evidence</span>
           </div>
-        </a>`;
+          </summary>
+          <div class="test-card-evidence">
+            ${failure ? `<p class="evidence-error">${escapeHtml(failure)}</p>` : `<p>${escapeHtml(resultStatus === 'PASS' ? 'Passing evidence is collapsed by default.' : result.error || result.reason || `Result: ${resultStatus}`)}</p>`}
+            <code>${escapeHtml(rerunCommand)}</code>
+            <a href="${escapeHtml(detailHref)}">Open full evidence →</a>
+          </div>
+        </details>`;
     })
     .join('\n');
 
@@ -1006,14 +1050,15 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
         .join('\n')
     : '<p class="muted">No failures to categorize.</p>';
   const environmentRows = [
-    ['Branch', environment.branch],
-    ['Commit', environment.commit],
+    ['App branch', environment.appBranch],
+    ['App commit', environment.appCommit],
     ['Connect version', environment.appVersion],
     ['Connect build', environment.appBuild],
-    ['Node', environment.node],
     ['Bundle ID', environment.bundleId],
-    ['Automation branch', environment.appBranch ? environment.automationBranch : ''],
-    ['Automation commit', environment.appCommit ? environment.automationCommit : ''],
+    ['Server environment', environment.serverEnvironment],
+    ['Automation branch', environment.automationBranch],
+    ['Automation commit', environment.automationCommit],
+    ['Node', environment.node],
     ['Devices', environment.devices.join(', ')],
     ['Appium ports', environment.appiumPorts.join(', ')],
     ['WDA ports', environment.wdaPorts.join(', ')],
@@ -1022,6 +1067,43 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     .filter(([, value]) => value)
     .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
     .join('\n');
+  const evidenceTone = {
+    READY: 'pass',
+    NOT_READY: 'fail',
+    STALE: 'warning',
+    INCOMPLETE: 'warning',
+    INCONCLUSIVE: 'unknown',
+  }[evidence.decision] || 'unknown';
+  const coverageRows = evidence.coverage.available
+    ? evidence.coverage.rows
+        .map(
+          row => `
+            <tr>
+              <th scope="row">${escapeHtml(row.feature)}</th>
+              <td><span class="coverage-class">${escapeHtml(row.classification)}</span></td>
+              <td>${escapeHtml(row.scheduled)}/${escapeHtml(row.total)}</td>
+              <td>${escapeHtml(row.completed)}/${escapeHtml(row.total)}</td>
+              <td>${escapeHtml(row.passed)}</td>
+              <td>${escapeHtml(row.failed + row.blocked + row.inconclusive)}</td>
+            </tr>`
+        )
+        .join('\n')
+    : '';
+  const coveragePanel = evidence.coverage.available
+    ? `<section class="panel coverage-panel">
+        <div class="panel-heading">
+          <h2>Coverage</h2>
+          <p>${escapeHtml(evidence.coverage.requiredCompleted)}/${escapeHtml(evidence.coverage.requiredTotal)} eligible required tests completed</p>
+        </div>
+        <div class="coverage-scroll"><table>
+          <thead><tr><th>Feature</th><th>Class</th><th>Scheduled</th><th>Completed</th><th>Passed</th><th>Attention</th></tr></thead>
+          <tbody>${coverageRows}</tbody>
+        </table></div>
+      </section>`
+    : `<section class="panel coverage-panel coverage-fallback">
+        <div class="panel-heading"><h2>Coverage</h2><p>Not assessed</p></div>
+        <p>No registry or coverage contract was attached to this run. Results are visible, but required-suite completeness cannot be claimed.</p>
+      </section>`;
 
   const html = `<!doctype html>
 <html lang="en">
@@ -1038,6 +1120,9 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
       --panel: #ffffff;
       --pass: #0f9f6e;
       --fail: #d93f3f;
+      --skipped: #64748b;
+      --blocked: #b45309;
+      --inconclusive: #7c3aed;
       --unknown: #7c8798;
       --navy: #090222;
       --blue: #0e61d8;
@@ -1228,7 +1313,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     main { padding: 2rem clamp(1rem, 4vw, 4rem) 4rem; }
     .stats {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 1rem;
       margin-top: -3.5rem;
     }
@@ -1477,14 +1562,19 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     }
     .test-card {
       display: block;
-      min-height: 11rem;
-      padding: 1rem;
       text-decoration: none;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 1.2rem;
       transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
     }
+    .test-card-summary { min-height: 11rem; padding: 1rem; cursor: pointer; list-style: none; }
+    .test-card-summary::-webkit-details-marker { display: none; }
+    .test-card-evidence { display: grid; gap: .75rem; padding: 1rem; border-top: 1px solid var(--line); }
+    .test-card-evidence p { margin: 0; white-space: pre-wrap; }
+    .test-card-evidence code { overflow-x: auto; border-radius: .65rem; padding: .65rem; background: #101828; color: #e9f1ff; white-space: nowrap; }
+    .test-card-evidence a { justify-self: start; color: var(--blue); font-weight: 800; text-decoration: none; }
+    .test-card-evidence .evidence-error { color: #8f2424; font-weight: 700; }
     .test-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: rgba(14, 97, 216, 0.4); }
     .test-card.fail { border-color: rgba(217, 63, 63, 0.45); }
     .test-card.slow { border-color: rgba(245, 158, 11, 0.55); }
@@ -1506,6 +1596,9 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
     }
     .status-pill.pass { background: var(--pass); }
     .status-pill.fail { background: var(--fail); }
+    .status-pill.skipped { background: var(--skipped); }
+    .status-pill.blocked { background: var(--blocked); }
+    .status-pill.inconclusive { background: var(--inconclusive); }
     .status-pill.unknown { background: var(--unknown); }
     .slow-pill { background: #d97706; margin-left: 0.35rem; }
     .duration, .muted, .test-card p, .screenshot-count { color: var(--muted); }
@@ -1525,6 +1618,22 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
       background: #f4f7fb;
     }
     .panel { padding: 1.25rem; margin-bottom: 1.5rem; }
+    .evidence-decision { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 1rem; align-items: center; }
+    .decision-badge { display: grid; place-items: center; min-width: 8rem; min-height: 5rem; border-radius: 1rem; color: white; font-size: 1.05rem; font-weight: 900; letter-spacing: .05em; }
+    .decision-badge.pass { background: var(--pass); }
+    .decision-badge.fail { background: var(--fail); }
+    .decision-badge.warning { background: var(--blocked); }
+    .decision-badge.unknown { background: var(--inconclusive); }
+    .decision-copy h2 { margin: 0 0 .25rem; }
+    .decision-copy p { margin: 0; color: var(--muted); font-weight: 700; }
+    .decision-facts { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .75rem; }
+    .decision-facts span { border-radius: 999px; padding: .28rem .58rem; background: #eef3f9; color: var(--ink); font-size: .82rem; font-weight: 800; }
+    .coverage-panel table { width: 100%; border-collapse: collapse; }
+    .coverage-panel th, .coverage-panel td { padding: .65rem; border-top: 1px solid var(--line); text-align: left; }
+    .coverage-panel thead th { border-top: 0; color: var(--muted); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
+    .coverage-scroll { overflow-x: auto; }
+    .coverage-class { border-radius: 999px; padding: .2rem .5rem; background: #eef3f9; font-size: .78rem; font-weight: 800; text-transform: capitalize; white-space: nowrap; }
+    .coverage-fallback > p { margin-bottom: 0; color: var(--muted); }
     .failures a {
       display: grid;
       gap: 0.25rem;
@@ -1798,6 +1907,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
       .section-summary { display: block; }
       .summary-meta { justify-content: start; margin-top: 1rem; }
       .markdown-link { display: inline-block; margin-top: 1rem; }
+      .evidence-decision { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -1809,8 +1919,10 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
         <p>Scribe-style browser report generated from Appium screenshots and runner results.</p>
         <div class="hero-meta">
           <span>Run: ${escapeHtml(runId)}</span>
-          ${environment.branch ? `<span>Branch: ${escapeHtml(environment.branch)}</span>` : ''}
-          ${environment.commit ? `<span>Commit: ${escapeHtml(environment.commit)}</span>` : ''}
+          ${environment.appBranch ? `<span>App branch: ${escapeHtml(environment.appBranch)}</span>` : '<span>App branch: not reported</span>'}
+          ${environment.appCommit ? `<span>App commit: ${escapeHtml(environment.appCommit)}</span>` : '<span>App commit: not reported</span>'}
+          ${environment.appBuild ? `<span>App build: ${escapeHtml(environment.appBuild)}</span>` : '<span>App build: not reported</span>'}
+          ${environment.serverEnvironment ? `<span>Environment: ${escapeHtml(environment.serverEnvironment)}</span>` : ''}
           <span>Source: ${escapeHtml(summary.source)}</span>
           <span>Started: ${escapeHtml(started || summary.startedAt || '')}</span>
           <span>Updated: ${escapeHtml(updated || summary.updatedAt || '')}</span>
@@ -1822,10 +1934,25 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
   </header>
 
   <main>
+    <section class="panel evidence-decision" aria-label="Release evidence decision">
+      <div class="decision-badge ${escapeHtml(evidenceTone)}">${escapeHtml(evidence.decision.replace('_', ' '))}</div>
+      <div class="decision-copy">
+        <h2>Release evidence</h2>
+        <p>${escapeHtml(evidence.reasons.join(' · '))}</p>
+        <div class="decision-facts">
+          <span>${escapeHtml(evidence.freshness.fresh ? 'Fresh' : 'Stale or undated')}</span>
+          <span>${escapeHtml(evidence.coverage.available ? `${evidence.coverage.requiredCompleted}/${evidence.coverage.requiredTotal} eligible required completed` : 'Coverage not reported')}</span>
+          <span>${escapeHtml(status)} test result</span>
+        </div>
+      </div>
+    </section>
+
     <section class="stats" aria-label="Run summary">
-      <div class="stat"><span>Status</span><strong>${escapeHtml(status)}</strong></div>
       <div class="stat"><span>Passed</span><strong>${escapeHtml(passed)}</strong></div>
       <div class="stat"><span>Failed</span><strong>${escapeHtml(failed)}</strong></div>
+      <div class="stat"><span>Skipped</span><strong>${escapeHtml(skipped)}</strong></div>
+      <div class="stat"><span>Blocked</span><strong>${escapeHtml(blocked)}</strong></div>
+      <div class="stat"><span>Inconclusive</span><strong>${escapeHtml(inconclusive)}</strong></div>
       <div class="stat"><span>Total</span><strong>${escapeHtml(total)}</strong></div>
     </section>
 
@@ -1838,6 +1965,8 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
 
     ${failureList}
 
+    ${coveragePanel}
+
     ${phaseTimingCards ? `<section class="panel phase-panel"><div class="panel-heading"><h2>Phase timing</h2><p>Aggregate workload time</p></div><dl class="meta-grid compact">${phaseTimingCards}</dl></section>` : ''}
     ${cleanupPanel}
 
@@ -1847,6 +1976,9 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
         <option value="">All statuses</option>
         <option value="PASS">Pass</option>
         <option value="FAIL">Fail</option>
+        <option value="SKIPPED">Skipped</option>
+        <option value="BLOCKED">Blocked</option>
+        <option value="INCONCLUSIVE">Inconclusive</option>
         <option value="UNKNOWN">Unknown</option>
       </select>
       <select id="laneFilter">
@@ -1985,11 +2117,17 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
 function writeReportMeta({ outDir, runId, summary, reportType }) {
   const counts = countsForSummary(summary);
   const results = summary.results || [];
+  const environment = buildEnvironmentSummary(summary, results);
+  const evidence = buildEvidenceDecision(summary, {
+    freshnessMs: reportFreshnessMs(),
+    environment,
+  });
   const meta = {
     runId,
     reportType,
     source: summary.source,
-    status: summary.status || (counts.failed ? 'FAIL' : 'PASS'),
+    status: statusForSummary(summary),
+    evidenceDecision: evidence.decision,
     startedAt: summary.startedAt || '',
     updatedAt: summary.updatedAt || '',
     durationMs:
@@ -1997,8 +2135,25 @@ function writeReportMeta({ outDir, runId, summary, reportType }) {
       results.reduce((sum, result) => sum + resultDurationMs(result), 0),
     passed: counts.passed,
     failed: counts.failed,
+    skipped: counts.skipped,
+    blocked: counts.blocked,
+    inconclusive: counts.inconclusive,
     total: counts.total,
-    environment: buildEnvironmentSummary(summary, results),
+    app: {
+      bundleId: environment.bundleId,
+      version: environment.appVersion,
+      build: environment.appBuild,
+      branch: environment.appBranch,
+      commit: environment.appCommit,
+    },
+    automation: {
+      branch: environment.automationBranch,
+      commit: environment.automationCommit,
+      node: environment.node,
+    },
+    environment,
+    coverage: evidence.coverage,
+    freshness: evidence.freshness,
     timings: summary.timings || {},
     cleanup: summary.cleanup || null,
     results: results.map(result => ({
@@ -2022,6 +2177,24 @@ function writeReportMeta({ outDir, runId, summary, reportType }) {
 
 function generateReportAt({ outputRoot, outputRunId, sourceRunId, summary, reportType }) {
   const outDir = path.join(outputRoot, outputRunId);
+  const indexPath = path.join(outDir, 'index.md');
+  const htmlPath = path.join(outDir, 'index.html');
+  const metaPath = path.join(outDir, '_report-meta.json');
+  if (
+    reportType === 'archive' &&
+    fs.existsSync(indexPath) &&
+    fs.existsSync(htmlPath) &&
+    fs.existsSync(metaPath)
+  ) {
+    return {
+      outDir,
+      indexPath,
+      htmlPath,
+      metaPath,
+      testDocs: {},
+      immutableExisting: true,
+    };
+  }
   if (reportType === 'latest' && fs.existsSync(outDir)) {
     fs.rmSync(outDir, { recursive: true, force: true });
   }
@@ -2032,10 +2205,10 @@ function generateReportAt({ outputRoot, outputRunId, sourceRunId, summary, repor
     testDocs[result.name] = writeTestDoc({ outDir, runId: sourceRunId, result });
   }
 
-  const indexPath = writeIndex({ outDir, runId: sourceRunId, summary, testDocs });
-  const htmlPath = writeHtmlReport({ outDir, runId: sourceRunId, summary, testDocs });
-  const metaPath = writeReportMeta({ outDir, runId: sourceRunId, summary, reportType });
-  return { outDir, indexPath, htmlPath, metaPath, testDocs };
+  writeIndex({ outDir, runId: sourceRunId, summary, testDocs });
+  writeHtmlReport({ outDir, runId: sourceRunId, summary, testDocs });
+  writeReportMeta({ outDir, runId: sourceRunId, summary, reportType });
+  return { outDir, indexPath, htmlPath, metaPath, testDocs, immutableExisting: false };
 }
 
 function discoverReports(outputRoot) {
@@ -2125,6 +2298,9 @@ function writeArchivePage({ file, reports, linkPrefix = '' }) {
       --panel: #ffffff;
       --pass: #0f9f6e;
       --fail: #d93f3f;
+      --skipped: #64748b;
+      --blocked: #b45309;
+      --inconclusive: #7c3aed;
       --unknown: #7c8798;
       --navy: #090222;
       --blue: #0e61d8;
@@ -2231,6 +2407,9 @@ function writeArchivePage({ file, reports, linkPrefix = '' }) {
     }
     .status-pill.pass { background: var(--pass); }
     .status-pill.fail { background: var(--fail); }
+    .status-pill.skipped { background: var(--skipped); }
+    .status-pill.blocked { background: var(--blocked); }
+    .status-pill.inconclusive { background: var(--inconclusive); }
     .status-pill.unknown { background: var(--unknown); }
     dl {
       display: grid;
@@ -2412,9 +2591,14 @@ function generate() {
         reportType: 'archive',
       })
     : null;
-  const discoveredReports = discoverReports(outputRoot).filter(
-    report => archiveEnabled || report.reportType !== 'archive'
-  );
+  const retention = enforceReportRetention({
+    outputRoot,
+    maxArchives: argValue('max-archives', process.env.SCRIBE_ARCHIVE_MAX_COUNT || '20'),
+    maxAgeDays: argValue('max-archive-age-days', process.env.SCRIBE_ARCHIVE_MAX_AGE_DAYS || '90'),
+  });
+  const writeArchive =
+    archive && !archive.immutableExisting && !retention.removed.includes(archive.outDir);
+  const discoveredReports = discoverReports(outputRoot);
   const reports = reportsForNavigation(discoveredReports, latest.htmlPath);
   writeHtmlReport({
     outDir: latest.outDir,
@@ -2424,7 +2608,7 @@ function generate() {
     reportNav: buildReportNav(reports, latest.htmlPath),
     allReports: reports,
   });
-  if (archive) {
+  if (writeArchive) {
     writeHtmlReport({
       outDir: archive.outDir,
       runId,
@@ -2441,7 +2625,7 @@ function generate() {
     testDocs: latest.testDocs,
     allReports: reports,
   });
-  if (archive) {
+  if (writeArchive) {
     writeTestHtmlPages({
       outDir: archive.outDir,
       runId,
@@ -2466,7 +2650,7 @@ function generate() {
     allReports: reports,
   });
   writeReportMeta({ outDir: latest.outDir, runId, summary, reportType: 'latest' });
-  if (archive) {
+  if (writeArchive) {
     writeIndex({ outDir: archive.outDir, runId, summary, testDocs: archive.testDocs });
     writeHtmlReport({
       outDir: archive.outDir,
@@ -2483,8 +2667,14 @@ function generate() {
   const htmlPath = latest.htmlPath;
   console.log(`Scribe-style Markdown written to ${indexPath}`);
   console.log(`Scribe-style web report written to ${htmlPath}`);
-  if (archive) console.log(`Archived copy written to ${archive.htmlPath}`);
-  else console.log('Archive generation disabled for this report');
+  if (archive && !retention.removed.includes(archive.outDir)) {
+    console.log(`Archived copy available at ${archive.htmlPath}`);
+  } else if (!archive) {
+    console.log('Archive generation disabled for this report');
+  }
+  if (retention.removed.length) {
+    console.log(`Report retention removed ${retention.removed.length} expired archive(s)`);
+  }
   console.log(`Report archive page updated at ${archivePages.repoRootIndex} (${archivePages.reportCount} reports)`);
 }
 
