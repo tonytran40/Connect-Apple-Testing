@@ -65,7 +65,9 @@ async function waitForAppEntryState(driver) {
     if (!recoveryAttempted && Date.now() >= recoveryAt) {
       recoveryAttempted = true;
       console.log('Login preflight: recovering from an unfinished in-app flow');
-      await resetToHome(driver, 8);
+      const recoveredHome = await resetToHome(driver, 8);
+      if (recoveredHome) return 'home';
+      if (await isOnLoginScreen(driver)) return 'login';
       continue;
     }
 

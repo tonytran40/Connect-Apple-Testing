@@ -2,13 +2,13 @@
 
 - Run ID: AudienceFilters-latest
 - Source: summary.json
-- Status: BLOCKED
-- Started: 2026-09-01T18:47:20.785Z
-- Updated: 2026-09-01T18:47:44.163Z
-- Passed: 0
+- Status: PASS
+- Started: 2026-09-09T14:52:24.709Z
+- Updated: 2026-09-09T14:54:24.188Z
+- Passed: 1
 - Failed: 0
 - Skipped: 0
-- Blocked: 1
+- Blocked: 0
 - Inconclusive: 0
 - Total tests: 1
 
@@ -16,15 +16,16 @@
 
 | Phase | Aggregate Duration |
 | --- | --- |
-| Session creation | 8s |
-| Login/readiness | 15s |
-| Test body | 16ms |
-| Screenshot capture | 0ms |
+| Session creation | 7s |
+| Login/readiness | 9s |
+| Test body | 1m 42s |
+| Screenshot capture | 1s |
 | Recovery | 0ms |
-| Report generation | 697ms |
+| Report generation | 1s |
+| Room creation (test-owned) | 622ms |
 
 ## Tests
 
 | Test | Category | Physical Lane | Status | Duration | Screenshots | Guide |
 | --- | --- | --- | --- | --- | --- | --- |
-| AudienceFilters |  | AudienceFilters-latest | BLOCKED | 10s | 0 | [guide](AudienceFilters.md) |
+| AudienceFilters |  | AudienceFilters-latest | PASS | 1m 48s | 11 | [guide](AudienceFilters.md) |

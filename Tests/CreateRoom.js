@@ -240,7 +240,7 @@ async function createPublicRoom(driver, roomName, options = {}) {
     console.log(`createPublicRoom: ${roomName} (Add Members sheet — add invitees then Save)`);
     return { roomName, roomCreationMs: Math.round(performance.now() - creationStarted) };
   }
-
+  
   await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
   await ensureCreatedRoomOpen(driver, roomName);
   const roomCreationMs = Math.round(performance.now() - creationStarted);

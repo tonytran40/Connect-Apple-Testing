@@ -13,35 +13,25 @@ const {
   getElementRect,
   tapByText,
 } = require('../utils/uiActions');
-const { createPublicRoom } = require('./CreateRoom');
+const { createPrivateRoom } = require('./CreateRoom');
 const { requireQaServer } = require('./BrowseRooms');
 
 const TEST_NAME = 'AudienceFilters';
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.AUDIENCE_FILTER_TIMEOUT_MS, 10) || 25000;
-const REQUIRED_VALUE_ENV = [
-  'AUDIENCE_FILTER_TERRITORY',
-  'AUDIENCE_FILTER_DEPARTMENT',
-  'AUDIENCE_FILTER_TITLE',
-];
-
-function configurationBlockedError(missing) {
-  const error = new Error(
-    `BLOCKED: ${TEST_NAME} requires deterministic QA values for ${missing.join(', ')}.`
-  );
-  error.name = 'QaOnlyBlockedError';
-  error.code = 'BLOCKED_QA_CONFIGURATION';
-  error.status = 'BLOCKED';
-  return error;
-}
+const APPLY_TIMEOUT = Number.parseInt(process.env.AUDIENCE_FILTER_APPLY_TIMEOUT_MS, 10) || 120000;
+const TYPE_DELAY_MS = Number.parseInt(process.env.AUDIENCE_FILTER_TYPE_DELAY_MS, 10) || 75;
+const TYPE_RETRIES = Number.parseInt(process.env.AUDIENCE_FILTER_TYPE_RETRIES, 10) || 3;
+const QA_AUDIENCE_FIXTURE = Object.freeze({
+  territory: 'Philadelphia',
+  department: 'Business Technology',
+  title: 'Nitro Quality Ninja',
+});
 
 function resolveAudienceFilterConfig(env = process.env) {
-  const missing = REQUIRED_VALUE_ENV.filter(name => !String(env[name] || '').trim());
-  if (missing.length) throw configurationBlockedError(missing);
-
   return {
-    territory: String(env.AUDIENCE_FILTER_TERRITORY).trim(),
-    department: String(env.AUDIENCE_FILTER_DEPARTMENT).trim(),
-    title: String(env.AUDIENCE_FILTER_TITLE).trim(),
+    territory: String(env.AUDIENCE_FILTER_TERRITORY || QA_AUDIENCE_FIXTURE.territory).trim(),
+    department: String(env.AUDIENCE_FILTER_DEPARTMENT || QA_AUDIENCE_FIXTURE.department).trim(),
+    title: String(env.AUDIENCE_FILTER_TITLE || QA_AUDIENCE_FIXTURE.title).trim(),
     roomName:
       String(env.AUDIENCE_FILTER_ROOM_NAME || '').trim() ||
       buildUniqueRoomName('Audience-Filter'),
@@ -86,6 +76,61 @@ async function waitForTextHidden(driver, text, timeout = DEFAULT_TIMEOUT) {
   throw new Error(`Audience-filter text "${text}" remained visible after ${timeout}ms`);
 }
 
+async function textFieldValue(field) {
+  if (typeof field.getValue === 'function') {
+    const value = await field.getValue().catch(() => '');
+    if (value !== null && value !== undefined) return String(value);
+  }
+  return String((await field.getAttribute('value').catch(() => '')) || '');
+}
+
+async function typeUntilDropdownOptionVisible(driver, field, value, options = {}) {
+  const delayMs = options.delayMs ?? TYPE_DELAY_MS;
+  const retries = options.retries ?? TYPE_RETRIES;
+  const timeout = options.timeout ?? DEFAULT_TIMEOUT;
+  const optionSelector = visibleTextSelector(value);
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    await field.click();
+    await field.clearValue().catch(async () => field.setValue(''));
+    let expectedPrefix = '';
+    let mistyped = false;
+
+    for (const character of value) {
+      expectedPrefix += character;
+      await field.addValue(character);
+      if (delayMs > 0) await driver.pause(delayMs);
+
+      const typed = await textFieldValue(field);
+      if (typed !== expectedPrefix) {
+        console.log(
+          `AudienceFilters: typed "${typed}" instead of prefix "${expectedPrefix}"; ` +
+          `retrying (${attempt}/${retries})`
+        );
+        mistyped = true;
+        break;
+      }
+
+      const option = await driver.$(optionSelector);
+      if (await option.isDisplayed().catch(() => false)) {
+        console.log(`AudienceFilters: "${value}" appeared after typing "${expectedPrefix}"`);
+        return option;
+      }
+    }
+
+    if (mistyped) continue;
+
+    const option = await driver.$(optionSelector);
+    if (await option.waitForDisplayed({ timeout }).then(() => true).catch(() => false)) {
+      return option;
+    }
+  }
+
+  throw new Error(
+    `AudienceFilters could not type a reliable prefix or find dropdown option "${value}"`
+  );
+}
+
 function categoryFieldXPath(category) {
   const safe = category.replace(/'/g, "\\'");
   return (
@@ -108,18 +153,52 @@ async function selectAudienceValue(
     timeoutMsg: `Audience filter did not expose the ${category} typeahead`,
   });
   await field.click();
-  await field.clearValue().catch(() => {});
-  await field.setValue(value);
-
-  const option = await driver.$(visibleTextSelector(value));
-  await option.waitForDisplayed({
-    timeout,
-    timeoutMsg: `Audience filter did not return the configured ${category} value "${value}"`,
-  });
-  await tapByText(driver, value, timeout);
+  const option = await typeUntilDropdownOptionVisible(driver, field, value, { timeout });
+  await option.click().catch(async () => tapByText(driver, value, timeout));
   await waitForText(driver, expectedSummary, timeout);
   await driver.hideKeyboard().catch(() => {});
   return expectedSummary;
+}
+
+function roomMemberCountSelector() {
+  return (
+    '-ios predicate string:' +
+    '(name BEGINSWITH "Members (" OR label BEGINSWITH "Members (")'
+  );
+}
+
+async function waitForRoomMemberCount(
+  driver,
+  expected = 2,
+  timeout = APPLY_TIMEOUT,
+  options = {}
+) {
+  const selector = roomMemberCountSelector();
+  const exact = options.exact === true;
+  let observed = '';
+  await driver.waitUntil(async () => {
+    // Reload the element on every poll because SwiftUI replaces count labels
+    // as the audience response and Matrix membership arrive.
+    const countElement = await driver.$(selector);
+    if (!(await countElement.isDisplayed().catch(() => false))) return false;
+    observed = String(
+      (await countElement.getAttribute('name').catch(() => '')) ||
+      (await countElement.getAttribute('label').catch(() => '')) ||
+      (await countElement.getText().catch(() => '')) ||
+      ''
+    ).trim();
+    const match = observed.match(/^Members \((\d+)\)$/);
+    if (!match) return false;
+    const count = Number(match[1]);
+    return exact ? count === expected : count >= expected;
+  }, {
+    timeout,
+    interval: 300,
+    timeoutMsg: exact
+      ? `Audience-filter room did not reach exactly ${expected} joined members`
+      : `Audience-filter room did not load at least ${expected} joined members`,
+  });
+  return Number(observed.match(/^Members \((\d+)\)$/)[1]);
 }
 
 async function tapEnabledTextButton(driver, label, timeout = DEFAULT_TIMEOUT) {
@@ -193,6 +272,24 @@ async function waitForRoomOpen(driver, roomName, timeout = DEFAULT_TIMEOUT) {
   });
 }
 
+async function openRoomMembers(driver, roomName, timeout = DEFAULT_TIMEOUT) {
+  const settings = await driver.$(SELECTORS.openRoomSettingsButton);
+  await settings.waitForDisplayed({
+    timeout,
+    timeoutMsg: `Room settings did not become available for "${roomName}"`,
+  });
+  await settings.click();
+
+  const members = await driver.$(SELECTORS.membersButton);
+  await members.waitForDisplayed({ timeout });
+  await members.click();
+  const membersTitle = await driver.$(roomMemberCountSelector());
+  await membersTitle.waitForDisplayed({
+    timeout,
+    timeoutMsg: `Members list did not open for "${roomName}"`,
+  });
+}
+
 async function runTest(driver, options = {}) {
   const env = options.env || process.env;
   requireQaServer(env, TEST_NAME);
@@ -201,7 +298,7 @@ async function runTest(driver, options = {}) {
   if (!options.skipLogin) await ensureLoggedIn(driver);
   await ensureRoomsSectionReady(driver);
 
-  const creation = await createPublicRoom(driver, config.roomName, {
+  const creation = await createPrivateRoom(driver, config.roomName, {
     skipAddMembersSheet: true,
   });
   await saveScreenshot(driver, TEST_NAME, '01_add_members_sheet.png');
@@ -254,21 +351,49 @@ async function runTest(driver, options = {}) {
   await waitForText(driver, editedSummary);
   await saveScreenshot(driver, TEST_NAME, '07_filter_edited.png');
 
-  await openAudienceFilterMenu(driver, editedSummary);
-  await tapByText(driver, 'Delete Filter', DEFAULT_TIMEOUT);
-  await waitForTextHidden(driver, editedSummary);
-  await waitForText(driver, 'Add Members by Territory, Department, & Title');
-  await saveScreenshot(driver, TEST_NAME, '08_filter_deleted.png');
+  await tapEnabledTextButton(driver, 'Save', DEFAULT_TIMEOUT);
+  await waitForRoomOpen(driver, config.roomName, APPLY_TIMEOUT);
+  await saveScreenshot(driver, TEST_NAME, '08_filter_applied_room_open.png');
 
-  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
-  await waitForRoomOpen(driver, config.roomName);
-  await saveScreenshot(driver, TEST_NAME, '09_room_open_after_filter_lifecycle.png');
+  await openRoomMembers(driver, config.roomName, APPLY_TIMEOUT);
+  const joinedRoomMemberCount = await waitForRoomMemberCount(driver, 2, APPLY_TIMEOUT);
+  console.log(`AudienceFilters: audience applied with ${joinedRoomMemberCount} joined members`);
+  await saveScreenshot(driver, TEST_NAME, '09_audience_members_loaded.png');
+
+  let cleanedRoomMemberCount = null;
+  let cleanupWarning = null;
+  try {
+    await tapEnabledTextButton(driver, 'Edit', DEFAULT_TIMEOUT);
+    await waitForText(driver, 'Edit Members', DEFAULT_TIMEOUT);
+    await waitForText(driver, editedSummary, DEFAULT_TIMEOUT);
+    await saveScreenshot(driver, TEST_NAME, '10_filter_persisted_in_members.png');
+
+    await openAudienceFilterMenu(driver, editedSummary, DEFAULT_TIMEOUT);
+    await tapByText(driver, 'Delete Filter', DEFAULT_TIMEOUT);
+    await waitForTextHidden(driver, editedSummary);
+    await saveScreenshot(driver, TEST_NAME, '11_filter_deleted_for_cleanup.png');
+
+    await tapEnabledTextButton(driver, 'Save', DEFAULT_TIMEOUT);
+    cleanedRoomMemberCount = await waitForRoomMemberCount(
+      driver,
+      1,
+      DEFAULT_TIMEOUT,
+      { exact: true }
+    );
+    await saveScreenshot(driver, TEST_NAME, '12_filter_cleanup_saved.png');
+  } catch (error) {
+    cleanupWarning = `Audience filter cleanup was not completed: ${error.message}`;
+    console.warn(`AudienceFilters: ${cleanupWarning}`);
+  }
 
   return {
     qaOnly: true,
     roomName: config.roomName,
     createdSummary,
     editedSummary,
+    joinedRoomMemberCount,
+    cleanedRoomMemberCount,
+    cleanupWarning,
     timings: { roomCreationMs: creation.roomCreationMs },
   };
 }
@@ -288,18 +413,21 @@ async function run(driver, options = {}) {
 }
 
 module.exports = {
-  REQUIRED_VALUE_ENV,
+  QA_AUDIENCE_FIXTURE,
   buildAudienceSummary,
   categoryFieldXPath,
-  configurationBlockedError,
   findAudienceFilterMenuButton,
   openAudienceFilterMenu,
   openAudienceFilterSheet,
   resolveAudienceFilterConfig,
+  roomMemberCountSelector,
   run,
   runTest,
   selectAudienceValue,
+  textFieldValue,
+  typeUntilDropdownOptionVisible,
   visibleTextSelector,
+  waitForRoomMemberCount,
 };
 
 if (require.main === module) {

@@ -5,6 +5,7 @@ const {
   NATIVE_ALERT_SELECTOR,
   SSO_CONTINUE_BUTTON,
   continueWebAuthenticationIfNeeded,
+  exposeSystemAlertsToXctest,
   isWebSignInAlert,
 } = require('../utils/systemPrompts');
 
@@ -91,4 +92,15 @@ test('does not request native alert text when no alert is open', async () => {
 
   assert.equal(await continueWebAuthenticationIfNeeded(driver), false);
   assert.equal(alertTextRequests, 0);
+});
+
+test('enables system-alert visibility only once per Appium session', async () => {
+  const settings = [];
+  const driver = {
+    updateSettings: async value => settings.push(value),
+  };
+
+  assert.equal(await exposeSystemAlertsToXctest(driver), true);
+  assert.equal(await exposeSystemAlertsToXctest(driver), true);
+  assert.deepEqual(settings, [{ respectSystemAlerts: true }]);
 });

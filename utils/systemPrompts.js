@@ -1,5 +1,6 @@
 const DEFAULT_POLL_MS = 150;
 const NATIVE_ALERT_SELECTOR = '//XCUIElementTypeAlert';
+const SYSTEM_ALERTS_CONFIGURED = new WeakSet();
 
 const SSO_CONTINUE_BUTTON =
   '//XCUIElementTypeAlert[' +
@@ -13,6 +14,21 @@ function isWebSignInAlert(text) {
     /wants to use.+to sign in/i.test(value) ||
     /powerhrg\.com.+sign in/i.test(value)
   );
+}
+
+async function exposeSystemAlertsToXctest(driver) {
+  if (
+    !driver ||
+    (typeof driver !== 'object' && typeof driver !== 'function') ||
+    typeof driver.updateSettings !== 'function'
+  ) {
+    return false;
+  }
+  if (SYSTEM_ALERTS_CONFIGURED.has(driver)) return true;
+
+  await driver.updateSettings({ respectSystemAlerts: true });
+  SYSTEM_ALERTS_CONFIGURED.add(driver);
+  return true;
 }
 
 async function acceptNativeWebSignInAlert(driver) {
@@ -41,6 +57,7 @@ async function clickWebSignInContinue(driver) {
 }
 
 async function continueWebAuthenticationIfNeeded(driver, options = {}) {
+  await exposeSystemAlertsToXctest(driver).catch(() => false);
   const timeout = Math.max(0, Number(options.timeout) || 0);
   const pollMs = Math.max(50, Number(options.pollMs) || DEFAULT_POLL_MS);
   const deadline = Date.now() + timeout;
@@ -66,5 +83,6 @@ module.exports = {
   NATIVE_ALERT_SELECTOR,
   SSO_CONTINUE_BUTTON,
   continueWebAuthenticationIfNeeded,
+  exposeSystemAlertsToXctest,
   isWebSignInAlert,
 };
