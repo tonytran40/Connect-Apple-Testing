@@ -2,9 +2,9 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
 const {
   ensureRoomsSectionReady,
-  runWithOptionalDriver,
   waitForConversationRow,
 } = require('../utils/testSession');
 const { escapePredicateString } = require('../utils/uiActions');
@@ -159,17 +159,15 @@ async function runTest(driver, options = {}) {
   };
 }
 
-async function run(driver, options = {}) {
-  const fixture = options.fixture || validateAppointmentFixture(options.env || process.env);
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, { ...options, fixture });
-    } catch (error) {
-      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  prepareOptions: options => ({
+    ...options,
+    fixture: options.fixture || validateAppointmentFixture(options.env || process.env),
+  }),
+});
+const { run } = test;
 
 module.exports = {
   BlockedTestError,
@@ -182,10 +180,4 @@ module.exports = {
   waitForLoadedAppointmentCard,
 };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

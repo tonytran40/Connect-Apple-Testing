@@ -2,17 +2,26 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
+const { integer, text } = require('../utils/envConfig');
+const { isQaServerName } = require('../utils/qaEnvironment');
 const {
   resetToHome,
-  runWithOptionalDriver,
   swipeConversationList,
   waitForConnectivity,
 } = require('../utils/testSession');
 const { APP_STATE, waitForAppState } = require('../utils/systemFlowDraft');
+const {
+  firstVisible,
+  visibleButtonSelector,
+  visibleTextSelector,
+  waitForVisibleButton: waitForQaButton,
+  waitForVisibleText: waitForQaText,
+} = require('../utils/qaNavigation');
 const { escapePredicateString, getElementRect } = require('../utils/uiActions');
 
 const TEST_NAME = 'CorporateEvents';
-const DEFAULT_TIMEOUT = Number.parseInt(process.env.CORPORATE_EVENTS_TIMEOUT_MS, 10) || 30000;
+const DEFAULT_TIMEOUT = integer(process.env, 'CORPORATE_EVENTS_TIMEOUT_MS', 30000, { min: 1 });
 const DEFAULT_EXPECTED_SECTION = 'Automate test 1';
 const DEFAULT_EXPECTED_ITEM = 'CORPORATE AUTOMATE ROOM';
 const DEFAULT_DM_ITEM = 'JONATHAN LEVY';
@@ -20,9 +29,13 @@ const DEFAULT_EXPECTED_DM = 'Jonathan Levy';
 const DEFAULT_ROOM_ITEM = 'CORPORATE AUTOMATE ROOM';
 const DEFAULT_EXPECTED_ROOM = 'Corporate Automate Room';
 const DEFAULT_URL_ITEM = 'GOOGLE';
-const CONNECT_BUNDLE_ID = process.env.CONNECT_BUNDLE_ID || 'com.powerhrg.connect.v3.debug';
-const EXTERNAL_NAVIGATION_TIMEOUT =
-  Number.parseInt(process.env.CORPORATE_EVENTS_EXTERNAL_TIMEOUT_MS, 10) || 10000;
+const CONNECT_BUNDLE_ID = text(process.env, 'CONNECT_BUNDLE_ID', 'com.powerhrg.connect.v3.debug');
+const EXTERNAL_NAVIGATION_TIMEOUT = integer(
+  process.env,
+  'CORPORATE_EVENTS_EXTERNAL_TIMEOUT_MS',
+  10000,
+  { min: 1 }
+);
 const EVENTS_HEADER_SELECTOR =
   '-ios predicate string:type == "XCUIElementTypeButton" AND ' +
   '(name CONTAINS "Events" OR label CONTAINS "Events")';
@@ -67,7 +80,7 @@ function applyStandaloneDefaults(env = process.env) {
 
 function validateCorporateEventsFixture(env = process.env) {
   const serverName = String(env.CONNECT_SERVER_NAME || '').trim();
-  if (serverName.toLowerCase() !== 'qa') {
+  if (!isQaServerName(serverName)) {
     throw new BlockedTestError(
       `Corporate Events automation is QA-only; CONNECT_SERVER_NAME was "${serverName || 'unset'}"`
     );
@@ -122,57 +135,22 @@ function validateCorporateEventsFixture(env = process.env) {
   return fixture;
 }
 
-function visibleTextSelector(text, exact = true) {
-  const safe = escapePredicateString(text);
-  const comparison = exact ? '==' : 'CONTAINS';
-  return (
-    '-ios predicate string:(type == "XCUIElementTypeButton" OR ' +
-    'type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeOther") AND ' +
-    `(name ${comparison} "${safe}" OR label ${comparison} "${safe}")`
-  );
-}
-
-function visibleButtonSelector(text, exact = true) {
-  const safe = escapePredicateString(text);
-  const comparison = exact ? '==' : 'CONTAINS';
-  return (
-    '-ios predicate string:type == "XCUIElementTypeButton" AND ' +
-    `(name ${comparison} "${safe}" OR label ${comparison} "${safe}")`
-  );
-}
-
-async function firstVisible(driver, selector) {
-  const elements = await driver.$$(selector).catch(() => []);
-  for (const element of elements) {
-    if (await element.isDisplayed().catch(() => false)) return element;
-  }
-  return null;
-}
-
 async function waitForVisibleText(driver, text, timeout = DEFAULT_TIMEOUT, exact = true) {
-  let element;
-  await driver.waitUntil(async () => {
-    element = await firstVisible(driver, visibleTextSelector(text, exact));
-    return Boolean(element);
-  }, {
+  return waitForQaText(driver, text, {
     timeout,
     interval: 200,
     timeoutMsg: `Corporate Events did not display "${text}"`,
+    exact,
   });
-  return element;
 }
 
 async function waitForVisibleButton(driver, text, timeout = DEFAULT_TIMEOUT, exact = true) {
-  let element;
-  await driver.waitUntil(async () => {
-    element = await firstVisible(driver, visibleButtonSelector(text, exact));
-    return Boolean(element);
-  }, {
+  return waitForQaButton(driver, text, {
     timeout,
     interval: 200,
     timeoutMsg: `Corporate Events did not display tappable item "${text}"`,
+    exact,
   });
-  return element;
 }
 
 async function findEventsHeader(driver, timeout = DEFAULT_TIMEOUT) {
@@ -197,7 +175,6 @@ async function scrollToEventsHeader(driver, timeout = DEFAULT_TIMEOUT) {
       x: Math.round(rect.x + rect.width * 0.12),
       y: Math.round(rect.y + Math.max(8, Math.min(20, rect.height * 0.02))),
     });
-    await driver.pause(350);
   } catch {}
 
   for (let attempt = 0; Date.now() < deadline; attempt++) {
@@ -250,7 +227,6 @@ async function ensureEventExpanded(driver, fixture, timeout = DEFAULT_TIMEOUT) {
   let banner = await findEventBannerButton(driver, header, 1500);
   if (!banner) {
     await header.click();
-    await driver.pause(650);
     header = await findEventsHeader(driver, timeout);
     banner = await findEventBannerButton(driver, header, timeout);
   }
@@ -403,17 +379,15 @@ async function runTest(driver, options = {}) {
   }
 }
 
-async function run(driver, options = {}) {
-  const fixture = options.fixture || validateCorporateEventsFixture(options.env || process.env);
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, { ...options, fixture });
-    } catch (error) {
-      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  prepareOptions: options => ({
+    ...options,
+    fixture: options.fixture || validateCorporateEventsFixture(options.env || process.env),
+  }),
+});
+const { run } = test;
 
 module.exports = {
   BlockedTestError,
@@ -438,9 +412,5 @@ module.exports = {
 
 if (require.main === module) {
   applyStandaloneDefaults();
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
 }
+test.runIfMain(module);

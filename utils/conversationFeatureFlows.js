@@ -1,6 +1,7 @@
 const { SELECTORS } = require('./selectors');
 const { waitForConnectivity } = require('./testSession');
 const { escapePredicateString } = require('./uiActions');
+const { waitForCondition } = require('./uiTransitions');
 
 const DEFAULT_TIMEOUT = 20000;
 const DEFAULT_POLL_INTERVAL = 175;
@@ -165,14 +166,15 @@ async function clickLabeledControl(driver, label, options = {}) {
 async function waitForLabeledControlHidden(driver, label, options = {}) {
   const timeout = options.timeout ?? DEFAULT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_POLL_INTERVAL;
-  const deadline = Date.now() + timeout;
-
-  while (Date.now() < deadline) {
-    if (!(await isLabeledControlVisible(driver, label, options))) return;
-    await driver.pause(interval);
-  }
-
-  throw new Error(`Control with source label "${label}" remained visible`);
+  await waitForCondition(
+    driver,
+    async () => !(await isLabeledControlVisible(driver, label, options)),
+    {
+      timeout,
+      interval,
+      timeoutMsg: `Control with source label "${label}" remained visible`,
+    }
+  );
 }
 
 async function roomComposer(driver, timeout = DEFAULT_TIMEOUT) {
@@ -205,13 +207,18 @@ async function composerAccessibleText(composer) {
 }
 
 async function waitForComposerText(driver, expected, timeout = DEFAULT_TIMEOUT) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const composer = await roomComposer(driver, Math.min(1000, timeout));
-    if ((await composerAccessibleText(composer)).includes(expected)) return composer;
-    await driver.pause(DEFAULT_POLL_INTERVAL);
-  }
-  throw new Error(`Composer did not contain "${expected}"`);
+  return waitForCondition(
+    driver,
+    async () => {
+      const composer = await roomComposer(driver, Math.min(1000, timeout));
+      return (await composerAccessibleText(composer)).includes(expected) ? composer : false;
+    },
+    {
+      timeout,
+      interval: DEFAULT_POLL_INTERVAL,
+      timeoutMsg: `Composer did not contain "${expected}"`,
+    }
+  );
 }
 
 async function findTypeaheadOption(driver, label, timeout = DEFAULT_TIMEOUT) {
@@ -241,13 +248,15 @@ function messageBubbleSelector(marker) {
 }
 
 async function findMessageBubble(driver, marker, timeout = DEFAULT_TIMEOUT) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const bubble = await firstVisible(driver, messageBubbleSelector(marker));
-    if (bubble) return bubble;
-    await driver.pause(DEFAULT_POLL_INTERVAL);
-  }
-  throw new Error(`Message containing "${marker}" did not appear`);
+  return waitForCondition(
+    driver,
+    () => firstVisible(driver, messageBubbleSelector(marker)),
+    {
+      timeout,
+      interval: DEFAULT_POLL_INTERVAL,
+      timeoutMsg: `Message containing "${marker}" did not appear`,
+    }
+  );
 }
 
 async function messageAttributes(messageBubble) {
@@ -281,12 +290,15 @@ async function longPressElement(driver, element, durationMs = 900) {
 }
 
 async function waitForMessageAbsent(driver, marker, timeout = DEFAULT_TIMEOUT) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    if (!(await firstVisible(driver, messageBubbleSelector(marker)))) return;
-    await driver.pause(DEFAULT_POLL_INTERVAL);
-  }
-  throw new Error(`Message containing "${marker}" remained visible after deletion`);
+  await waitForCondition(
+    driver,
+    async () => !(await firstVisible(driver, messageBubbleSelector(marker))),
+    {
+      timeout,
+      interval: DEFAULT_POLL_INTERVAL,
+      timeoutMsg: `Message containing "${marker}" remained visible after deletion`,
+    }
+  );
 }
 
 async function readClipboardText(driver) {
@@ -320,54 +332,59 @@ async function waitForStableLabeledControlSignature(driver, label, options = {})
   const timeout = options.timeout ?? DEFAULT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_POLL_INTERVAL;
   const signatures = [];
-  const deadline = Date.now() + timeout;
-
-  while (Date.now() < deadline) {
-    signatures.push(await labeledControlSignature(driver, label, Math.min(1200, timeout)));
-    const stable = stableTailSignature(
-      signatures,
-      STABLE_VISUAL_REPEAT_COUNT,
-      options.differentFrom
-    );
-    if (stable) return stable;
-    await driver.pause(interval);
-  }
-
-  throw new Error(`Notification option "${label}" did not reach a stable visual state`);
+  return waitForCondition(
+    driver,
+    async () => {
+      signatures.push(await labeledControlSignature(driver, label, Math.min(1200, timeout)));
+      return stableTailSignature(
+        signatures,
+        STABLE_VISUAL_REPEAT_COUNT,
+        options.differentFrom
+      );
+    },
+    {
+      timeout,
+      interval,
+      timeoutMsg: `Notification option "${label}" did not reach a stable visual state`,
+    }
+  );
 }
 
 async function waitForLabeledControlVisualTransition(driver, label, baseline, options = {}) {
   const timeout = options.timeout ?? DEFAULT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_POLL_INTERVAL;
-  const deadline = Date.now() + timeout;
   const settledSignatures = [];
   let observedTransition = false;
-
-  while (Date.now() < deadline) {
-    const signature = await labeledControlSignature(driver, label, Math.min(1200, timeout));
-    if (signature !== baseline) observedTransition = true;
-    if (observedTransition) {
+  return waitForCondition(
+    driver,
+    async () => {
+      const signature = await labeledControlSignature(driver, label, Math.min(1200, timeout));
+      if (signature !== baseline) observedTransition = true;
+      if (!observedTransition) return false;
       settledSignatures.push(signature);
-      const stable = stableTailSignature(settledSignatures, STABLE_VISUAL_REPEAT_COUNT);
-      if (stable) return stable;
+      return stableTailSignature(settledSignatures, STABLE_VISUAL_REPEAT_COUNT);
+    },
+    {
+      timeout,
+      interval,
+      timeoutMsg: `Notification option "${label}" did not transition to a settled visual state`,
     }
-    await driver.pause(interval);
-  }
-
-  throw new Error(`Notification option "${label}" did not transition to a settled visual state`);
+  );
 }
 
 async function waitForLabeledControlSignature(driver, label, expected, options = {}) {
   const timeout = options.timeout ?? DEFAULT_TIMEOUT;
   const interval = options.interval ?? DEFAULT_POLL_INTERVAL;
-  const deadline = Date.now() + timeout;
-
-  while (Date.now() < deadline) {
-    if ((await labeledControlSignature(driver, label, Math.min(1200, timeout))) === expected) return;
-    await driver.pause(interval);
-  }
-
-  throw new Error(`Notification option "${label}" did not restore its persisted visual state`);
+  await waitForCondition(
+    driver,
+    async () =>
+      (await labeledControlSignature(driver, label, Math.min(1200, timeout))) === expected,
+    {
+      timeout,
+      interval,
+      timeoutMsg: `Notification option "${label}" did not restore its persisted visual state`,
+    }
+  );
 }
 
 module.exports = {

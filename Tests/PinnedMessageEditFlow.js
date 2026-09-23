@@ -3,11 +3,11 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const {
-  runWithOptionalDriver,
   scrollUntilConversationEntryVisible,
   ensureRoomsSectionReady,
   goBack,
 } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const { SELECTORS } = require('../utils/selectors');
 const {
   escapePredicateString,
@@ -15,12 +15,17 @@ const {
   tapByText,
   typeComposerMessage,
 } = require('../utils/uiActions');
+const {
+  waitForAnyElementDisplayed,
+  waitForCondition,
+  waitForElementEnabled,
+  waitForElementHidden,
+} = require('../utils/uiTransitions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'PinnedMessageEditFlow';
 
 const SEARCH_RESULTS_BUDGET_MS = 2800;
-const SEARCH_AFTER_TYPE_MS = 500;
 
 async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
   await scrollUntilConversationEntryVisible(driver);
@@ -65,7 +70,6 @@ async function tapSearchResultByText(driver, text, timeout = 20000) {
 
 async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGET_MS) {
   const safe = escapePredicateString(text);
-  const deadline = Date.now() + budgetMs;
   const buttonEl = await driver.$(
     `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
   );
@@ -75,16 +79,15 @@ async function roomAppearsInSearch(driver, text, budgetMs = SEARCH_RESULTS_BUDGE
   const cellEl = await driver.$(
     `//XCUIElementTypeStaticText[contains(@name,"${text}") or contains(@label,"${text}")]/ancestor::XCUIElementTypeCell[1]`
   );
-  while (Date.now() < deadline) {
-    if (await buttonEl.isExisting().catch(() => false) && (await buttonEl.isDisplayed().catch(() => false)))
-      return true;
-    if (await textEl.isExisting().catch(() => false) && (await textEl.isDisplayed().catch(() => false)))
-      return true;
-    if (await cellEl.isExisting().catch(() => false) && (await cellEl.isDisplayed().catch(() => false)))
-      return true;
-    await driver.pause(120);
-  }
-  return false;
+  return waitForCondition(
+    driver,
+    async () => {
+      if (await buttonEl.isDisplayed().catch(() => false)) return true;
+      if (await textEl.isDisplayed().catch(() => false)) return true;
+      return cellEl.isDisplayed().catch(() => false);
+    },
+    { timeout: budgetMs, interval: 120, timeoutMsg: `Room "${text}" was not found in search` }
+  ).then(() => true).catch(() => false);
 }
 
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
@@ -160,7 +163,10 @@ async function createRoomFromSheet(driver, roomName, timeout = DEFAULT_TIMEOUT) 
   const closeBtn = await driver.$(SELECTORS.closeButton);
   await closeBtn.waitForDisplayed({ timeout });
   await closeBtn.click();
-  await driver.pause(500);
+  await waitForElementHidden(driver, closeBtn, {
+    timeout,
+    timeoutMsg: 'Start Conversation sheet did not close',
+  });
   await openRoomsPlusMenu(driver, timeout);
   const createRoomBtn = await driver.$(SELECTORS.createRoomButton);
   await createRoomBtn.waitForDisplayed({ timeout });
@@ -252,7 +258,6 @@ async function replaceComposerText(driver, newText, timeout = DEFAULT_TIMEOUT) {
   if (await byId.isExisting().catch(() => false)) {
     await byId.waitForDisplayed({ timeout });
     await byId.click();
-    await driver.pause(200);
     try {
       await byId.clearValue();
     } catch {}
@@ -263,7 +268,6 @@ async function replaceComposerText(driver, newText, timeout = DEFAULT_TIMEOUT) {
   for (const tv of textViews) {
     if (await tv.isDisplayed().catch(() => false)) {
       await tv.click();
-      await driver.pause(150);
       try {
         await tv.clearValue();
       } catch {}
@@ -287,22 +291,31 @@ async function findPinnedRowByText(driver, text, timeout = 20000) {
 async function openPinnedMessagesPanel(driver) {
   const pinButton = await driver.$(SELECTORS.pinnedMessagesButton);
   await pinButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-  await driver.pause(300);
   await pinButton.click();
-  await driver.pause(600);
+  await waitForAnyElementDisplayed(
+    driver,
+    [SELECTORS.closePinnedMessagesDrawer, SELECTORS.closeButton],
+    { timeout: DEFAULT_TIMEOUT, timeoutMsg: 'Pinned messages panel did not open' }
+  );
 }
 
 async function closePinnedSheet(driver) {
   const closeBtn = await driver.$(SELECTORS.closeButton);
   if (await closeBtn.isDisplayed().catch(() => false)) {
     await closeBtn.click();
-    await driver.pause(400);
+    await waitForElementHidden(driver, closeBtn, {
+      timeout: DEFAULT_TIMEOUT,
+      timeoutMsg: 'Pinned messages panel did not close',
+    });
     return;
   }
   const pinBtn = await driver.$(SELECTORS.pinnedMessagesButton);
   if (await pinBtn.isDisplayed().catch(() => false)) {
     await pinBtn.click();
-    await driver.pause(400);
+    await waitForElementHidden(driver, SELECTORS.closePinnedMessagesDrawer, {
+      timeout: DEFAULT_TIMEOUT,
+      timeoutMsg: 'Pinned messages panel did not close',
+    });
   }
 }
 
@@ -325,7 +338,6 @@ async function navigateToRoom(driver, roomName, options = {}) {
   await searchField.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await searchField.click();
   await searchField.setValue(roomName);
-  await driver.pause(SEARCH_AFTER_TYPE_MS);
   if (await roomAppearsInSearch(driver, roomName)) {
     await tapSearchResultByText(driver, roomName, DEFAULT_TIMEOUT);
   } else {
@@ -356,14 +368,15 @@ async function runTest(driver, options = {}) {
 
   // 1. Send a message
   await typeComposerMessage(driver, sentText);
-  const sendBtn = await driver.$(SELECTORS.sendMessageButton);
-  await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+  const sendBtn = await waitForElementEnabled(driver, SELECTORS.sendMessageButton, {
+    timeout: DEFAULT_TIMEOUT,
+    timeoutMsg: 'Send button did not become enabled for the original message',
+  });
   await sendBtn.click();
-  await driver.pause(800);
+  await findMessageBubbleByText(driver, sentText, DEFAULT_TIMEOUT);
 
   // 2. Pin it
   await longPressByText(driver, sentText, DEFAULT_TIMEOUT, 900);
-  await driver.pause(400);
   await tapPinFromContextMenu(driver, DEFAULT_TIMEOUT);
 
   // 3. Check the pin
@@ -371,18 +384,21 @@ async function runTest(driver, options = {}) {
 
   // 4. Close out of the pin
   await closePinnedSheet(driver);
-  await driver.pause(400);
 
   // 5. Edit the message (thread still shows original until saved)
   await longPressByText(driver, sentText, DEFAULT_TIMEOUT, 900);
-  await driver.pause(400);
   await tapEditFromContextMenu(driver, DEFAULT_TIMEOUT);
-  await driver.pause(400);
+  await waitForAnyElementDisplayed(
+    driver,
+    [SELECTORS.roomComposerTextView, SELECTORS.messageComposerTextView],
+    { timeout: DEFAULT_TIMEOUT, timeoutMsg: 'Composer did not enter edit mode' }
+  );
   await replaceComposerText(driver, editedText, DEFAULT_TIMEOUT);
-  const sendAfterEdit = await driver.$(SELECTORS.sendMessageButton);
-  await sendAfterEdit.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
+  const sendAfterEdit = await waitForElementEnabled(driver, SELECTORS.sendMessageButton, {
+    timeout: DEFAULT_TIMEOUT,
+    timeoutMsg: 'Send button did not become enabled for the edited message',
+  });
   await sendAfterEdit.click();
-  await driver.pause(800);
   await findMessageBubbleByText(driver, editedText, DEFAULT_TIMEOUT);
 
   // 6. Check the pin (sheet should reflect edited body if app updates pin text)
@@ -390,42 +406,25 @@ async function runTest(driver, options = {}) {
 
   // 7. Close out of the pin
   await closePinnedSheet(driver);
-  await driver.pause(400);
 
   // 8. Unpin (from pinned sheet: long-press row → Unpin)
   await openPinnedMessagesPanel(driver);
   const pinnedRow = await findPinnedRowByText(driver, editedText, DEFAULT_TIMEOUT);
   await longPressElement(driver, pinnedRow, 900);
-  await driver.pause(400);
   await tapContextMenuItem(driver, 'Unpin', DEFAULT_TIMEOUT);
-  await driver.pause(600);
+  await waitForElementHidden(driver, pinnedRow, {
+    timeout: DEFAULT_TIMEOUT,
+    timeoutMsg: 'Pinned message row did not disappear after unpinning',
+  });
   await closePinnedSheet(driver);
-  await driver.pause(400);
 
   // End here: with no pins left, `pinnedMessagesButton` is often removed from the tree,
   // so reopening the sheet to "verify empty" fails with noSuchElement.
   await saveScreenshot(driver, TEST_NAME, '08_unpinned_drawer_closed.png');
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(err => {
-    console.error(err?.stack || err);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

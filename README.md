@@ -22,7 +22,7 @@ read-only reference; all automation and reporting changes live in this repo.
 | **System coverage** | Draft persistence through background/foreground, notification deep-link probing, and safe generated-room cleanup |
 | **Reporting** | Scribe-style HTML and Markdown reports, per-step screenshots, collapsed test details, failed-step highlighting, failure classification, rerun commands, lane health, timings, build/branch metadata, coverage readiness, latest/history navigation, and report retention |
 | **Sharing** | Local server on port `5500`, VS Code Live Server support, temporary Cloudflare Quick Tunnels, and GitHub Pages publishing with a run-and-publish command |
-| **Framework quality** | Central test manifest, syntax checks, ESLint, selector audit against the read-only Swift source, and 137 framework unit tests at the time of this update |
+| **Framework quality** | Central test manifest, syntax checks, ESLint, selector audit against the read-only Swift source, and 176 framework unit tests at the time of this update |
 
 ### Automation coverage
 
@@ -147,6 +147,39 @@ Writes `connect-launch.png` after activating the app—confirms driver + bundle 
 ---
 
 ## Running tests
+
+### One-command runner
+
+The `connect` command can prepare simulators, start missing Appium servers, run
+the selected profile, generate its report, and clean up the processes it
+started:
+
+```bash
+# Normal three-simulator regression
+npm run connect -- split3 --prepare
+
+# Three-simulator regression with required QA-only coverage
+npm run connect -- split3-qa --prepare
+
+# One test with its report
+npm run connect -- single Reactions
+
+# Run and publish the persistent GitHub Pages report
+npm run connect -- split3 --prepare --publish
+
+# Run and keep the local report server open on port 5500
+npm run connect -- split3 --prepare --serve
+```
+
+Use `--no-appium` when the required Appium servers are already running. Preview
+every phase without touching a simulator or starting a process with:
+
+```bash
+npm run connect -- split3-qa --prepare --serve --dry-run
+```
+
+Existing test commands remain available for targeted debugging and backward
+compatibility.
 
 ### Full regression suite
 
@@ -742,6 +775,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 |--------|---------|
 | `npm run appium` | Start Appium via local `node_modules` binary |
 | `npm run doctor` | Check simulator discovery, app installs, credentials, and Appium ports |
+| `npm run connect -- <profile>` | Prepare, run, report, serve, or publish through one orchestrator |
 | `npm run check` | Syntax-check framework JavaScript |
 | `npm run lint` | Run focused ESLint correctness checks and unused-code warnings |
 | `npm test` | Run framework unit tests |

@@ -4,9 +4,9 @@ const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const {
   ensureRoomsSectionReady,
-  runWithOptionalDriver,
   scrollUntilConversationEntryVisible,
 } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const { SELECTORS } = require('../utils/selectors');
 const { openRoomsPlusMenu: tapRoomsPlusMenu } = require('../utils/uiActions');
 
@@ -15,7 +15,6 @@ const TEST_NAME = 'EditMessage';
 
 /** Max time to wait for search results after typing (polls; avoids 3× long waitForDisplayed). */
 const SEARCH_RESULTS_BUDGET_MS = 2800;
-const SEARCH_AFTER_TYPE_MS = 500;
 
 async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
   await scrollUntilConversationEntryVisible(driver);
@@ -119,8 +118,6 @@ async function createRoomFromSheet(driver, roomName, timeout = DEFAULT_TIMEOUT) 
   await closeBtn.waitForDisplayed({ timeout });
   await closeBtn.click();
   console.log('Closed new-message sheet (closeButton)');
-  await driver.pause(500);
-
   await openRoomsPlusMenu(driver, timeout);
 
   const createRoomBtn = await driver.$(SELECTORS.createRoomButton);
@@ -254,8 +251,6 @@ async function runTest(driver, options = {}) {
   await searchField.click();
   await searchField.setValue(roomName);
 
-  await driver.pause(SEARCH_AFTER_TYPE_MS);
-
   if (await roomAppearsInSearch(driver, roomName)) {
     await tapSearchResultByText(driver, roomName, DEFAULT_TIMEOUT);
   } else {
@@ -274,11 +269,9 @@ async function runTest(driver, options = {}) {
     const sendBtn = await driver.$(SELECTORS.sendMessageButton);
     await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
     await sendBtn.click();
-    await driver.pause(450);
+    await findMessageBubbleByText(driver, messages[i], DEFAULT_TIMEOUT);
     console.log(`Sent message ${i + 1}/${messages.length}`);
   }
-
-  await driver.pause(600);
 
   // Oldest first so we exercise editing a prior line, not only the newest bubble.
   for (let i = 0; i < messages.length; i++) {
@@ -286,16 +279,13 @@ async function runTest(driver, options = {}) {
     const editedBody = `${original} — edited-${i + 1}`;
 
     await longPressByText(driver, original, DEFAULT_TIMEOUT, 900);
-    await driver.pause(400);
     await tapEditFromContextMenu(driver, DEFAULT_TIMEOUT);
-    await driver.pause(400);
     await replaceComposerText(driver, editedBody, DEFAULT_TIMEOUT);
 
     const saveOrSend = await driver.$(SELECTORS.sendMessageButton);
     await saveOrSend.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
     await saveOrSend.click();
 
-    await driver.pause(600);
     await findMessageBubbleByText(driver, editedBody, DEFAULT_TIMEOUT);
     console.log(`Edited message ${i + 1}/${messages.length} (was: …${original.slice(-12)})`);
   }
@@ -303,22 +293,8 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, 'three_messages_edited.png');
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

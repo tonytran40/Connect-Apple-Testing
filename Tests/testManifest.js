@@ -1,8 +1,8 @@
 const TESTS = Object.freeze([
-  entry('CreateRoom', 'Room creation', { runAll: true, parallel: true, splitLane: 'main', split2Lane: 'main', cleanup: 'generated-room' }),
-  entry('newMessage', 'Direct messaging', { runAll: true, parallel: true, splitLane: 'main', split2Lane: 'main', cleanup: 'generated-conversation' }),
-  entry('favoriteRoom', 'Conversation list', { parallelAll: true, splitLane: 'conversationList' }),
-  entry('markAsRead', 'Conversation list', { parallelAll: true, splitLane: 'conversationList' }),
+  entry('CreateRoom', 'Room creation', { runAll: true, parallel: true, splitLane: 'main', split2Lane: 'main', cleanup: 'generated-room', estimatedDurationMs: 45000 }),
+  entry('newMessage', 'Direct messaging', { runAll: true, parallel: true, splitLane: 'main', split2Lane: 'main', cleanup: 'generated-conversation', estimatedDurationMs: 35000 }),
+  entry('favoriteRoom', 'Conversation list', { parallelAll: true, splitLane: 'conversationList', estimatedDurationMs: 40000 }),
+  entry('markAsRead', 'Conversation list', { parallelAll: true, splitLane: 'conversationList', estimatedDurationMs: 65000 }),
   entry('notifications', 'Notifications', {
     parallelAll: true,
     splitLane: 'conversationList',
@@ -11,7 +11,7 @@ const TESTS = Object.freeze([
     cleanup: 'external-fixture',
     timeoutClass: 'long',
   }),
-  entry('removeRoom', 'Conversation list', { parallelAll: true, splitLane: 'conversationList' }),
+  entry('removeRoom', 'Conversation list', { parallelAll: true, splitLane: 'conversationList', estimatedDurationMs: 55000 }),
   entry('PinnedMessageEditFlow', 'Conversation view', {
     runAll: true,
     parallel: true,
@@ -19,6 +19,7 @@ const TESTS = Object.freeze([
     split2Lane: 'main',
     balanceTarget: 'main',
     balanceSafe: true,
+    estimatedDurationMs: 65000,
   }),
   entry('Reactions', 'Conversation view', {
     runAll: true,
@@ -26,6 +27,7 @@ const TESTS = Object.freeze([
     splitLane: 'conversationView',
     balanceTarget: 'main',
     balanceSafe: true,
+    estimatedDurationMs: 70000,
   }),
   entry('markdowns', 'Conversation view', {
     runAll: true,
@@ -35,6 +37,7 @@ const TESTS = Object.freeze([
     balanceSafe: true,
     timeoutClass: 'long',
     cleanup: 'generated-room',
+    estimatedDurationMs: 95000,
   }),
   entry('LinkPreviews', 'Conversation view', {
     runAll: true,
@@ -42,6 +45,7 @@ const TESTS = Object.freeze([
     splitLane: 'conversationView',
     timeoutClass: 'long',
     cleanup: 'generated-room',
+    estimatedDurationMs: 55000,
   }),
   entry('attachments', 'Conversation view', {
     parallelAll: true,
@@ -49,15 +53,17 @@ const TESTS = Object.freeze([
     photoReady: true,
     timeoutClass: 'long',
     cleanup: 'generated-room-and-files',
+    estimatedDurationMs: 105000,
   }),
-  entry('editRoom', 'Room settings', { parallelAll: true, splitLane: 'conversationView', balanceSafe: true }),
-  entry('membersRoom', 'Room membership', { parallelAll: true, splitLane: 'conversationView', balanceSafe: true }),
+  entry('editRoom', 'Room settings', { parallelAll: true, splitLane: 'conversationView', balanceSafe: true, estimatedDurationMs: 50000 }),
+  entry('membersRoom', 'Room membership', { parallelAll: true, splitLane: 'conversationView', balanceSafe: true, estimatedDurationMs: 45000 }),
   entry('ComposerTypeahead', 'Composer', {
     runAll: true,
     parallel: true,
     splitLane: 'conversationView',
     balanceTarget: 'conversationList',
     balanceSafe: true,
+    estimatedDurationMs: 40000,
   }),
   entry('MessageActions', 'Message actions', {
     runAll: true,
@@ -65,12 +71,14 @@ const TESTS = Object.freeze([
     splitLane: 'conversationView',
     balanceTarget: 'conversationList',
     balanceSafe: true,
+    estimatedDurationMs: 35000,
   }),
   entry('ConversationSearch', 'Conversation search', {
     runAll: true,
     parallel: true,
     splitLane: 'conversationView',
     balanceSafe: true,
+    estimatedDurationMs: 65000,
   }),
   entry('RoomNotificationPreferences', 'Room settings', {
     runAll: true,
@@ -78,6 +86,7 @@ const TESTS = Object.freeze([
     splitLane: 'conversationView',
     balanceTarget: 'conversationList',
     balanceSafe: true,
+    estimatedDurationMs: 70000,
   }),
   entry('ConversationList', 'User settings', {
     runAll: true,
@@ -149,6 +158,9 @@ function entry(name, feature, options = {}) {
     photoReady: Boolean(options.photoReady),
     balanceTarget: options.balanceTarget || '',
     balanceSafe: Boolean(options.balanceSafe),
+    estimatedDurationMs: Number.isFinite(options.estimatedDurationMs) && options.estimatedDurationMs > 0
+      ? Math.round(options.estimatedDurationMs)
+      : options.timeoutClass === 'long' ? 90000 : 45000,
   });
 }
 

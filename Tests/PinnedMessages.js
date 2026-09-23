@@ -3,11 +3,12 @@ require('dotenv').config();
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
 const {
-  runWithOptionalDriver,
   scrollUntilConversationEntryVisible,
   ensureRoomsSectionReady,
   goBack,
 } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
+const { waitForElementDisplayed, waitForElementHidden } = require('../utils/uiTransitions');
 const { SELECTORS } = require('../utils/selectors');
 const { openRoomsPlusMenu: tapRoomsPlusMenu } = require('../utils/uiActions');
 
@@ -16,7 +17,6 @@ const TEST_NAME = 'PinnedMessages';
 
 /** Max time to wait for search results after typing (polls; avoids 3× long waitForDisplayed). */
 const SEARCH_RESULTS_BUDGET_MS = 2800;
-const SEARCH_AFTER_TYPE_MS = 500;
 
 async function openNewConversation(driver, timeout = DEFAULT_TIMEOUT) {
   await scrollUntilConversationEntryVisible(driver);
@@ -325,8 +325,6 @@ async function runTest(driver, options = {}) {
     await searchField.click();
     await searchField.setValue(roomName);
 
-    await driver.pause(SEARCH_AFTER_TYPE_MS);
-
     if (await roomAppearsInSearch(driver, roomName)) {
       await tapSearchResultByText(driver, roomName, DEFAULT_TIMEOUT);
     } else {
@@ -344,48 +342,36 @@ async function runTest(driver, options = {}) {
   await sendBtn.waitForEnabled({ timeout: DEFAULT_TIMEOUT });
   await sendBtn.click();
 
-  await driver.pause(1200);
   await longPressByText(driver, sentText, DEFAULT_TIMEOUT, 900);
-  await driver.pause(600);
   await tapPinFromContextMenu(driver, DEFAULT_TIMEOUT);
 
   const pinButton = await driver.$(SELECTORS.pinnedMessagesButton);
   await pinButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
-  await driver.pause(800);
   await pinButton.click();
-  await driver.pause(800);
+  const pinnedRow = await findPinnedRowByText(driver, sentText, DEFAULT_TIMEOUT);
   await saveScreenshot(driver, TEST_NAME, 'pinned_message.png');
 
-  const pinnedRow = await findPinnedRowByText(driver, sentText, DEFAULT_TIMEOUT);
   await longPressElement(driver, pinnedRow, 900);
-  await driver.pause(600);
   await tapContextMenuItem(driver, 'Unpin', DEFAULT_TIMEOUT);
 
-  await driver.pause(800);
-  await pinButton.click();
+  await waitForElementHidden(driver, pinnedRow, {
+    timeout: DEFAULT_TIMEOUT,
+    timeoutMsg: 'Pinned message remained visible after Unpin',
+  });
+  const visiblePinButton = await waitForElementDisplayed(driver, SELECTORS.pinnedMessagesButton, {
+    timeout: DEFAULT_TIMEOUT,
+    timeoutMsg: 'Pinned messages control did not become available after Unpin',
+  });
+  await visiblePinButton.click();
+  await waitForElementDisplayed(driver, SELECTORS.sendMessageButton, {
+    timeout: DEFAULT_TIMEOUT,
+    timeoutMsg: 'Conversation composer did not return after closing pinned messages',
+  });
   await saveScreenshot(driver, TEST_NAME, 'unpinned_message.png');
-  await driver.pause(800);
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(err => {
-    console.error(err?.stack || err);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

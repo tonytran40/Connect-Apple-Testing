@@ -4,8 +4,8 @@ const crypto = require('node:crypto');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
 const {
-  runWithOptionalDriver,
   resetToHome,
   ensureRoomsSectionReady,
   goBack,
@@ -170,10 +170,8 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, 400);
   }
   await resetToHome(driver);
-  await pause(driver, 450);
 
   const candidates = await prepareTargetRoom(driver);
   const exact = CANDIDATES.length === 0;
@@ -183,7 +181,6 @@ async function runTest(driver, options = {}) {
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe_right.png');
   await swipeRightOnRow(driver, target.el);
-  await pause(driver, 200);
   await saveScreenshot(driver, TEST_NAME, '02_after_swipe_right.png');
   await tapMarkAsUnreadBesideTitle(driver, target.roomTitle);
   const unread = await waitForTitleVisualSignature(
@@ -195,9 +192,7 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '03_after_mark_unread.png');
 
   // Toggle back to read (same button after second swipe).
-  await pause(driver, 400);
   await swipeRightOnRow(driver, unread.el);
-  await pause(driver, 200);
   await tapMarkAsUnreadBesideTitle(driver, unread.roomTitle);
   const restored = await waitForTitleVisualSignature(
     driver,
@@ -224,22 +219,9 @@ async function runTest(driver, options = {}) {
   };
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { elementVisualSignature, run, visualStateTransition };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

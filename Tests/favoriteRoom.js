@@ -2,13 +2,13 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
 const {
-  runWithOptionalDriver,
   resetToHome,
   ensureRoomsSectionReady,
   waitForConversationRow,
 } = require('../utils/testSession');
-const { escapePredicateString, getElementRect, pauseIfNeeded } = require('../utils/uiActions');
+const { escapePredicateString, getElementRect } = require('../utils/uiActions');
 const { createPublicRoom, generateRoomName } = require('./CreateRoom');
 
 const TEST_NAME = 'favoriteRoom';
@@ -25,10 +25,6 @@ const WAIT_INTERVAL_MS = intEnv('FAVORITE_ROOM_WAIT_INTERVAL_MS', 400, 150, 2000
 const MAX_LIST_SCROLLS = intEnv('FAVORITE_ROOM_MAX_SCROLLS', 12, 0, 30);
 const SWIPE_HOLD_MS = intEnv('FAVORITE_ROOM_SWIPE_HOLD_MS', 120, 40, 800);
 const SWIPE_MOVE_MS = intEnv('FAVORITE_ROOM_SWIPE_MOVE_MS', 200, 80, 600);
-const POST_LOGIN_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_LOGIN_PAUSE_MS', 400, 0, 2000);
-const POST_RESET_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_RESET_PAUSE_MS', 250, 0, 1500);
-const POST_SCROLL_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_SCROLL_PAUSE_MS', 200, 0, 1500);
-const POST_SWIPE_PAUSE_MS = intEnv('FAVORITE_ROOM_POST_SWIPE_PAUSE_MS', 200, 0, 1500);
 
 async function holdThenSwipeRight(driver, fromX, toX, y) {
   try {
@@ -85,18 +81,17 @@ async function waitForFavoriteRow(driver, roomName) {
   return el;
 }
 
-async function tapRevealedFavorite(driver, roomName) {
+async function waitForRevealedFavorite(driver, roomName) {
   const esc = escapePredicateString(roomName);
   const candidate = await driver.$(
     `//XCUIElementTypeStaticText[@name="${esc}" or @label="${esc}"]/preceding::XCUIElementTypeButton[@name="favoritesButton" or @label=""][1]`
   );
-
-  const exists = await candidate.isExisting().catch(() => false);
-  if (!exists) {
-    throw new Error('favoriteRoom: favoritesButton next to room title was not found after swipe');
-  }
-
   await candidate.waitForDisplayed({ timeout: 8000 });
+  return candidate;
+}
+
+async function tapRevealedFavorite(driver, roomName) {
+  const candidate = await waitForRevealedFavorite(driver, roomName);
   await candidate.click();
 }
 
@@ -106,54 +101,36 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pauseIfNeeded(driver, POST_LOGIN_PAUSE_MS);
   }
 
   await resetToHome(driver);
-  await pauseIfNeeded(driver, POST_RESET_PAUSE_MS);
   if (!CONFIGURED_FAVORITE_ROOM_NAME) {
     console.log(`favoriteRoom: creating isolated room "${roomName}"`);
     await createPublicRoom(driver, roomName);
     await resetToHome(driver);
   }
   await ensureRoomsSectionReady(driver);
-  await pauseIfNeeded(driver, POST_SCROLL_PAUSE_MS);
 
   const row = await waitForFavoriteRow(driver, roomName);
   console.log(`favoriteRoom: found "${roomName}"`);
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe.png');
   await swipeRightOnElement(driver, row);
-  await pauseIfNeeded(driver, POST_SWIPE_PAUSE_MS);
+  await waitForRevealedFavorite(driver, roomName);
   await saveScreenshot(driver, TEST_NAME, '02_after_swipe_right.png');
   await tapRevealedFavorite(driver, roomName);
   await saveScreenshot(driver, TEST_NAME, '03_after_click_favorites.png');
 
   // Toggle off: same row action again (swipe actions usually collapse after tap).
   const rowAgain = await waitForFavoriteRow(driver, roomName);
-  await pauseIfNeeded(driver, 400);
   await swipeRightOnElement(driver, rowAgain);
-  await pauseIfNeeded(driver, POST_SWIPE_PAUSE_MS);
   await tapRevealedFavorite(driver, roomName);
   await saveScreenshot(driver, TEST_NAME, '04_after_unfavorite.png');
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

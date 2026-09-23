@@ -2,14 +2,14 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
 const {
   ensureRoomsSectionReady,
   goBack,
   resetToHome,
-  runWithOptionalDriver,
   waitForConversationRow,
 } = require('../utils/testSession');
-const { escapePredicateString: esc, getElementRect, pauseIfNeeded: pause } = require('../utils/uiActions');
+const { escapePredicateString: esc, getElementRect } = require('../utils/uiActions');
 const { createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'removeRoom';
@@ -72,20 +72,33 @@ async function waitForTargetRow(driver, names, exact = false) {
   });
 }
 
-async function tapRemoveBesideTitle(driver, roomTitle) {
+async function waitForRemoveBesideTitle(driver, roomTitle) {
   const q = esc(roomTitle);
   const xpaths = [
     `//XCUIElementTypeStaticText[@name="${q}" or @label="${q}"]/preceding::XCUIElementTypeButton[@name="" or @label=""][1]`,
     `//XCUIElementTypeStaticText[@name="${q}" or @label="${q}"]/following::XCUIElementTypeButton[@name="" or @label=""][1]`,
   ];
-  for (const xp of xpaths) {
-    const btn = await driver.$(xp);
-    if (await btn.isDisplayed().catch(() => false)) {
-      await btn.click();
-      return;
+  let visibleButton;
+  await driver.waitUntil(async () => {
+    for (const xp of xpaths) {
+      const btn = await driver.$(xp);
+      if (await btn.isDisplayed().catch(() => false)) {
+        visibleButton = btn;
+        return true;
+      }
     }
-  }
-  throw new Error(`removeRoom: no  button for "${roomTitle}"`);
+    return false;
+  }, {
+    timeout: WAIT_MS,
+    interval: 100,
+    timeoutMsg: `removeRoom: no  button for "${roomTitle}"`,
+  });
+  return visibleButton;
+}
+
+async function tapRemoveBesideTitle(driver, roomTitle) {
+  const btn = await waitForRemoveBesideTitle(driver, roomTitle);
+  await btn.click();
 }
 
 async function waitUntilTitleGone(driver, roomTitle) {
@@ -118,10 +131,8 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, 400);
   }
   await resetToHome(driver);
-  await pause(driver, 450);
 
   const candidates = await prepareTargetRoom(driver);
   const { el, roomTitle } = await waitForTargetRow(driver, candidates, CANDIDATES.length === 0);
@@ -129,7 +140,7 @@ async function runTest(driver, options = {}) {
 
   await saveScreenshot(driver, TEST_NAME, '01_before_swipe_left.png');
   await swipeLeftOnRow(driver, el);
-  await pause(driver, 200);
+  await waitForRemoveBesideTitle(driver, roomTitle);
   await saveScreenshot(driver, TEST_NAME, '02_after_swipe_left.png');
   await tapRemoveBesideTitle(driver, roomTitle);
   await saveScreenshot(driver, TEST_NAME, '03_after_tap_remove.png');
@@ -137,22 +148,9 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '04_after_room_removed.png');
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

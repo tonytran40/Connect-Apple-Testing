@@ -6,8 +6,8 @@ const { performance } = require('perf_hooks');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
 const {
-  runWithOptionalDriver,
   ensureRoomsSectionReady,
   waitForConversationRow,
 } = require('../utils/testSession');
@@ -208,7 +208,7 @@ async function createPrivateRoom(driver, roomName, options = {}) {
   }
 
   await tapBackButton(driver);
-  await driver.pause(600);
+  await waitForRoomsListReady(driver);
   console.log(`createPrivateRoom: ${roomName}`);
   return { roomName, roomCreationMs };
 }
@@ -262,7 +262,6 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await driver.pause(1200);
   }
 
   await openRoomsPlusMenu(driver);
@@ -331,23 +330,13 @@ async function runTest(driver, options = {}) {
   return { timings: { roomCreationMs } };
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-        await dumpSource(activeDriver, 'ERROR_source.xml');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  onError: activeDriver => dumpSource(activeDriver, 'ERROR_source.xml').catch(() => {}),
+});
+const { run } = test;
 
 module.exports = { run, generateRoomName, createPrivateRoom, createPublicRoom };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

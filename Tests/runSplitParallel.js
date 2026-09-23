@@ -3,7 +3,7 @@ require('dotenv').config();
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
-const { spawn, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const { performance } = require('perf_hooks');
 const {
   buildTimingSummary,
@@ -11,8 +11,29 @@ const {
   mergePhaseTimings,
   normalizePhaseTimings,
 } = require('../utils/reportWriter');
+const {
+  buildArtifactLinks,
+  ensureDir,
+  escapeCell,
+  readJsonIfExists,
+  relativeLink,
+  writeReportArtifacts,
+} = require('../utils/runnerArtifacts');
+const {
+  prefixOutput,
+  spawnNodeChild,
+  waitForChild,
+} = require('../utils/runnerLifecycle');
+const { appendPhaseTimingSection, summarizeResults } = require('../utils/runnerReport');
 const { resolveLaneUdids } = require('../utils/simulatorConfig');
-const { TESTS, coverageFor, splitLaneTests, testsFor } = require('./testManifest');
+const {
+  DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS,
+  DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS,
+  buildSplitThreeSchedule,
+  defaultRunId,
+  loadHistoricalDurationEstimates,
+} = require('../utils/splitSchedule');
+const { coverageFor, splitLaneTests, testsFor } = require('./testManifest');
 
 const csv = tests => tests.map(test => test.name).join(',');
 const splitTwoTests = testsFor('split2');
@@ -22,25 +43,11 @@ const THREE_LANE_MAIN_TESTS = csv(splitLaneTests('main'));
 const THREE_LANE_CONVERSATION_LIST_TESTS = csv(splitLaneTests('conversationList'));
 const THREE_LANE_CONVERSATION_VIEW_TESTS = csv(splitLaneTests('conversationView'));
 const EXCLUSIVE_SETTINGS_TESTS = csv(testsFor('exclusive'));
-const DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS = csv(
-  TESTS.filter(test => test.balanceTarget === 'main')
-);
-const DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS = csv(
-  TESTS.filter(test => test.balanceTarget === 'conversationList')
-);
-const PHOTO_READY_TESTS = new Set(TESTS.filter(test => test.photoReady).map(test => test.name));
-const SAFE_CONVERSATION_VIEW_BALANCE_TESTS = new Set(
-  TESTS.filter(test => test.balanceSafe).map(test => test.name)
-);
 const DEFAULT_SESSION_STAGGER_MS = 6000;
 const BUNDLE_ID = process.env.CONNECT_BUNDLE_ID || 'com.powerhrg.connect.v3.debug';
 
 function envValue(name, fallback) {
   return process.env[name] || fallback;
-}
-
-function defaultRunId(runId, env = process.env) {
-  return env.PARALLEL_DRY_RUN === '1' ? `${runId}-dry-run` : runId;
 }
 
 function makeLane({
@@ -96,11 +103,6 @@ function withResolvedLaneEnvironment(lane) {
   };
 }
 
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
-
 function listCsv(value) {
   return String(value || '')
     .split(',')
@@ -112,84 +114,6 @@ function assignment(name, logicalCategory) {
   return { name, logicalCategory };
 }
 
-function assertUniqueTests(groups) {
-  const seen = new Map();
-  for (const [group, tests] of Object.entries(groups)) {
-    for (const name of tests) {
-      if (seen.has(name)) {
-        throw new Error(`Split test "${name}" is assigned to both ${seen.get(name)} and ${group}`);
-      }
-      seen.set(name, group);
-    }
-  }
-}
-
-function buildSplitThreeSchedule({
-  mainTests,
-  conversationListTests,
-  conversationViewTests,
-  selectedConversationViewTests = listCsv(DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS),
-  selectedConversationListTests = listCsv(DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS),
-  balancingEnabled = true,
-}) {
-  const groups = {
-    main: [...mainTests],
-    conversationList: [...conversationListTests],
-    conversationView: [...conversationViewTests],
-  };
-  assertUniqueTests(groups);
-
-  for (const photoTest of PHOTO_READY_TESTS) {
-    const source = Object.keys(groups).find(group => groups[group].includes(photoTest));
-    if (source && source !== 'conversationView') {
-      groups[source] = groups[source].filter(name => name !== photoTest);
-      groups.conversationView.push(photoTest);
-    }
-  }
-
-  const selectedMain = new Set(selectedConversationViewTests);
-  const selectedList = new Set(selectedConversationListTests);
-  const overlappingSelections = [...selectedMain].filter(name => selectedList.has(name));
-  if (overlappingSelections.length) {
-    throw new Error(
-      `ConversationView balance targets overlap: ${overlappingSelections.join(', ')}`
-    );
-  }
-
-  const movedToMain = balancingEnabled
-    ? groups.conversationView.filter(
-        name => selectedMain.has(name) && SAFE_CONVERSATION_VIEW_BALANCE_TESTS.has(name)
-      )
-    : [];
-  const movedToConversationList = balancingEnabled
-    ? groups.conversationView.filter(
-        name => selectedList.has(name) && SAFE_CONVERSATION_VIEW_BALANCE_TESTS.has(name)
-      )
-    : [];
-  const moved = new Set([...movedToMain, ...movedToConversationList]);
-  const mainAssignments = [
-    ...groups.main.map(name => assignment(name, 'main-suite')),
-    ...movedToMain.map(name => assignment(name, 'ConversationView')),
-  ];
-
-  return {
-    main: [
-      ...mainAssignments.filter(item => item.name !== 'newMessage'),
-      ...mainAssignments.filter(item => item.name === 'newMessage'),
-    ],
-    conversationList: [
-      ...groups.conversationList.map(name => assignment(name, 'Conversation-List')),
-      ...movedToConversationList.map(name => assignment(name, 'ConversationView')),
-    ],
-    conversationView: groups.conversationView
-      .filter(name => !moved.has(name))
-      .map(name => assignment(name, 'ConversationView')),
-    movedTests: [...movedToMain, ...movedToConversationList],
-    movedToMain,
-    movedToConversationList,
-  };
-}
-
 function categoriesForAssignments(assignments) {
   return Object.fromEntries(assignments.map(item => [item.name, item.logicalCategory]));
 }
@@ -198,41 +122,17 @@ function testNames(assignments) {
   return assignments.map(item => item.name).join(',');
 }
 
-function readJsonIfExists(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
-function escapeCell(value) {
-  return String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, '<br>');
-}
-
-function relativeLink(fromFile, targetPath, label) {
-  const rel = path.relative(path.dirname(fromFile), targetPath).replace(/\\/g, '/');
-  return `[${label}](${encodeURI(rel)})`;
-}
-
 function artifactLinks({ reportPath, result }) {
-  const links = [];
-  if (result.summaryPath && fs.existsSync(result.summaryPath)) {
-    links.push(relativeLink(reportPath, result.summaryPath, 'summary'));
-  }
-  if (result.status === 'DRY_RUN') {
-    return links.join(' / ');
-  }
-  if (result.logPath && fs.existsSync(result.logPath)) {
-    links.push(relativeLink(reportPath, result.logPath, 'log'));
-  }
-  if (result.resultPath && fs.existsSync(result.resultPath)) {
-    links.push(relativeLink(reportPath, result.resultPath, 'json'));
-  }
-  if (result.screenshotDir && fs.existsSync(result.screenshotDir)) {
-    links.push(relativeLink(reportPath, result.screenshotDir, 'screenshots'));
-  }
-  return links.join(' / ');
+  const dryRun = result.status === 'DRY_RUN';
+  return buildArtifactLinks({
+    reportPath,
+    artifacts: [
+      { label: 'summary', path: result.summaryPath },
+      { label: 'log', path: result.logPath, include: !dryRun },
+      { label: 'json', path: result.resultPath, include: !dryRun },
+      { label: 'screenshots', path: result.screenshotDir, include: !dryRun },
+    ],
+  });
 }
 
 function loadLaneResults(lane, code) {
@@ -281,41 +181,26 @@ function laneWithReportedTimings(lane) {
   return { ...lane, timings };
 }
 
-function timingRows(timings) {
-  const labels = {
-    sessionCreationMs: 'Session creation',
-    loginReadinessMs: 'Login/readiness',
-    testBodyMs: 'Test body',
-    screenshotCaptureMs: 'Screenshot capture',
-    recoveryMs: 'Recovery',
-    reportGenerationMs: 'Report generation',
-    roomCreationMs: 'Room creation (test-owned)',
-  };
-  return Object.entries(labels).map(([key, label]) => ({
-    label,
-    durationMs: timings?.phases?.[key] || 0,
-  }));
-}
-
 function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, startedAt, cleanup }) {
   const results = lanes.flatMap((lane, index) => loadLaneResults(lane, laneCodes[index]));
   const reportedLanes = lanes.map(laneWithReportedTimings);
-  const passed = results.filter(result => result.status === 'PASS').length;
-  const failed = results.filter(result => result.status === 'FAIL').length;
-  const unknown = results.filter(result => result.status === 'UNKNOWN').length;
-  const skipped = results.filter(result => result.status === 'SKIPPED').length;
-  const blocked = results.filter(result => result.status === 'BLOCKED').length;
-  const inconclusive = results.filter(result => result.status === 'INCONCLUSIVE').length;
-  const dryRun = results.filter(result => result.status === 'DRY_RUN').length;
-  const total = results.length;
-  const executed = results.filter(result => result.status !== 'DRY_RUN');
-  const failures = results.filter(result =>
-    ['FAIL', 'UNKNOWN', 'BLOCKED', 'INCONCLUSIVE'].includes(result.status)
-  );
-  const slowest = [...results]
-    .filter(result => Number.isFinite(result.durationMs))
-    .sort((a, b) => b.durationMs - a.durationMs)
-    .slice(0, 8);
+  const {
+    passed,
+    failed,
+    unknown,
+    skipped,
+    blocked,
+    inconclusive,
+    dryRun,
+    total,
+    executed,
+    failures,
+    slowest,
+  } = summarizeResults(results, {
+    failureStatuses: ['FAIL', 'UNKNOWN', 'BLOCKED', 'INCONCLUSIVE'],
+    slowestLimit: 8,
+    slowestExcludedStatuses: [],
+  });
   const finishedAt = new Date().toISOString();
   const productStatus = failed || unknown
     ? 'FAIL'
@@ -402,10 +287,8 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
   }
 
   const timings = buildTimingSummary({ lanes: reportedLanes, results });
-  lines.push('', '## Phase Timings', '', '| Phase | Aggregate Duration |', '| --- | --- |');
-  timingRows(timings).forEach(phase => {
-    lines.push(`| ${phase.label} | ${formatDurationMs(phase.durationMs)} |`);
-  });
+  lines.push('');
+  appendPhaseTimingSection(lines, timings);
 
   lines.push(
     '',
@@ -420,10 +303,10 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
     );
   });
 
-  fs.writeFileSync(reportPath, `${lines.join('\n')}\n`, 'utf8');
-  fs.writeFileSync(
-    reportPath.replace(/\.md$/, '.json'),
-    `${JSON.stringify({
+  writeReportArtifacts({
+    reportPath,
+    lines,
+    summary: {
       runId,
       status: statusCode,
       productStatus,
@@ -448,9 +331,8 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
       coverage: coverageFor(results.map(result => result.name)),
       timings,
       cleanup,
-    }, null, 2)}\n`,
-    'utf8'
-  );
+    },
+  });
   return { passed, failed, unknown, skipped, blocked, inconclusive, dryRun, total };
 }
 
@@ -517,64 +399,50 @@ function assertAppInstalledOnLanes(lanes) {
   }
 }
 
-function prefixOutput(stream, label) {
-  let pending = '';
-  stream.on('data', chunk => {
-    pending += chunk.toString();
-    const lines = pending.split(/\r?\n/);
-    pending = lines.pop() || '';
-    for (const line of lines) {
-      if (line) console.log(`[${label}] ${line}`);
-    }
-  });
-  stream.on('end', () => {
-    if (pending) console.log(`[${label}] ${pending}`);
-  });
-}
-
 async function runLane(lane) {
-  return new Promise(resolve => {
-    console.log(`[${lane.label}] starting on Appium port ${lane.appiumPort}`);
-    const child = spawn(process.execPath, [path.join(__dirname, 'runParallel.js')], {
-      cwd: path.resolve(__dirname, '..'),
-      env: lane.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    prefixOutput(child.stdout, lane.label);
-    prefixOutput(child.stderr, lane.label);
-
-    child.on('close', (code, signal) => {
-      const exitCode = Number.isInteger(code) ? code : 1;
-      console.log(
-        `[${lane.label}] finished with exit code ${exitCode}${signal ? ` (signal ${signal})` : ''}`
-      );
-      resolve(exitCode);
-    });
+  console.log(`[${lane.label}] starting on Appium port ${lane.appiumPort}`);
+  const child = spawnNodeChild(path.join(__dirname, 'runParallel.js'), [], {
+    cwd: path.resolve(__dirname, '..'),
+    env: lane.env,
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+
+  prefixOutput(child.stdout, lane.label);
+  prefixOutput(child.stderr, lane.label);
+
+  try {
+    const { code, signal } = await waitForChild(child);
+    const exitCode = Number.isInteger(code) ? code : 1;
+    console.log(
+      `[${lane.label}] finished with exit code ${exitCode}${signal ? ` (signal ${signal})` : ''}`
+    );
+    return exitCode;
+  } catch (error) {
+    console.error(`[${lane.label}] failed to start: ${error.message}`);
+    return 1;
+  }
 }
 
 async function prepareLane(lane) {
-  return new Promise((resolve, reject) => {
-    console.log(`[${lane.label}] checking login before tests`);
-    const child = spawn(process.execPath, [path.resolve(__dirname, '..', 'scripts', 'prepareSimulatorLane.js')], {
+  console.log(`[${lane.label}] checking login before tests`);
+  const child = spawnNodeChild(
+    path.resolve(__dirname, '..', 'scripts', 'prepareSimulatorLane.js'),
+    [],
+    {
       cwd: path.resolve(__dirname, '..'),
       env: lane.env,
       stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    }
+  );
 
-    prefixOutput(child.stdout, lane.label);
-    prefixOutput(child.stderr, lane.label);
-    child.on('error', reject);
-    child.on('close', code => {
-      if (code === 0) {
-        console.log(`[${lane.label}] login ready`);
-        resolve();
-        return;
-      }
-      reject(new Error(`[${lane.label}] login preflight failed with exit code ${code}`));
-    });
-  });
+  prefixOutput(child.stdout, lane.label);
+  prefixOutput(child.stderr, lane.label);
+  const { code } = await waitForChild(child);
+  if (code === 0) {
+    console.log(`[${lane.label}] login ready`);
+    return;
+  }
+  throw new Error(`[${lane.label}] login preflight failed with exit code ${code}`);
 }
 
 async function runPostSuiteCleanup(lanes, combinedRunId) {
@@ -641,12 +509,25 @@ async function run() {
   const conversationViewTestList = listCsv(
     envValue('SPLIT_THIRD_TESTS', THREE_LANE_CONVERSATION_VIEW_TESTS)
   );
-  const selectedBalancedTests = process.env.SPLIT_BALANCED_CONVERSATION_VIEW_TESTS == null
-    ? listCsv(DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS)
-    : listCsv(process.env.SPLIT_BALANCED_CONVERSATION_VIEW_TESTS);
-  const selectedListBalancedTests = process.env.SPLIT_LIST_BALANCED_CONVERSATION_VIEW_TESTS == null
-    ? listCsv(DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS)
-    : listCsv(process.env.SPLIT_LIST_BALANCED_CONVERSATION_VIEW_TESTS);
+  const hasMainBalanceOverride = process.env.SPLIT_BALANCED_CONVERSATION_VIEW_TESTS != null;
+  const hasListBalanceOverride =
+    process.env.SPLIT_LIST_BALANCED_CONVERSATION_VIEW_TESTS != null;
+  const hasBalanceOverrides = hasMainBalanceOverride || hasListBalanceOverride;
+  const selectedBalancedTests = hasBalanceOverrides
+    ? listCsv(
+        hasMainBalanceOverride
+          ? process.env.SPLIT_BALANCED_CONVERSATION_VIEW_TESTS
+          : DEFAULT_BALANCED_CONVERSATION_VIEW_TESTS
+      )
+    : undefined;
+  const selectedListBalancedTests = hasBalanceOverrides
+    ? listCsv(
+        hasListBalanceOverride
+          ? process.env.SPLIT_LIST_BALANCED_CONVERSATION_VIEW_TESTS
+          : DEFAULT_LIST_BALANCED_CONVERSATION_VIEW_TESTS
+      )
+    : undefined;
+  const historicalDurationEstimates = loadHistoricalDurationEstimates();
   const schedule = useThirdLane
     ? buildSplitThreeSchedule({
         mainTests: mainTestList,
@@ -655,6 +536,7 @@ async function run() {
         selectedConversationViewTests: selectedBalancedTests,
         selectedConversationListTests: selectedListBalancedTests,
         balancingEnabled: process.env.SPLIT_BALANCE_CONVERSATION_VIEW !== '0',
+        durationEstimates: historicalDurationEstimates,
       })
     : null;
   const mainAssignments = schedule || {
@@ -714,6 +596,14 @@ async function run() {
     console.log(
       `[split] balanced ConversationView tests onto Conversation-List: ` +
         schedule.movedToConversationList.join(', ')
+    );
+  }
+  if (schedule) {
+    const estimates = schedule.estimatedLaneDurationMs;
+    console.log(
+      `[split] estimated lane durations: main-suite=${formatDurationMs(estimates.main)}, ` +
+        `Conversation-List=${formatDurationMs(estimates.conversationList)}, ` +
+        `ConversationView=${formatDurationMs(estimates.conversationView)}`
     );
   }
 
@@ -815,4 +705,10 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildSplitThreeSchedule, defaultRunId, run, shouldFailSplitCommand };
+module.exports = {
+  buildSplitThreeSchedule,
+  defaultRunId,
+  loadHistoricalDurationEstimates,
+  run,
+  shouldFailSplitCommand,
+};

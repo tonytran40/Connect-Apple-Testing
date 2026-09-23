@@ -2,10 +2,14 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
+const { ensureRoomsSectionReady } = require('../utils/testSession');
+const { integer, text } = require('../utils/envConfig');
 const {
-  ensureRoomsSectionReady,
-  runWithOptionalDriver,
-} = require('../utils/testSession');
+  isQaServerName,
+  qaOnlyBlockedError,
+  requireQaServer: requireQaServerFromEnvironment,
+} = require('../utils/qaEnvironment');
 const {
   buildUniqueRoomName,
   longPressElement,
@@ -18,15 +22,14 @@ const {
   openRoomsPlusMenu,
   tapByText,
 } = require('../utils/uiActions');
+const { waitForElementHidden } = require('../utils/uiTransitions');
 const { createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'BrowseRooms';
-const DEFAULT_TIMEOUT = Number.parseInt(process.env.BROWSE_ROOMS_TIMEOUT_MS, 10) || 20000;
-const DEFAULT_INVITEE = process.env.BROWSE_ROOMS_INVITEE || 'Jonathan Levy';
-const DEFAULT_INVITEE_SEARCH = process.env.BROWSE_ROOMS_INVITEE_SEARCH || 'Levy';
-const DEFAULT_CURRENT_USER = process.env.BROWSE_ROOMS_CURRENT_USER || 'Tony Tran';
-const SEARCH_RESULTS_PAUSE_MS =
-  Number.parseInt(process.env.BROWSE_ROOMS_USER_SEARCH_PAUSE_MS, 10) || 800;
+const DEFAULT_TIMEOUT = integer(process.env, 'BROWSE_ROOMS_TIMEOUT_MS', 20000, { min: 1 });
+const DEFAULT_INVITEE = text(process.env, 'BROWSE_ROOMS_INVITEE', 'Jonathan Levy');
+const DEFAULT_INVITEE_SEARCH = text(process.env, 'BROWSE_ROOMS_INVITEE_SEARCH', 'Levy');
+const DEFAULT_CURRENT_USER = text(process.env, 'BROWSE_ROOMS_CURRENT_USER', 'Tony Tran');
 const SEARCH_FIELD_SELECTOR = '-ios predicate string:type == "XCUIElementTypeTextField"';
 const EDIT_MEMBERS_SELECTOR =
   '-ios predicate string:(type == "XCUIElementTypeButton" OR ' +
@@ -35,31 +38,8 @@ const EDIT_MEMBERS_SELECTOR =
   'name == "Edit Members" OR label == "Edit Members")';
 const NITRO_ROOM_LINK_PREFIX = 'https://connect.powerhrg.com/room/';
 
-function qaOnlyBlockedError(testName, serverName) {
-  const configured = String(serverName || '').trim() || '(not set)';
-  const error = new Error(
-    `BLOCKED: ${testName} is QA-only. ` +
-    `CONNECT_SERVER_NAME must identify QA; received "${configured}".`
-  );
-  error.name = 'QaOnlyBlockedError';
-  error.code = 'BLOCKED_QA_ONLY';
-  error.status = 'BLOCKED';
-  return error;
-}
-
-function isQaServerName(serverName) {
-  return String(serverName || '')
-    .trim()
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .includes('qa');
-}
-
 function requireQaServer(env = process.env, testName = TEST_NAME) {
-  if (!isQaServerName(env.CONNECT_SERVER_NAME)) {
-    throw qaOnlyBlockedError(testName, env.CONNECT_SERVER_NAME);
-  }
-  return String(env.CONNECT_SERVER_NAME).trim();
+  return requireQaServerFromEnvironment(env, testName);
 }
 
 function compactRoomBrowserCapabilities() {
@@ -108,12 +88,11 @@ async function tapTopLeadingBack(driver) {
 
 async function waitForExactTextHidden(driver, text, timeout = DEFAULT_TIMEOUT) {
   const selector = exactVisibleTextSelector(text);
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    if (!(await isDisplayed(driver, selector))) return;
-    await driver.pause(250);
-  }
-  throw new Error(`Expected "${text}" to disappear within ${timeout}ms`);
+  await waitForElementHidden(driver, selector, {
+    timeout,
+    interval: 250,
+    timeoutMsg: `Expected "${text}" to disappear within ${timeout}ms`,
+  });
 }
 
 async function addInviteeFromCreateRoom(
@@ -152,9 +131,9 @@ async function addInviteeFromCreateRoom(
     interval: 200,
     timeoutMsg: `Add Members search field did not contain "${searchTerm}"`,
   });
-  await driver.pause(SEARCH_RESULTS_PAUSE_MS);
-
-  await tapByText(driver, invitee, timeout);
+  const inviteeOption = await driver.$(exactVisibleTextSelector(invitee));
+  await inviteeOption.waitForDisplayed({ timeout });
+  await inviteeOption.click();
   await driver.waitUntil(async () => {
     const value = String((await field.getAttribute('value').catch(() => '')) || '').trim();
     return value === '' || value === 'Select';
@@ -287,7 +266,6 @@ async function leaveMembersScreen(driver, timeout = DEFAULT_TIMEOUT) {
   // The members toolbar is rebuilt when the current user loses admin access.
   // This view's custom chevron has no identifier, so align the tap with its
   // dynamic "Members (n)" toolbar title instead of using a fixed screen row.
-  await driver.pause(750);
   const membersTitle = await driver.$(
     '-ios predicate string:type == "XCUIElementTypeStaticText" AND ' +
     '(name == "Members" OR label == "Members" OR ' +
@@ -420,14 +398,11 @@ async function waitForRoomResult(driver, roomName, timeout = DEFAULT_TIMEOUT) {
 
 async function waitForRoomResultHidden(driver, roomName, timeout = DEFAULT_TIMEOUT) {
   const selector = exactVisibleTextSelector(roomName);
-  const deadline = Date.now() + timeout;
-
-  while (Date.now() < deadline) {
-    if (!(await isDisplayed(driver, selector))) return;
-    await driver.pause(200);
-  }
-
-  throw new Error(`Browse Rooms result "${roomName}" remained visible after filtering`);
+  await waitForElementHidden(driver, selector, {
+    timeout,
+    interval: 200,
+    timeoutMsg: `Browse Rooms result "${roomName}" remained visible after filtering`,
+  });
 }
 
 async function waitForSelectedRoom(driver, roomName, timeout = DEFAULT_TIMEOUT) {
@@ -548,17 +523,15 @@ async function runTest(driver, options = {}) {
   };
 }
 
-async function run(driver, options = {}) {
-  requireQaServer(options.env || process.env);
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, options);
-    } catch (error) {
-      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  prepareOptions: options => {
+    requireQaServer(options.env || process.env);
+    return options;
+  },
+});
+const { run } = test;
 
 module.exports = {
   NITRO_ROOM_LINK_PREFIX,
@@ -588,10 +561,4 @@ module.exports = {
   waitForRoomResult,
 };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

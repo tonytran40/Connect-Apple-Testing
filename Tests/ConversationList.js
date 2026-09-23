@@ -2,8 +2,9 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const { SELECTORS } = require('../utils/selectors');
+const { waitForStableLabeledControlSignature } = require('../utils/conversationFeatureFlows');
 const { boundedInt, tapByText } = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
@@ -11,9 +12,6 @@ const TEST_NAME = 'ConversationList';
 
 const SCROLL_TO_TEXT_MAX = boundedInt(process.env.CONVERSATION_SCROLL_MAX, 10, 4, 20);
 const SCROLL_STEP_PAUSE_MS = boundedInt(process.env.CONVERSATION_SCROLL_PAUSE_MS, 260, 120, 800);
-const MENU_OPEN_PAUSE_MS = boundedInt(process.env.CONVERSATION_MENU_OPEN_PAUSE_MS, 450, 200, 1200);
-const MENU_ACTION_PAUSE_MS = boundedInt(process.env.CONVERSATION_MENU_ACTION_PAUSE_MS, 350, 150, 800);
-
 const LAYOUT_OPTIONS = (process.env.CONVERSATION_LAYOUTS || 'Classic,Cozy')
   .split(',')
   .map(s => s.trim())
@@ -36,7 +34,7 @@ async function scrollToText(driver, text, maxScrolls = SCROLL_TO_TEXT_MAX) {
   const predicate = containsAnyTextPredicate(text);
   for (let i = 0; i < maxScrolls; i++) {
     const el = await driver.$(`-ios predicate string:${predicate}`);
-    if (await el.isExisting().catch(() => false)) return;
+    if (await el.waitForDisplayed({ timeout: 1200 }).then(() => true).catch(() => false)) return;
     try {
       await driver.execute('mobile: scroll', { direction: 'down' });
     } catch {}
@@ -50,6 +48,7 @@ async function tapRadioLoose(driver, title, timeout = DEFAULT_TIMEOUT) {
   const el = await driver.$(`-ios predicate string:${predicate}`);
   await el.waitForDisplayed({ timeout });
   await el.click();
+  await waitForStableLabeledControlSignature(driver, title, { timeout });
 }
 
 function slug(label) {
@@ -60,14 +59,14 @@ async function openUserSettings(driver) {
   const settings = await driver.$(SELECTORS.settingsButton);
   await settings.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await settings.click();
-  await driver.pause(MENU_OPEN_PAUSE_MS);
+  const layout = await driver.$(`-ios predicate string:${containsAnyTextPredicate('Conversation Layout')}`);
+  await layout.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
 }
 
 async function closeUserSettings(driver) {
   const closeBtn = await driver.$(SELECTORS.closeButton);
   await closeBtn.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
   await closeBtn.click();
-  await driver.pause(MENU_ACTION_PAUSE_MS);
 }
 
 /** After closing settings, main conversation list should be usable again. */
@@ -90,12 +89,10 @@ async function applyEachLayout(driver) {
     await openUserSettings(driver);
     await scrollToText(driver, 'Conversation Layout');
     await tapByText(driver, 'Conversation Layout', DEFAULT_TIMEOUT);
-    await driver.pause(MENU_ACTION_PAUSE_MS);
+    await scrollToText(driver, layout, SCROLL_TO_TEXT_MAX);
     await saveScreenshot(driver, TEST_NAME, `layout_${slug(layout)}_menu_open.png`);
 
-    await scrollToText(driver, layout, SCROLL_TO_TEXT_MAX);
     await tapRadioLoose(driver, layout, DEFAULT_TIMEOUT);
-    await driver.pause(MENU_ACTION_PAUSE_MS);
     await saveScreenshot(driver, TEST_NAME, `layout_${slug(layout)}_after_switch_in_menu.png`);
 
     await closeUserSettings(driver);
@@ -110,12 +107,10 @@ async function applyEachSort(driver) {
     await openUserSettings(driver);
     await scrollToText(driver, 'Conversation Sorting');
     await tapByText(driver, 'Conversation Sorting', DEFAULT_TIMEOUT);
-    await driver.pause(MENU_ACTION_PAUSE_MS);
+    await scrollToText(driver, sort, SCROLL_TO_TEXT_MAX);
     await saveScreenshot(driver, TEST_NAME, `sort_${slug(sort)}_menu_open.png`);
 
-    await scrollToText(driver, sort, SCROLL_TO_TEXT_MAX);
     await tapRadioLoose(driver, sort, DEFAULT_TIMEOUT);
-    await driver.pause(MENU_ACTION_PAUSE_MS);
     await saveScreenshot(driver, TEST_NAME, `sort_${slug(sort)}_after_switch_in_menu.png`);
 
     await closeUserSettings(driver);
@@ -129,29 +124,14 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await driver.pause(800);
   }
 
   await applyEachLayout(driver);
   await applyEachSort(driver);
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

@@ -2,8 +2,10 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
+const { resetToHome } = require('../utils/testSession');
 const { SELECTORS, A11Y } = require('../utils/selectors');
+const { waitForAnyElementDisplayed } = require('../utils/uiTransitions');
 const { generateRoomName, createPublicRoom } = require('./CreateRoom');
 
 const TEST_NAME = 'editRoom';
@@ -26,6 +28,16 @@ async function pause(driver, ms) {
 async function waitForInRoom(driver, timeout = DEFAULT_TIMEOUT) {
   const header = await driver.$(SELECTORS.openRoomSettingsButton);
   await header.waitForDisplayed({ timeout });
+}
+
+async function waitForEditModal(driver, timeout = DEFAULT_TIMEOUT) {
+  const byAccessibilityText =
+    `-ios predicate string:type == "XCUIElementTypeTextField" AND ` +
+    `(name == "${A11Y.setRoomName}" OR label == "${A11Y.setRoomName}")`;
+  return waitForAnyElementDisplayed(driver, [SELECTORS.setRoomName, byAccessibilityText], {
+    timeout,
+    timeoutMsg: 'editRoom: edit modal did not appear',
+  });
 }
 
 async function tapConversationHeader(driver, roomName) {
@@ -134,10 +146,8 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, 400);
   }
   await resetToHome(driver);
-  await pause(driver, 450);
 
   const sortKey = process.env.EDIT_ROOM_SORT_KEY || 'E';
   const roomName = generateRoomName('Public', sortKey);
@@ -145,12 +155,11 @@ async function runTest(driver, options = {}) {
   console.log(`editRoom: creating "${roomName}"`);
 
   await createPublicRoom(driver, roomName);
-  await pause(driver, 600);
   await waitForInRoom(driver);
   await saveScreenshot(driver, TEST_NAME, '01_in_room.png');
 
   await tapConversationHeader(driver, roomName);
-  await pause(driver, 400);
+  await waitForEditModal(driver);
   await saveScreenshot(driver, TEST_NAME, '02_edit_modal_open.png');
 
   await togglePrivateRoomInEditModal(driver);
@@ -170,31 +179,17 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '06_after_save.png');
 
   await tapCloseEditModal(driver);
-  await pause(driver, 400);
   await waitForInRoom(driver);
   await saveScreenshot(driver, TEST_NAME, '07_after_close.png');
 
   await tapConversationHeader(driver, savedRoomName);
-  await pause(driver, 400);
+  await waitForEditModal(driver);
   await saveScreenshot(driver, TEST_NAME, '08_reopened_saved_settings.png');
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

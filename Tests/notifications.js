@@ -7,7 +7,9 @@ const { spawnSync } = require('child_process');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { resetToHome } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
+const { APP_STATE, ensureAppForeground, waitForAppState } = require('../utils/systemFlowDraft');
 const { SELECTORS } = require('../utils/selectors');
 const { getElementRect } = require('../utils/uiActions');
 
@@ -133,11 +135,17 @@ function pushSimulatorNotification(payload, bundleId = BUNDLE_ID, udid = SIM_UDI
 
 async function backgroundApp(driver) {
   await driver.execute('mobile: pressButton', { name: 'home' });
+  await waitForAppState(
+    driver,
+    BUNDLE_ID,
+    [APP_STATE.BACKGROUND_SUSPENDED, APP_STATE.BACKGROUND],
+    { timeout: DEFAULT_TIMEOUT }
+  );
   console.log('notifications: sent app to background (Home)');
 }
 
 async function foregroundApp(driver) {
-  await driver.activateApp(BUNDLE_ID);
+  await ensureAppForeground(driver, BUNDLE_ID, { timeout: DEFAULT_TIMEOUT });
   console.log(`notifications: foregrounded ${BUNDLE_ID}`);
 }
 
@@ -171,8 +179,8 @@ async function waitForNotificationBanner(driver, title, body) {
   throw new Error(`notifications: notification banner was not visible within ${BANNER_TIMEOUT}ms`);
 }
 
-async function tapNotificationBanner(driver, title, body) {
-  const { el } = await waitForNotificationBanner(driver, title, body);
+async function tapNotificationBanner(driver, title, body, visibleBanner) {
+  const { el } = visibleBanner || await waitForNotificationBanner(driver, title, body);
   const rect = await getElementRect(el);
   await driver.execute('mobile: tap', {
     x: Math.round(rect.x + rect.width / 2),
@@ -223,10 +231,8 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, 400);
   }
   await resetToHome(driver);
-  await pause(driver, 450);
 
   const payload = loadPayload();
   const plan = resolveNotificationPlan(payload);
@@ -239,14 +245,12 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '01_before_push.png');
 
   await backgroundApp(driver);
-  await pause(driver, 600);
 
   pushSimulatorNotification(payload);
-  await pause(driver, 1200);
+  const visibleBanner = await waitForNotificationBanner(driver, title, body);
   await saveScreenshot(driver, TEST_NAME, '02_after_push.png');
 
   if (plan.mode === BANNER_MODE) {
-    await waitForNotificationBanner(driver, title, body);
     await saveScreenshot(driver, TEST_NAME, '03_banner_delivery_verified.png');
     await foregroundApp(driver);
     return {
@@ -256,11 +260,10 @@ async function runTest(driver, options = {}) {
     };
   }
 
-  await tapNotificationBanner(driver, title, body);
-  await pause(driver, 800);
+  await tapNotificationBanner(driver, title, body, visibleBanner);
+  await waitForExactTargetRoom(driver, plan.targetRoomName);
   await saveScreenshot(driver, TEST_NAME, '03_after_tap_notification.png');
 
-  await waitForExactTargetRoom(driver, plan.targetRoomName);
   await saveScreenshot(driver, TEST_NAME, '04_in_app_after_notification.png');
   return {
     status: 'PASS',
@@ -271,19 +274,18 @@ async function runTest(driver, options = {}) {
   };
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  captureErrorScreenshot: false,
+  onError: async activeDriver => {
     try {
-      return await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await foregroundApp(activeDriver);
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+      await foregroundApp(activeDriver);
+      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
+    } catch {}
+  },
+});
+const { run } = test;
 
 module.exports = {
   buildPayloadFromEnv,
@@ -295,8 +297,4 @@ module.exports = {
   waitForNotificationBanner,
   waitForExactTargetRoom,
 };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

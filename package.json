@@ -9,6 +9,7 @@
     "lint": "eslint Login_Flow Tests scripts utils unit test.js eslint.config.js",
     "validate": "npm run check && npm run lint && npm test",
     "doctor": "node scripts/doctor.js",
+    "connect": "node scripts/connect.js",
     "appium": "appium",
     "test:ios": "node test.js",
     "test:suite": "node Tests/runAll.js",

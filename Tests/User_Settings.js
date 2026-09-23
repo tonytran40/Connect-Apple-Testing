@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const { SELECTORS } = require('../utils/selectors');
 const {
   clickLabeledControl,
@@ -98,7 +98,9 @@ async function verifyPersistedSetting(driver, config) {
 
   await tapByText(driver, section, DEFAULT_TIMEOUT);
   await clickLabeledControl(driver, restore, { timeout: DEFAULT_TIMEOUT });
-  await driver.pause(500);
+  await waitForStableLabeledControlSignature(driver, restore, {
+    timeout: DEFAULT_TIMEOUT,
+  });
 
   await reopenUserSettings(driver);
   await tapByText(driver, section, DEFAULT_TIMEOUT);
@@ -180,17 +182,15 @@ async function runTest(driver, options = {}) {
   };
 }
 
-async function run(driver, options = {}) {
-  const fixture = options.fixture || resolveUserSettingsFixture(options.env || process.env);
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, { ...options, fixture });
-    } catch (error) {
-      await screenshot(activeDriver, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  prepareOptions: options => ({
+    ...options,
+    fixture: options.fixture || resolveUserSettingsFixture(options.env || process.env),
+  }),
+});
+const { run } = test;
 
 module.exports = {
   DISPLAY_STYLES,
@@ -201,10 +201,4 @@ module.exports = {
   runTest,
 };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

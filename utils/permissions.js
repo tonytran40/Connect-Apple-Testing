@@ -1,3 +1,5 @@
+const { waitForCondition } = require('./uiTransitions');
+
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.IOS_PERMISSION_PROMPT_TIMEOUT_MS, 10) || 1500;
 const PHOTO_PROMPT_TIMEOUT =
   Number.parseInt(process.env.IOS_PHOTO_PERMISSION_PROMPT_TIMEOUT_MS, 10) || DEFAULT_TIMEOUT;
@@ -105,6 +107,26 @@ async function isDocumentAccessPromptVisible(driver) {
   return prompt.isDisplayed().catch(() => false);
 }
 
+async function waitForPromptDismissal(driver, isVisible, timeout) {
+  try {
+    await waitForCondition(driver, async () => !(await isVisible(driver)), {
+      timeout,
+      interval: 50,
+      timeoutMsg: 'permissions: prompt remained visible after accepting it',
+    });
+  } catch {
+    // Best-effort animation settling; the next feature-specific wait reports failures.
+  }
+}
+
+async function isButtonVisible(driver, label) {
+  const safe = esc(label);
+  const button = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (name == "${safe}" OR label == "${safe}")`
+  );
+  return button.isDisplayed().catch(() => false);
+}
+
 async function tapAllowFullPhotoAccessByCoordinates(driver) {
   if (!(await isPhotoLibraryPromptVisible(driver))) {
     return false;
@@ -116,7 +138,7 @@ async function tapAllowFullPhotoAccessByCoordinates(driver) {
     y: Math.round(win.height * 0.75),
   });
   console.log('permissions: tapped photo library prompt by fallback coordinates');
-  await driver.pause(600);
+  await waitForPromptDismissal(driver, isPhotoLibraryPromptVisible, 600);
   return true;
 }
 
@@ -128,7 +150,7 @@ async function allowNotificationPromptIfNeeded(driver) {
   const tapped = await tapFirstVisibleButton(driver, ['Allow']);
   if (tapped) {
     console.log(`permissions: tapped notification prompt "${tapped}"`);
-    await driver.pause(500);
+    await waitForPromptDismissal(driver, activeDriver => isButtonVisible(activeDriver, tapped), 500);
     return true;
   }
 
@@ -156,7 +178,7 @@ async function allowPhotoLibraryPromptIfNeeded(driver) {
 
   if (tapped) {
     console.log(`permissions: tapped photo library prompt "${tapped}"`);
-    await driver.pause(600);
+    await waitForPromptDismissal(driver, isPhotoLibraryPromptVisible, 600);
     return true;
   }
 
@@ -190,7 +212,7 @@ async function allowDocumentAccessPromptIfNeeded(driver, options = {}) {
       }
 
       console.log(`permissions: tapped document access prompt "${tapped}"`);
-      await driver.pause(500);
+      await waitForPromptDismissal(driver, isDocumentAccessPromptVisible, 500);
       return true;
     }
     if (Date.now() < deadline) await driver.pause(150);

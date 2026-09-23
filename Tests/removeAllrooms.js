@@ -2,8 +2,8 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
+const { defineTest } = require('../utils/testHarness');
 const {
-  runWithOptionalDriver,
   ensureRoomsSectionReady,
   swipeConversationList,
 } = require('../utils/testSession');
@@ -198,7 +198,6 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, 400);
   }
 
   await ensureRoomsSectionReady(driver);
@@ -213,7 +212,6 @@ async function runTest(driver, options = {}) {
     if (target) {
       await removeOne(driver, target, removed, viewport);
       removed += 1;
-      await pause(driver, POLL_MS);
       continue;
     }
 
@@ -235,25 +233,9 @@ async function runTest(driver, options = {}) {
   }
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(err => {
-    console.error(err?.stack || err);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

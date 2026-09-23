@@ -5,9 +5,9 @@ const { saveScreenshot } = require('../utils/screenshots');
 const {
   ensureRoomsSectionReady,
   goBack,
-  runWithOptionalDriver,
   waitForConversationRow,
 } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const { SELECTORS } = require('../utils/selectors');
 const { createPublicRoom } = require('./CreateRoom');
 const {
@@ -181,23 +181,8 @@ async function runTest(driver, options = {}) {
   return { timings: { roomCreationMs } };
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, options);
-    } catch (error) {
-      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run, runTest };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

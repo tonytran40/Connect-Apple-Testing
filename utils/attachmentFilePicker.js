@@ -1,6 +1,7 @@
 const { SELECTORS } = require('./selectors');
 const { allowDocumentAccessPromptIfNeeded } = require('./permissions');
 const { escapePredicateString, getElementRect, tapByText } = require('./uiActions');
+const { waitForCondition } = require('./uiTransitions');
 
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_FILE_PICKER_TIMEOUT_MS, 10) || 20000;
 const DEFAULT_LOCATION_NAME = process.env.ATTACHMENT_FILES_LOCATION_LABEL || 'On My iPhone';
@@ -36,13 +37,11 @@ async function visibleNamedItem(driver, label) {
 }
 
 async function waitForNamedItem(driver, label, timeout = DEFAULT_TIMEOUT) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const item = await visibleNamedItem(driver, label);
-    if (item) return item;
-    await driver.pause(200);
-  }
-  throw new Error(`attachments: Files picker item "${label}" did not appear`);
+  return waitForCondition(driver, () => visibleNamedItem(driver, label), {
+    timeout,
+    interval: 200,
+    timeoutMsg: `attachments: Files picker item "${label}" did not appear`,
+  });
 }
 
 async function tapNamedItem(driver, label, timeout = DEFAULT_TIMEOUT) {
@@ -65,17 +64,21 @@ async function tapFileElement(driver, element) {
 
 async function waitForDocumentPicker(driver, timeout = DEFAULT_TIMEOUT) {
   await allowDocumentAccessPromptIfNeeded(driver);
-  const deadline = Date.now() + timeout;
   const signals = ['Recents', 'Browse', 'Cancel', DEFAULT_LOCATION_NAME];
-
-  while (Date.now() < deadline) {
-    for (const signal of signals) {
-      if (await visibleNamedItem(driver, signal)) return signal;
+  return waitForCondition(
+    driver,
+    async () => {
+      for (const signal of signals) {
+        if (await visibleNamedItem(driver, signal)) return signal;
+      }
+      return false;
+    },
+    {
+      timeout,
+      interval: 200,
+      timeoutMsg: 'attachments: native Files document picker did not appear',
     }
-    await driver.pause(200);
-  }
-
-  throw new Error('attachments: native Files document picker did not appear');
+  );
 }
 
 async function selectConnectDocument(driver, options = {}) {
@@ -110,19 +113,22 @@ async function waitForSentFile(driver, fileName = DEFAULT_FILE_NAME, timeout = D
     '-ios predicate string:(type == "XCUIElementTypeButton" OR ' +
     'type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeOther") AND ' +
     `(name CONTAINS "${safe}" OR label CONTAINS "${safe}")`;
-  const deadline = Date.now() + timeout;
-
-  while (Date.now() < deadline) {
-    const file = await firstVisible(driver, selector);
-    const inConversation = await driver
-      .$(SELECTORS.shareOptionsButton)
-      .isDisplayed()
-      .catch(() => false);
-    if (file && inConversation) return file;
-    await driver.pause(200);
-  }
-
-  throw new Error(`attachments: sent file "${fileName}" did not appear in the conversation`);
+  return waitForCondition(
+    driver,
+    async () => {
+      const file = await firstVisible(driver, selector);
+      const inConversation = await driver
+        .$(SELECTORS.shareOptionsButton)
+        .isDisplayed()
+        .catch(() => false);
+      return file && inConversation ? file : false;
+    },
+    {
+      timeout,
+      interval: 200,
+      timeoutMsg: `attachments: sent file "${fileName}" did not appear in the conversation`,
+    }
+  );
 }
 
 module.exports = {

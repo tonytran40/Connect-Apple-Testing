@@ -2,9 +2,11 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
+const { resetToHome } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
 const { generateRoomName, createPublicRoom } = require('./CreateRoom');
+const { waitForAnyElementDisplayed, waitForCondition } = require('../utils/uiTransitions');
 const {
   escapePredicateString: esc,
   pauseIfNeeded: pause,
@@ -64,6 +66,37 @@ async function tapMembersRow(driver, timeout = DEFAULT_TIMEOUT) {
   await cell.waitForDisplayed({ timeout });
   await cell.click();
   console.log('membersRoom: tapped Members cell');
+}
+
+async function waitForMembersRow(driver, timeout = DEFAULT_TIMEOUT) {
+  return waitForAnyElementDisplayed(driver, [
+    `-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label CONTAINS "Members" OR name CONTAINS "Members")`,
+    `//XCUIElementTypeStaticText[contains(@name,"Members") or contains(@label,"Members")]/ancestor::XCUIElementTypeCell[1]`,
+  ], {
+    timeout,
+    timeoutMsg: 'membersRoom: Members row did not appear',
+  });
+}
+
+async function waitForNavBarButton(driver, label, timeout = DEFAULT_TIMEOUT) {
+  const safe = esc(label);
+  return waitForAnyElementDisplayed(driver, [
+    `//XCUIElementTypeNavigationBar//XCUIElementTypeButton[(@name="${safe}" or @label="${safe}")]`,
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (name == "${safe}" OR label == "${safe}")`,
+  ], {
+    timeout,
+    timeoutMsg: `membersRoom: ${label} button did not appear`,
+  });
+}
+
+async function waitForAddIndividualsField(driver, timeout = DEFAULT_TIMEOUT) {
+  return waitForAnyElementDisplayed(driver, [
+    `//XCUIElementTypeStaticText[@name="Add Individuals" or @label="Add Individuals"]/following::XCUIElementTypeTextField[1]`,
+    `//XCUIElementTypeStaticText[contains(@name,"ADD INDIVIDUALS") or contains(@label,"ADD INDIVIDUALS")]/following::XCUIElementTypeTextField[1]`,
+  ], {
+    timeout,
+    timeoutMsg: 'membersRoom: Add Individuals field did not appear',
+  });
 }
 
 async function tapMemberText(driver, text, timeout = DEFAULT_TIMEOUT) {
@@ -295,30 +328,27 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pause(driver, 400);
   }
   await resetToHome(driver);
-  await pause(driver, 450);
 
   const sortKey = process.env.MEMBERS_ROOM_SORT_KEY || 'M';
   const roomName = generateRoomName('Public', sortKey);
   console.log(`membersRoom: creating "${roomName}"`);
 
   await createPublicRoom(driver, roomName);
-  await pause(driver, 600);
   await waitForInRoom(driver);
   await saveScreenshot(driver, TEST_NAME, '01_in_room.png');
 
   await tapConversationHeader(driver, roomName);
-  await pause(driver, 400);
+  await waitForMembersRow(driver);
   await saveScreenshot(driver, TEST_NAME, '02_edit_modal_open.png');
 
   await tapMembersRow(driver);
-  await pause(driver, 500);
+  await waitForNavBarButton(driver, 'Edit');
   await saveScreenshot(driver, TEST_NAME, '03_members_screen.png');
 
   await tapNavBarButton(driver, 'Edit');
-  await pause(driver, 400);
+  await waitForAddIndividualsField(driver);
   await saveScreenshot(driver, TEST_NAME, '04_edit_members.png');
 
   await tapRemoveMemberX(driver, memberToRemove);
@@ -331,22 +361,24 @@ async function runTest(driver, options = {}) {
     await saveScreenshot(driver, TEST_NAME, '06_after_type_invitee.png');
 
     await waitForAndTapTypeaheadUserOption(driver, INVITEE);
-    await pause(driver, 400);
+    await waitForCondition(driver, () => selectedInviteeVisible(driver, INVITEE), {
+      timeout: DEFAULT_TIMEOUT,
+      timeoutMsg: `membersRoom: "${INVITEE}" did not appear selected`,
+    });
     await saveScreenshot(driver, TEST_NAME, '07_after_select_invitee.png');
   } else {
     await saveScreenshot(driver, TEST_NAME, '06_invitee_already_selected.png');
   }
 
   await tapNavBarButton(driver, 'Cancel');
-  await pause(driver, 400);
+  await waitForNavBarButton(driver, 'Edit');
   await saveScreenshot(driver, TEST_NAME, '08_after_cancel.png');
 
   await tapBackButton(driver);
-  await pause(driver, 400);
+  await waitForMembersRow(driver);
   await saveScreenshot(driver, TEST_NAME, '09_after_back.png');
 
   await tapCloseEditModal(driver);
-  await pause(driver, 400);
   await waitForInRoom(driver);
   await saveScreenshot(driver, TEST_NAME, '10_after_close.png');
 
@@ -357,22 +389,9 @@ async function runTest(driver, options = {}) {
 
 
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

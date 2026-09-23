@@ -2,7 +2,8 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, ensureRoomsSectionReady } = require('../utils/testSession');
+const { ensureRoomsSectionReady } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const { typeComposerMessage } = require('../utils/uiActions');
 const {
   backgroundAndReactivate,
@@ -77,13 +78,13 @@ async function runTest(driver, options = {}) {
   }
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(activeDriver => runTest(activeDriver, options), driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  // runTest captures before cleanup restores the Rooms list, preserving the existing evidence.
+  captureErrorScreenshot: false,
+});
+const { run } = test;
 
 module.exports = { run, runTest };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

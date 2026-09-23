@@ -2,9 +2,14 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
+const { isQaServerName } = require('../utils/qaEnvironment');
 const { SELECTORS } = require('../utils/selectors');
-const { escapePredicateString, tapByText } = require('../utils/uiActions');
+const {
+  visibleTextSelector,
+  waitForVisibleText: waitForQaText,
+} = require('../utils/qaNavigation');
+const { tapByText } = require('../utils/uiActions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'CorporateDirectory';
@@ -20,7 +25,7 @@ class BlockedTestError extends Error {
 
 function validateCorporateDirectoryFixture(env = process.env) {
   const serverName = String(env.CONNECT_SERVER_NAME || '').trim();
-  if (serverName.toLowerCase() !== 'qa') {
+  if (!isQaServerName(serverName)) {
     throw new BlockedTestError(
       `Corporate Directory automation is QA-only; CONNECT_SERVER_NAME was "${serverName || 'unset'}"`
     );
@@ -38,32 +43,12 @@ function validateCorporateDirectoryFixture(env = process.env) {
   return { serverName, query, expectedUser };
 }
 
-function visibleTextSelector(text, exact = true) {
-  const safe = escapePredicateString(text);
-  const comparison = exact ? '==' : 'CONTAINS';
-  return (
-    '-ios predicate string:(type == "XCUIElementTypeButton" OR ' +
-    'type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeOther") AND ' +
-    `(name ${comparison} "${safe}" OR label ${comparison} "${safe}")`
-  );
-}
-
-async function firstVisible(driver, selector) {
-  const elements = await driver.$$(selector).catch(() => []);
-  for (const element of elements) {
-    if (await element.isDisplayed().catch(() => false)) return element;
-  }
-  return null;
-}
-
 async function waitForVisibleText(driver, text, timeout = DEFAULT_TIMEOUT) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const element = await firstVisible(driver, visibleTextSelector(text));
-    if (element) return element;
-    await driver.pause(175);
-  }
-  throw new Error(`Corporate Directory did not display expected QA user "${text}"`);
+  return waitForQaText(driver, text, {
+    timeout,
+    interval: 175,
+    timeoutMsg: `Corporate Directory did not display expected QA user "${text}"`,
+  });
 }
 
 async function findSearchField(driver) {
@@ -109,17 +94,15 @@ async function runTest(driver, options = {}) {
   };
 }
 
-async function run(driver, options = {}) {
-  const fixture = options.fixture || validateCorporateDirectoryFixture(options.env || process.env);
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, { ...options, fixture });
-    } catch (error) {
-      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  prepareOptions: options => ({
+    ...options,
+    fixture: options.fixture || validateCorporateDirectoryFixture(options.env || process.env),
+  }),
+});
+const { run } = test;
 
 module.exports = {
   BlockedTestError,
@@ -129,10 +112,4 @@ module.exports = {
   visibleTextSelector,
 };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

@@ -9,8 +9,9 @@ const { performance } = require('node:perf_hooks');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot, ensureTestArtifactsDir } = require('../utils/screenshots');
-const { runWithOptionalDriver } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
+const { defineTest } = require('../utils/testHarness');
+const { waitForAnyElementDisplayed, waitForCondition } = require('../utils/uiTransitions');
 const { createPrivateRoom } = require('./CreateRoom');
 
 const DEFAULT_TIMEOUT = 25000;
@@ -111,36 +112,49 @@ function addIndividualsSectionPredicate() {
   );
 }
 
-/** Tap the “Select” typeahead row under ADD INDIVIDUALS (placeholder + chevron), then caller types into the search UI. */
-async function tapSelectUnderAddIndividuals(driver) {
-  const sm = addIndividualsSectionPredicate();
+async function waitForAnyDisplayed(driver, selectors, timeout = DEFAULT_TIMEOUT) {
+  return waitForAnyElementDisplayed(driver, selectors, {
+    timeout,
+    interval: 150,
+    timeoutMsg: `Timed out waiting for one of: ${selectors.join(', ')}`,
+  });
+}
 
-  const selectTaps = [
+async function waitForAllHidden(driver, selectors, timeout = DEFAULT_TIMEOUT) {
+  await waitForCondition(
+    driver,
+    async () => {
+      const visibility = await Promise.all(
+        selectors.map(async selector => {
+          const element = await driver.$(selector);
+          return element.isDisplayed().catch(() => false);
+        })
+      );
+      return visibility.every(isVisible => !isVisible);
+    },
+    {
+      timeout,
+      interval: 150,
+      timeoutMsg: `Timed out waiting for elements to disappear: ${selectors.join(', ')}`,
+    }
+  );
+}
+
+function addIndividualsSelectSelectors() {
+  const sm = addIndividualsSectionPredicate();
+  return [
     `//XCUIElementTypeStaticText[${sm}]/following::XCUIElementTypeStaticText[@name="Select" or @label="Select"][1]`,
     `//XCUIElementTypeStaticText[${sm}]/following::XCUIElementTypeButton[(@name="Select" or @label="Select")][1]`,
     `//XCUIElementTypeStaticText[${sm}]/following::XCUIElementTypeCell[.//XCUIElementTypeStaticText[@name="Select" or @label="Select"]][1]`,
     `//XCUIElementTypeStaticText[${sm}]/following::*[(@name="Select" or @label="Select")][1]`,
+    `-ios predicate string:(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton") AND (name == "Select" OR label == "Select")`,
   ];
+}
 
-  for (const xp of selectTaps) {
-    const el = await driver.$(xp);
-    if (await el.isExisting().catch(() => false) && (await el.isDisplayed().catch(() => false))) {
-      await el.click();
-      await driver.pause(500);
-      return;
-    }
-  }
-
-  const loose = await driver.$(
-    `-ios predicate string:(type == "XCUIElementTypeStaticText" OR type == "XCUIElementTypeButton") AND (name == "Select" OR label == "Select")`
-  );
-  if (await loose.isExisting().catch(() => false) && (await loose.isDisplayed().catch(() => false))) {
-    await loose.click();
-    await driver.pause(500);
-    return;
-  }
-
-  throw new Error('Could not tap “Select” under Add Individuals');
+/** Tap the “Select” typeahead row under ADD INDIVIDUALS (placeholder + chevron), then caller types into the search UI. */
+async function tapSelectUnderAddIndividuals(driver) {
+  const select = await waitForAnyDisplayed(driver, addIndividualsSelectSelectors());
+  await select.click();
 }
 
 /**
@@ -154,46 +168,24 @@ async function typeIntoAddIndividualsTypeahead(driver, textToType) {
     `//XCUIElementTypeStaticText[${sm}]/following::XCUIElementTypeTextField[1]`,
     `//XCUIElementTypeStaticText[${sm}]/following::XCUIElementTypeTextView[1]`,
     `//XCUIElementTypeStaticText[${sm}]/following::XCUIElementTypeSearchField[1]`,
+    'XCUIElementTypeSearchField',
+    '//XCUIElementTypeTextField[1]',
+    '//XCUIElementTypeTextView[1]',
   ];
 
-  for (const xp of inputPaths) {
-    const el = await driver.$(xp);
-    if (await el.isExisting().catch(() => false) && (await el.isDisplayed().catch(() => false))) {
-      await el.click();
-      await driver.pause(200);
-      try {
-        await el.clearValue();
-      } catch {}
-      await el.setValue(textToType);
-      return;
-    }
-  }
-
-  for (const pick of [
-    () => driver.$('XCUIElementTypeSearchField'),
-    () => driver.$('//XCUIElementTypeTextField[1]'),
-    () => driver.$('//XCUIElementTypeTextView[1]'),
-  ]) {
-    const q = pick();
-    if (await q.isExisting().catch(() => false) && (await q.isDisplayed().catch(() => false))) {
-      await q.click();
-      await driver.pause(150);
-      try {
-        await q.clearValue();
-      } catch {}
-      await q.setValue(textToType);
-      return;
-    }
-  }
-
-  throw new Error('Could not type into field after tapping Select under Add Individuals');
+  const input = await waitForAnyDisplayed(driver, inputPaths);
+  await input.click();
+  await driver.pause(150);
+  try {
+    await input.clearValue();
+  } catch {}
+  await input.setValue(textToType);
 }
 
 async function addInviteeFromAddMembersSheet(driver, name) {
   await typeIntoAddIndividualsTypeahead(driver, name);
-  await driver.pause(800);
   await tapSearchResultByText(driver, name, DEFAULT_TIMEOUT);
-  await driver.pause(450);
+  await waitForAnyDisplayed(driver, addIndividualsSelectSelectors(), DEFAULT_TIMEOUT);
 }
 
 /**
@@ -286,7 +278,8 @@ async function tapRoomTitle(driver, titleText) {
 async function openRoomFromList(driver, titleText) {
   await scrollToText(driver, titleText, 12);
   await tapRadioLoose(driver, titleText, DEFAULT_TIMEOUT);
-  await driver.pause(600);
+  const sendButton = await driver.$(SELECTORS.sendMessageButton);
+  await sendButton.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
 }
 
 async function runTest(driver, options = {}) {
@@ -294,11 +287,10 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await driver.pause(1000);
   }
 
   await createPrivateRoom(driver, ROOM_NAME, { skipAddMembersSheet: true, sendStarterMessage: false });
-  await driver.pause(600);
+  await waitForAnyDisplayed(driver, addIndividualsSelectSelectors(), DEFAULT_TIMEOUT);
   await saveScreenshot(driver, TEST_NAME, '01_add_members_sheet.png');
 
   for (const person of INVITEES) {
@@ -307,7 +299,12 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '02_invitees_added.png');
 
   await tapTopSave(driver);
-  await driver.pause(1000);
+  await waitForAllHidden(driver, addIndividualsSelectSelectors(), DEFAULT_TIMEOUT);
+  await waitForAnyDisplayed(
+    driver,
+    [SELECTORS.sendMessageButton, `-ios predicate string:${containsAnyTextPredicate(ROOM_NAME)}`],
+    DEFAULT_TIMEOUT
+  );
   await saveScreenshot(driver, TEST_NAME, '03_after_add_members_save.png');
 
   const alreadyInRoom = await driver.$(SELECTORS.sendMessageButton).isDisplayed().catch(() => false);
@@ -317,13 +314,20 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '04_in_room.png');
 
   await tapRoomTitle(driver, ROOM_NAME);
-  await driver.pause(400);
   await tapByText(driver, 'Members', DEFAULT_TIMEOUT);
-  await driver.pause(600);
+  await waitForAnyDisplayed(
+    driver,
+    [`-ios predicate string:${containsAnyTextPredicate('Edit')}`],
+    DEFAULT_TIMEOUT
+  );
   await saveScreenshot(driver, TEST_NAME, '05_members.png');
 
   await tapByText(driver, 'Edit', DEFAULT_TIMEOUT);
-  await driver.pause(500);
+  await waitForAnyDisplayed(
+    driver,
+    [`-ios predicate string:${containsAnyTextPredicate('Add Members by Territory')}`],
+    DEFAULT_TIMEOUT
+  );
   await saveScreenshot(driver, TEST_NAME, '06_edit_members.png');
 
   await scrollToText(driver, 'Add Members by Territory', 12);
@@ -332,21 +336,26 @@ async function runTest(driver, options = {}) {
   } catch {
     await tapRadioLoose(driver, 'Territory', DEFAULT_TIMEOUT);
   }
-  await driver.pause(600);
+  await waitForAnyDisplayed(
+    driver,
+    [`-ios predicate string:${containsAnyTextPredicate('DEPARTMENT')}`],
+    DEFAULT_TIMEOUT
+  );
   await saveScreenshot(driver, TEST_NAME, '07_filter_members_screen.png');
 
   const deptField = await focusDepartmentTypeaheadOnFilterMembers(driver);
-  await driver.pause(300);
   try {
     await deptField.clearValue();
   } catch {}
   await deptField.setValue(DEPARTMENT_FILTER);
-  await driver.pause(900);
   await tapSearchResultByText(driver, DEPARTMENT_FILTER, DEFAULT_TIMEOUT);
-  await driver.pause(400);
 
   await tapByText(driver, 'Create Filter', DEFAULT_TIMEOUT);
-  await driver.pause(500);
+  const audienceSave = await driver.$(
+    `//XCUIElementTypeNavigationBar//XCUIElementTypeButton[(@name="Save" or @label="Save")]`
+  );
+  await audienceSave.waitForDisplayed({ timeout: DEFAULT_TIMEOUT });
+  await audienceSave.waitForEnabled({ timeout: 120000 });
   await saveScreenshot(driver, TEST_NAME, '08_filter_ready.png');
 
   const perfBeforeAudienceSave = performance.now();
@@ -367,22 +376,8 @@ async function runTest(driver, options = {}) {
   console.log(`Wrote ${reportPath}`);
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);

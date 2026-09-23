@@ -4,7 +4,8 @@ const { URL } = require('node:url');
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, waitForConnectivity } = require('../utils/testSession');
+const { waitForConnectivity } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const {
   buildUniqueMessage,
   buildUniqueRoomName,
@@ -115,16 +116,8 @@ async function runTest(driver, options = {}) {
   return { timings: { roomCreationMs: creation.roomCreationMs } };
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, options);
-    } catch (error) {
-      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = {
   DEFAULT_PREVIEW_CASES,
@@ -136,10 +129,4 @@ module.exports = {
   waitForPreviewCard,
 };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

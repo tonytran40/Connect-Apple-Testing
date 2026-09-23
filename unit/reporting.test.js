@@ -4,7 +4,6 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { formatDurationMs } = require('../utils/reportWriter');
 const { hasFreshCombinedSummary, validateRunId } = require('../scripts/runSplit3AndPublishReport');
 const {
   buildEnvironmentSummary,
@@ -16,6 +15,8 @@ const {
   uniqueReportRuns,
 } = require('../scripts/report/reportAnalysis');
 const { enforceReportRetention } = require('../scripts/report/reportFiles');
+const { discoverReports, reportsForNavigation } = require('../scripts/report/reportCatalog');
+const { buildReportNav, reportSwitcherMarkup } = require('../scripts/report/reportNavigation');
 
 const COMPLETE_APP_ENVIRONMENT = Object.freeze({
   bundleId: 'com.powerhrg.connect.v3.debug',
@@ -31,23 +32,17 @@ function freshSummary(overrides = {}) {
     startedAt: '2026-08-31T12:00:00.000Z',
     updatedAt: '2026-08-31T12:05:00.000Z',
     results: [{ name: 'LocalTest', status: 'PASS' }],
-    coverage: [
-      {
-        name: 'LocalTest',
-        feature: 'Local feature',
-        classification: 'required',
-        environments: ['ANY'],
-        scheduled: true,
-      },
-    ],
+    coverage: [{
+      name: 'LocalTest',
+      feature: 'Local feature',
+      classification: 'required',
+      environments: ['ANY'],
+      scheduled: true,
+    }],
     ...overrides,
   };
 }
 
-test('formatDurationMs formats short and minute-scale durations', () => {
-  assert.equal(formatDurationMs(900), '1s');
-  assert.equal(formatDurationMs(65000), '1m 5s');
-});
 
 test('publisher only accepts a summary written by the current run', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'connect-report-test-'));
@@ -398,4 +393,81 @@ test('report retention removes old and excess archives while keeping newest immu
   assert.equal(fs.existsSync(path.join(archiveRoot, 'newest')), true);
   assert.equal(fs.existsSync(path.join(archiveRoot, 'old')), false);
   fs.rmSync(outputRoot, { recursive: true, force: true });
+});
+
+test('report catalog discovers complete reports in newest-first order and ignores assets', () => {
+  const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'connect-report-catalog-'));
+  const writeReport = (relativeDir, startedAt) => {
+    const dir = path.join(outputRoot, relativeDir);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'index.html'), '<!doctype html>');
+    fs.writeFileSync(path.join(dir, '_report-meta.json'), JSON.stringify({ runId: relativeDir, startedAt }));
+  };
+  writeReport('older', '2026-08-01T12:00:00.000Z');
+  writeReport(path.join('archive', 'newer'), '2026-09-01T12:00:00.000Z');
+  writeReport(path.join('assets', 'ignored'), '2026-09-02T12:00:00.000Z');
+  fs.mkdirSync(path.join(outputRoot, 'incomplete'), { recursive: true });
+  fs.writeFileSync(path.join(outputRoot, 'incomplete', '_report-meta.json'), '{}');
+
+  const reports = discoverReports(outputRoot);
+  assert.deepEqual(
+    reports.map(report => report.runId),
+    ['archive/newer', 'older']
+  );
+  assert.deepEqual(
+    reports.map(report => report.href),
+    ['archive/newer/index.html', 'older/index.html']
+  );
+  fs.rmSync(outputRoot, { recursive: true, force: true });
+});
+
+test('report navigation keeps the active report and tracked history when filtering is enabled', () => {
+  const root = path.join(os.tmpdir(), 'connect-report-navigation');
+  const current = { dir: path.join(root, 'current') };
+  const tracked = { dir: path.join(root, 'archive', 'tracked') };
+  const untracked = { dir: path.join(root, 'archive', 'untracked') };
+  const trackedFiles = new Set([path.join(tracked.dir, 'index.html')]);
+
+  const reports = reportsForNavigation(
+    [current, tracked, untracked],
+    path.join(current.dir, 'index.html'),
+    {
+      trackedOnly: true,
+      repoRoot: root,
+      isTracked: file => trackedFiles.has(file),
+    }
+  );
+
+  assert.deepEqual(reports, [current, tracked]);
+});
+
+test('report switcher pins latest and resolves mutable history to immutable archives', () => {
+  const root = path.join(os.tmpdir(), 'connect-report-switcher');
+  const latest = {
+    dir: path.join(root, 'split3-combined'),
+    runId: 'split3-combined',
+    reportType: 'latest',
+    startedAt: '2026-09-01T12:00:00.000Z',
+    status: 'PASS',
+  };
+  const archive = {
+    ...latest,
+    dir: path.join(root, 'archive', 'run-1'),
+    reportType: 'archive',
+  };
+  const older = {
+    dir: path.join(root, 'archive', 'run-0'),
+    runId: 'split3-combined',
+    reportType: 'archive',
+    startedAt: '2026-08-31T12:00:00.000Z',
+    status: 'FAIL',
+  };
+
+  const navigation = buildReportNav([latest, archive, older], path.join(older.dir, 'index.html'));
+
+  assert.equal(navigation[0].latest, true);
+  assert.equal(navigation[0].runId, 'Full Suite');
+  assert.equal(navigation.find(report => report.selected).status, 'FAIL');
+  assert.match(reportSwitcherMarkup(navigation), /Saved runs/);
+  assert.match(reportSwitcherMarkup(navigation), /Full Suite/);
 });

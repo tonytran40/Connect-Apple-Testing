@@ -2,10 +2,10 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const {
-  ensureRoomsSectionReady,
-  runWithOptionalDriver,
-} = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
+const { ensureRoomsSectionReady } = require('../utils/testSession');
+const { integer } = require('../utils/envConfig');
+const { requireQaServer } = require('../utils/qaEnvironment');
 const { buildUniqueRoomName } = require('../utils/conversationFeatureFlows');
 const { SELECTORS } = require('../utils/selectors');
 const {
@@ -13,14 +13,14 @@ const {
   getElementRect,
   tapByText,
 } = require('../utils/uiActions');
+const { waitForElementHidden } = require('../utils/uiTransitions');
 const { createPrivateRoom } = require('./CreateRoom');
-const { requireQaServer } = require('./BrowseRooms');
 
 const TEST_NAME = 'AudienceFilters';
-const DEFAULT_TIMEOUT = Number.parseInt(process.env.AUDIENCE_FILTER_TIMEOUT_MS, 10) || 25000;
-const APPLY_TIMEOUT = Number.parseInt(process.env.AUDIENCE_FILTER_APPLY_TIMEOUT_MS, 10) || 120000;
-const TYPE_DELAY_MS = Number.parseInt(process.env.AUDIENCE_FILTER_TYPE_DELAY_MS, 10) || 75;
-const TYPE_RETRIES = Number.parseInt(process.env.AUDIENCE_FILTER_TYPE_RETRIES, 10) || 3;
+const DEFAULT_TIMEOUT = integer(process.env, 'AUDIENCE_FILTER_TIMEOUT_MS', 25000, { min: 1 });
+const APPLY_TIMEOUT = integer(process.env, 'AUDIENCE_FILTER_APPLY_TIMEOUT_MS', 120000, { min: 1 });
+const TYPE_DELAY_MS = integer(process.env, 'AUDIENCE_FILTER_TYPE_DELAY_MS', 75, { min: 0 });
+const TYPE_RETRIES = integer(process.env, 'AUDIENCE_FILTER_TYPE_RETRIES', 3, { min: 1 });
 const QA_AUDIENCE_FIXTURE = Object.freeze({
   territory: 'Philadelphia',
   department: 'Business Technology',
@@ -52,11 +52,6 @@ function visibleTextSelector(text) {
   );
 }
 
-async function isDisplayed(driver, selector) {
-  const element = await driver.$(selector);
-  return element.isDisplayed().catch(() => false);
-}
-
 async function waitForText(driver, text, timeout = DEFAULT_TIMEOUT) {
   const element = await driver.$(visibleTextSelector(text));
   await element.waitForDisplayed({
@@ -68,12 +63,11 @@ async function waitForText(driver, text, timeout = DEFAULT_TIMEOUT) {
 
 async function waitForTextHidden(driver, text, timeout = DEFAULT_TIMEOUT) {
   const selector = visibleTextSelector(text);
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    if (!(await isDisplayed(driver, selector))) return;
-    await driver.pause(250);
-  }
-  throw new Error(`Audience-filter text "${text}" remained visible after ${timeout}ms`);
+  await waitForElementHidden(driver, selector, {
+    timeout,
+    interval: 250,
+    timeoutMsg: `Audience-filter text "${text}" remained visible after ${timeout}ms`,
+  });
 }
 
 async function textFieldValue(field) {
@@ -398,19 +392,17 @@ async function runTest(driver, options = {}) {
   };
 }
 
-async function run(driver, options = {}) {
-  const env = options.env || process.env;
-  requireQaServer(env, TEST_NAME);
-  resolveAudienceFilterConfig(env);
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      return await runTest(activeDriver, options);
-    } catch (error) {
-      await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png').catch(() => {});
-      throw error;
-    }
-  }, driver);
-}
+const test = defineTest({
+  name: TEST_NAME,
+  execute: runTest,
+  prepareOptions: options => {
+    const env = options.env || process.env;
+    requireQaServer(env, TEST_NAME);
+    resolveAudienceFilterConfig(env);
+    return options;
+  },
+});
+const { run } = test;
 
 module.exports = {
   QA_AUDIENCE_FIXTURE,
@@ -430,10 +422,4 @@ module.exports = {
   waitForRoomMemberCount,
 };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(error => {
-    console.error(error?.stack || error);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

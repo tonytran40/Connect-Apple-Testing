@@ -2,7 +2,8 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, resetToHome } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
+const { resetToHome } = require('../utils/testSession');
 const {
   logPickerDiagnostics,
   sendComposerDraft,
@@ -27,8 +28,6 @@ const {
 
 const TEST_NAME = 'attachments';
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.ATTACHMENT_ROOM_TIMEOUT_MS, 10) || 20000;
-const COMPOSER_ATTACHMENT_SETTLE_MS =
-  Number.parseInt(process.env.ATTACHMENT_COMPOSER_SETTLE_MS, 10) || 5000;
 const GIF_PICKER_SETTLE_MS = Number.parseInt(process.env.ATTACHMENT_GIF_PICKER_SETTLE_MS, 10) || 800;
 const GIF_SEND_SETTLE_MS = Number.parseInt(process.env.ATTACHMENT_GIF_SEND_SETTLE_MS, 10) || 1500;
 const GIF_TAP_X_RATIO = Number.parseFloat(process.env.ATTACHMENT_GIF_TAP_X_RATIO) || 0.19;
@@ -95,7 +94,6 @@ async function enterAttachmentRoom(driver) {
 
   console.log(`attachments: creating "${roomName}"`);
   await createPublicRoom(driver, roomName);
-  await pauseIfNeeded(driver, 600);
   await waitForInRoom(driver);
 }
 
@@ -217,22 +215,18 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await pauseIfNeeded(driver, 400);
   }
 
   await resetToHome(driver);
-  await pauseIfNeeded(driver, 450);
   await enterAttachmentRoom(driver);
   await saveScreenshot(driver, TEST_NAME, '01_in_room.png');
 
   await tapShareOptionsButton(driver);
-  await pauseIfNeeded(driver, 400);
   const visibleOption = await waitForShareOptionsDialog(driver);
   console.log(`attachments: share options dialog visible (${visibleOption})`);
   await saveScreenshot(driver, TEST_NAME, '02_share_options_dialog.png');
 
   await tapShareOption(driver, 'Attach Photos');
-  await pauseIfNeeded(driver, 800);
   await waitForPhotoPicker(driver);
   await saveScreenshot(driver, TEST_NAME, '03_photo_picker_open.png');
 
@@ -246,7 +240,6 @@ async function runTest(driver, options = {}) {
 
   await tapDoneInPhotoPicker(driver);
   await waitForAttachmentDraftInComposer(driver);
-  await pauseIfNeeded(driver, COMPOSER_ATTACHMENT_SETTLE_MS);
   await saveScreenshot(driver, TEST_NAME, '05_attachment_in_composer.png');
 
   await sendComposerDraft(driver);
@@ -254,7 +247,6 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '06_after_send_attachment.png');
 
   await tapShareOptionsButton(driver);
-  await pauseIfNeeded(driver, 250);
   await waitForShareOptionsDialog(driver);
   await saveScreenshot(driver, TEST_NAME, '07_share_options_dialog_for_file.png');
 
@@ -281,7 +273,6 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '14_after_send_file_attachment.png');
 
   await tapShareOptionsButton(driver);
-  await pauseIfNeeded(driver, 400);
   await waitForShareOptionsDialog(driver);
   await saveScreenshot(driver, TEST_NAME, '15_share_options_dialog_for_gif.png');
 
@@ -294,25 +285,9 @@ async function runTest(driver, options = {}) {
   await saveScreenshot(driver, TEST_NAME, '17_after_send_gif.png');
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run, generateAttachmentRoomName, resolveAttachmentRoomName };
 
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(err => {
-    console.error(err?.stack || err);
-    process.exit(1);
-  });
-}
+test.runIfMain(module);

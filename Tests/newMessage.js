@@ -2,58 +2,62 @@ require('dotenv').config();
 
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { saveScreenshot } = require('../utils/screenshots');
-const { runWithOptionalDriver, scrollUntilConversationEntryVisible } = require('../utils/testSession');
+const { scrollUntilConversationEntryVisible } = require('../utils/testSession');
+const { defineTest } = require('../utils/testHarness');
 const { SELECTORS } = require('../utils/selectors');
 const { escapePredicateString, typeComposerMessage } = require('../utils/uiActions');
+const {
+  waitForAnyElementDisplayed,
+  waitForCondition,
+  waitForElementDisplayed,
+  waitForElementEnabled,
+} = require('../utils/uiTransitions');
 
 const TEST_NAME = 'newMessage';
 
-async function tapSearchResultByText(driver, text, timeout = 20000) {
+async function waitForSearchResultByText(driver, text, timeout = 20000) {
   const safe = escapePredicateString(text);
 
-  const buttonEl = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
-  );
-  if (await buttonEl.isExisting().catch(() => false)) {
-    await buttonEl.click();
-    return;
-  }
+  return waitForCondition(
+    driver,
+    async () => {
+      const buttonEl = await driver.$(
+        `-ios predicate string:type == "XCUIElementTypeButton" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
+      );
+      if (await buttonEl.isDisplayed().catch(() => false)) return buttonEl;
 
-  const textEl = await driver.$(
-    `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
-  );
+      const textEl = await driver.$(
+        `-ios predicate string:type == "XCUIElementTypeStaticText" AND (name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
+      );
+      if (await textEl.isDisplayed().catch(() => false)) {
+        const parentCell = await textEl.$('ancestor::XCUIElementTypeCell[1]');
+        if (await parentCell.isDisplayed().catch(() => false)) return parentCell;
 
-  if (await textEl.isExisting().catch(() => false)) {
-    const parentCell = await textEl.$('ancestor::XCUIElementTypeCell[1]');
-    if (await parentCell.isExisting().catch(() => false)) {
-      await parentCell.click();
-      return;
+        const parentButton = await textEl.$('ancestor::XCUIElementTypeButton[1]');
+        if (await parentButton.isDisplayed().catch(() => false)) return parentButton;
+        return textEl;
+      }
+
+      const cellEl = await driver.$(
+        `//XCUIElementTypeStaticText[contains(@name,"${text}") or contains(@label,"${text}")]/ancestor::XCUIElementTypeCell[1]`
+      );
+      if (await cellEl.isDisplayed().catch(() => false)) return cellEl;
+
+      const anyEl = await driver.$(
+        `-ios predicate string:(name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
+      );
+      return (await anyEl.isDisplayed().catch(() => false)) ? anyEl : false;
+    },
+    {
+      timeout,
+      timeoutMsg: `Search result for "${text}" did not become visible`,
     }
-
-    const parentButton = await textEl.$('ancestor::XCUIElementTypeButton[1]');
-    if (await parentButton.isExisting().catch(() => false)) {
-      await parentButton.click();
-      return;
-    }
-
-    await textEl.click();
-    return;
-  }
-
-  const cellEl = await driver.$(
-    `//XCUIElementTypeStaticText[contains(@name,"${text}") or contains(@label,"${text}")]/ancestor::XCUIElementTypeCell[1]`
   );
+}
 
-  if (await cellEl.isExisting().catch(() => false)) {
-    await cellEl.click();
-    return;
-  }
-
-  const anyEl = await driver.$(
-    `-ios predicate string:(name CONTAINS "${safe}" OR label CONTAINS "${safe}")`
-  );
-  await anyEl.waitForDisplayed({ timeout });
-  await anyEl.click();
+async function tapSearchResultByText(driver, text, timeout = 20000) {
+  const result = await waitForSearchResultByText(driver, text, timeout);
+  await result.click();
 }
 
 async function runTest(driver, options = {}) {
@@ -63,7 +67,11 @@ async function runTest(driver, options = {}) {
 
   if (!skipLogin) {
     await ensureLoggedIn(driver);
-    await driver.pause(800);
+    await waitForAnyElementDisplayed(
+      driver,
+      [SELECTORS.mainAppView, SELECTORS.roomsSectionHeader],
+      { timeout: 20000, timeoutMsg: 'Connect did not become ready after login' }
+    );
     await saveScreenshot(driver, TEST_NAME, '01_logged_in.png');
   }
 
@@ -80,7 +88,10 @@ async function runTest(driver, options = {}) {
     console.log('Opened Start Conversation via newConversationButton');
   }
 
-  await driver.pause(700);
+  await waitForElementDisplayed(driver, SELECTORS.searchUsersTextField, {
+    timeout: 20000,
+    timeoutMsg: 'Recipient search did not become visible',
+  });
   await saveScreenshot(driver, TEST_NAME, '02_start_conversation.png');
 
   const searchField = await driver.$(SELECTORS.searchUsersTextField);
@@ -89,41 +100,32 @@ async function runTest(driver, options = {}) {
   await searchField.setValue(recipient);
   console.log(`Typed recipient: ${recipient}`);
 
-  await driver.pause(900);
+  await waitForSearchResultByText(driver, recipient);
   await saveScreenshot(driver, TEST_NAME, '03_typed_recipient.png');
 
   await tapSearchResultByText(driver, recipient);
   console.log('Selected recipient');
 
-  await driver.pause(700);
+  await waitForAnyElementDisplayed(
+    driver,
+    [SELECTORS.roomComposerTextView, SELECTORS.messageComposerTextView],
+    { timeout: 20000, timeoutMsg: 'Message composer did not become visible after selecting recipient' }
+  );
   await saveScreenshot(driver, TEST_NAME, '04_selected_recipient.png');
 
   await typeComposerMessage(driver, message);
-  await driver.pause(500);
+  const sendBtn = await waitForElementEnabled(driver, SELECTORS.sendMessageButton, {
+    timeout: 10000,
+    timeoutMsg: 'Send button did not become enabled after typing the message',
+  });
   await saveScreenshot(driver, TEST_NAME, '05_message_typed.png');
 
-  const sendBtn = await driver.$(SELECTORS.sendMessageButton);
-  await sendBtn.waitForEnabled({ timeout: 10000 });
   await sendBtn.click();
   console.log('Sent message');
 }
 
-async function run(driver, options = {}) {
-  return runWithOptionalDriver(async activeDriver => {
-    try {
-      await runTest(activeDriver, options);
-    } catch (err) {
-      try {
-        await saveScreenshot(activeDriver, TEST_NAME, 'ERROR.png');
-      } catch {}
-      throw err;
-    }
-  }, driver);
-}
+const test = defineTest({ name: TEST_NAME, execute: runTest });
+const { run } = test;
 
 module.exports = { run };
-
-if (require.main === module) {
-  const { runCliTimed } = require('../utils/cliTestTiming');
-  runCliTimed(TEST_NAME, run).catch(() => process.exit(1));
-}
+test.runIfMain(module);
