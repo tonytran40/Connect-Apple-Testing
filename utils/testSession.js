@@ -4,6 +4,9 @@ const { boundedInt, escapePredicateString, getElementRect } = require('./uiActio
 const { continueWebAuthenticationIfNeeded } = require('./systemPrompts');
 
 const ROOMS_HEADER_SELECTOR = PREDICATES.roomsHeaderButton;
+const EVENTS_HEADER_SELECTOR =
+  '-ios predicate string:type == "XCUIElementTypeButton" AND ' +
+  '(name CONTAINS "Events" OR label CONTAINS "Events")';
 const LOST_CONNECTIVITY_SELECTOR =
   '-ios predicate string:(name CONTAINS "Lost connection" OR label CONTAINS "Lost connection")';
 const DEFAULT_CONNECTIVITY_RECOVERY_TIMEOUT_MS = boundedInt(
@@ -309,6 +312,20 @@ async function scrollConversationListToTop(driver, options = {}) {
     if (await getConversationListRoomsHeader(driver, 500)) {
       console.log('scrollConversationListToTop: Rooms controls restored with status-bar tap');
       return true;
+    }
+  } catch {}
+
+  // An expanded Corporate Events disclosure can occupy the entire home list.
+  // Collapse it only when Rooms is still hidden after returning to the top.
+  try {
+    const eventsHeader = await driver.$(EVENTS_HEADER_SELECTOR);
+    if (await eventsHeader.isDisplayed().catch(() => false)) {
+      await eventsHeader.click();
+      await driver.pause(settleMs);
+      if (await getConversationListRoomsHeader(driver, 500)) {
+        console.log('scrollConversationListToTop: collapsed Events to restore Rooms controls');
+        return true;
+      }
     }
   } catch {}
 

@@ -264,3 +264,38 @@ test('scroll-to-top uses fast scoped swipes when the status-bar tap is ignored',
   assert.ok(start.y < end.y);
   assert.equal(end.duration, 180);
 });
+
+test('scroll-to-top collapses expanded Corporate Events when it obscures Rooms', async () => {
+  let eventsClicks = 0;
+  const hidden = {
+    isDisplayed: async () => false,
+    waitForDisplayed: async () => {
+      throw new Error('not displayed');
+    },
+  };
+  const roomsHeader = visibleElement({
+    getLocation: async () => ({ y: eventsClicks ? 150 : 50 }),
+  });
+  const eventsHeader = visibleElement({
+    click: async () => {
+      eventsClicks++;
+    },
+  });
+  const driver = {
+    $: async selector => {
+      if (selector === PREDICATES.roomsHeaderButton) return roomsHeader;
+      if (selector === SELECTORS.roomsSectionHeader) return hidden;
+      if (selector.includes('Events')) return eventsHeader;
+      return hidden;
+    },
+    execute: async () => {},
+    getWindowRect: async () => ({ x: 0, y: 0, width: 300, height: 700 }),
+    pause: async () => {},
+  };
+
+  assert.equal(
+    await scrollConversationListToTop(driver, { maxSwipes: 0, settleMs: 0 }),
+    true
+  );
+  assert.equal(eventsClicks, 1);
+});

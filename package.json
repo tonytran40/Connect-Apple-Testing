@@ -35,6 +35,7 @@
     "test:browse-rooms": "CONNECT_SERVER_NAME=QA npm run test:one -- BrowseRooms",
     "test:audience-filters": "CONNECT_SERVER_NAME=QA npm run test:one -- AudienceFilters",
     "test:corporate-directory": "CONNECT_SERVER_NAME=QA npm run test:one -- CorporateDirectory",
+    "test:corporate-events": "CONNECT_SERVER_NAME=QA CORPORATE_EVENTS_ENABLED=1 npm run test:one -- CorporateEvents",
     "test:appointment-cards": "CONNECT_SERVER_NAME=QA APPOINTMENT_CARD_ENABLED=1 npm run test:one -- AppointmentCards",
     "test:user-settings": "npm run test:one -- User_Settings",
     "test:user-settings:logout": "USER_SETTINGS_INCLUDE_LOGOUT=1 npm run test:one -- User_Settings",

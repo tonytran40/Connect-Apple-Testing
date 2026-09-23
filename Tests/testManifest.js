@@ -105,6 +105,13 @@ const TESTS = Object.freeze([
     environments: ['QA'],
     cleanup: 'read-only',
   }),
+  entry('CorporateEvents', 'Corporate events', {
+    splitLane: 'conversationList',
+    environments: ['QA'],
+    optIn: true,
+    timeoutClass: 'long',
+    cleanup: 'read-only',
+  }),
   entry('AppointmentCards', 'Appointments', {
     parallelAll: true,
     optIn: true,

@@ -4,18 +4,47 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 
 ---
 
-## What this repo covers
+## Project status
+
+This started as a small Appium proof of concept and now provides a reusable iOS
+regression framework, multi-simulator execution, QA-only fixture coverage, and a
+shareable browser report. The Connect app source checkout is treated as a
+read-only reference; all automation and reporting changes live in this repo.
+
+### What has been built
+
+| Workstream | Delivered |
+|------------|-----------|
+| **Automation framework** | Shared login, SSO confirmation handling, permission handling, reusable Appium sessions, home-state recovery, connectivity waits, source-backed selectors, screenshots, cleanup contracts, and deterministic test data |
+| **Simulator execution** | Single-test runs, sequential suites, two-lane split, three-lane split, one-at-a-time simulator boot preparation, lane discovery, unique WDA ports, session recovery, and optional app installation |
+| **Core regression** | Room creation/edit/member flows; direct messaging; list actions; pin/edit/unpin; reactions; markdown; attachments; link previews; message actions; conversation search; notification preferences; layout/sort settings; login/logout |
+| **QA-only coverage** | Browse Rooms ownership transfer/leave/rejoin, audience-filter lifecycle, Corporate Directory lookup, Corporate Events navigation, and appointment-card fixture validation |
+| **System coverage** | Draft persistence through background/foreground, notification deep-link probing, and safe generated-room cleanup |
+| **Reporting** | Scribe-style HTML and Markdown reports, per-step screenshots, collapsed test details, failed-step highlighting, failure classification, rerun commands, lane health, timings, build/branch metadata, coverage readiness, latest/history navigation, and report retention |
+| **Sharing** | Local server on port `5500`, VS Code Live Server support, temporary Cloudflare Quick Tunnels, and GitHub Pages publishing with a run-and-publish command |
+| **Framework quality** | Central test manifest, syntax checks, ESLint, selector audit against the read-only Swift source, and 137 framework unit tests at the time of this update |
+
+### Automation coverage
 
 | Area | Tests / behavior |
 |------|------------------|
-| **Login** | Auto-login when `loginView` is shown (localhost server, credentials from `.env`) |
-| **Rooms** | Create public/private rooms (`CreateRoom.js`); edit room settings (`editRoom.js`); remove room rows (`removeRoom.js`); manage room members (`membersRoom.js`) |
-| **List actions** | Swipe-right favorite / unfavorite (`favoriteRoom.js`); mark unread/read (`markAsRead.js`); swipe-left remove (`removeRoom.js`) |
-| **Messaging** | New DM; conversation search/sort; reactions; emoji typeahead; Copy/Delete actions; markdown and link-preview rendering; pin/edit/unpin; photo, file, and GIF attachments |
-| **Notifications** | Push a simulator notification and verify app re-entry (`notifications.js`) |
-| **Settings** | Room notification preferences; conversation layout & sort; sign out |
-| **System flows** | Opt-in draft persistence across app background/foreground (`DraftPersistence.js`) |
-| **Suite** | One session, shared login, markdown report (`Tests/runAll.js`) |
+| **Authentication** | Auto-login when `loginView` appears, server selection, PowerHRG web sign-in confirmation, notification prompt handling, persisted sessions, and opt-in sign out/login restoration |
+| **Rooms** | Public/private room creation, room edit/topic/privacy, member management, removal, notification preference persistence, and cleanup of generated rooms |
+| **Conversation list** | Favorite/unfavorite, unread/read, remove, layout/sort persistence, long-list scrolling, result recovery, and opening existing rooms |
+| **Messaging** | New DM, composer emoji typeahead, Copy/Delete, pin/edit/unpin, reactions add/remove, markdown, conversation search/results, and three link-preview types |
+| **Attachments** | Photos, Files document picker, GIF entry points, shared permission prompts, composer validation, and generated-file cleanup |
+| **QA fixtures** | Real-user directory search, Browse Rooms with Jonathan Levy ownership transfer, audience filters for Philadelphia / Business Technology / Nitro Quality Ninja, Corporate Events, and appointment cards |
+| **Corporate Events** | Expand `Automate test 1`, open the Jonathan Levy DM, open `Corporate Automate Room`, return between checks, and verify the `GOOGLE` external-link handoff |
+| **Notifications** | Simulator APNS injection, app re-entry, optional deterministic room routing, and explicit partial/inconclusive evidence when a required fixture is unavailable |
+| **Reports** | Automatic report generation after single and suite runs, including reports for failures, blocked tests, skipped tests, and inconclusive checks |
+
+### Current known limitations
+
+- The `GOOGLE` item in the current Corporate Events QA fixture does not open an external app. The automation correctly fails this step; configure the event with a fully qualified URL such as `https://www.google.com` and rerun `npm run test:corporate-events`.
+- Corporate Events and appointment cards remain opt-in because their QA data must stay deterministic and available for the duration of a run.
+- Mention typeahead is intentionally excluded until the environment provides deterministic room members.
+- Notification room routing requires a real `NOTIFICATION_ROOM_ID` and exact visible room name; banner-only coverage is treated as partial rather than a full routing pass.
+- Full UI CI still requires a macOS host, Xcode simulators, an installed Connect build, Appium/XCUITest, credentials, and network access to the selected server.
 
 **Not in scope:** Connect app unit tests, pixel-perfect visual diff, load/performance benchmarks. This automation framework does include lightweight unit and syntax checks for its own runner/reporting code.
 
@@ -38,7 +67,7 @@ End-to-end automation for **Connect Apple (iOS)** using **Appium + WebdriverIO**
 - **Node.js 20+** and **npm**
 - **Appium** globally or via `npx`
 - **Connect iOS** debug app installed on the simulator (`com.powerhrg.connect.v3.debug`)
-- Local **localhost** backend available when login runs (tests select **localhost** in the server picker)
+- Access to the selected Connect server. Localhost and QA are supported; QA-only tests require a valid Nitro SSO session.
 
 Check simulators:
 
@@ -97,7 +126,7 @@ npm run doctor
 
 The doctor reports the simulator selected for each lane, whether Connect is installed, Appium port health, and login credential availability.
 
-**Login flow:** If the app is already logged in (`loginView` absent), tests skip login. With `appium:noReset: true`, session state persists across runs. After submitting login, the helper waits for the conversation list and fails fast if the app shows a login error like `There was an issue logging in`.
+**Login flow:** If the app is already logged in (`loginView` absent), tests skip login. With `appium:noReset: true`, session state persists across runs. The helper selects the configured server, handles the scoped PowerHRG web sign-in confirmation, waits for the conversation list, and fails fast if the app shows a login error like `There was an issue logging in`.
 
 ### 5. Start Appium (separate terminal)
 
@@ -394,6 +423,19 @@ http://localhost:5500/
 
 In VS Code, you can do the same thing with the **Live Server** extension: right-click `index.html`, choose **Open with Live Server**, and leave that browser tab open. After each report-aware test finishes, the local page will show the regenerated report without needing a push.
 
+To temporarily share that same live local report without committing or pushing,
+keep the local server running and start a Cloudflare Quick Tunnel in another
+terminal:
+
+```bash
+cloudflared tunnel --url http://localhost:5500
+```
+
+Share the generated `https://*.trycloudflare.com` URL. It reflects newly
+generated local reports as soon as they are written under `docs/`, but the Mac,
+local server, and tunnel must remain running. This is a temporary preview URL;
+GitHub Pages remains the persistent team link.
+
 Use `npm run docs:scribe -- --run <runId>` only when you want to regenerate an older report without rerunning its tests.
 
 To preview failure highlighting without publishing fake failures, generate a local-only report in `/tmp`:
@@ -467,6 +509,7 @@ node Tests/LinkPreviews.js
 CONNECT_SERVER_NAME=QA node Tests/BrowseRooms.js
 CONNECT_SERVER_NAME=QA node Tests/AudienceFilters.js
 CONNECT_SERVER_NAME=QA node Tests/CorporateDirectory.js
+node Tests/CorporateEvents.js
 CONNECT_SERVER_NAME=QA APPOINTMENT_CARD_ENABLED=1 node Tests/AppointmentCards.js
 node Tests/User_Settings.js
 node Tests/RoomNotificationPreferences.js
@@ -496,6 +539,7 @@ npm run test:composer-typeahead
 npm run test:message-actions
 npm run test:audience-filters
 npm run test:corporate-directory
+npm run test:corporate-events
 npm run test:appointment-cards
 npm run test:user-settings
 npm run test:room-notification-preferences
@@ -525,6 +569,7 @@ npm run selectors:audit
 - `BrowseRooms.js` is QA-only because the public directory and real user data are unavailable on localhost. Its dedicated command selects QA, then the test creates a deterministic public room, searches `Levy` and adds the exact `Jonathan Levy` result, transfers admin ownership from `Tony Tran` to Jonathan, leaves from Room Settings, finds and rejoins the room through Browse Rooms, verifies filtering, and returns home. The simulator must already have a valid Nitro SSO session; set `BROWSE_ROOMS_TARGET_ROOM` to run only the browse/search checks against an existing room.
 - `AudienceFilters.js` is QA-only and verifies create, edit, and delete using the configured territory, department, and title. Missing deterministic fixture values produce `BLOCKED`, not a fake pass.
 - `CorporateDirectory.js` is QA-only and opens a deterministic exact user result and its contact card. Configure `CORPORATE_DIRECTORY_USER_QUERY` and `CORPORATE_DIRECTORY_EXPECTED_USER`.
+- `CorporateEvents.js` is QA-only and opt-in. Standalone runs default to QA and target the `Automate test 1` fixture. The test opens its `JONATHAN LEVY` direct-message link and `CORPORATE AUTOMATE ROOM` room link, returns to the event between checks, and then verifies that `GOOGLE` hands off to an external app. The first two checks currently pass. The URL check intentionally reports a clear failure while the fixture does not launch externally; configure a fully qualified URL such as `https://www.google.com` to complete that coverage. Override the corresponding `CORPORATE_EVENTS_*` values if QA changes. Run it with `node Tests/CorporateEvents.js` or `npm run test:corporate-events`; it does not join the default QA split suite.
 - `AppointmentCards.js` is an opt-in QA fixture test. It proves that a known `A#<digits>` appointment card loads and displays a configured business detail; absent fixture data is reported as `BLOCKED`.
 - `User_Settings.js` verifies layout and sorting persistence across reopening and restores both settings. Logout/login is isolated behind `USER_SETTINGS_INCLUDE_LOGOUT=1`.
 - `RoomNotificationPreferences.js` changes a room preference, verifies it after reopening, and restores `ROOM_NOTIFICATION_RESTORE_LABEL` in cleanup.
@@ -622,6 +667,7 @@ Connect-Apple-Testing/
 │   ├── MessageActions.js
 │   ├── ConversationSearch.js
 │   ├── LinkPreviews.js
+│   ├── CorporateEvents.js       # opt-in QA corporate-event fixture flow
 │   ├── RoomNotificationPreferences.js
 │   ├── DraftPersistence.js       # opt-in system flow
 │   ├── editRoom.js          # standalone room settings flow
@@ -723,6 +769,7 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:browse-rooms` | Run the QA-only room-directory and ownership-transfer flow |
 | `npm run test:audience-filters` | Run the QA-only audience-filter lifecycle |
 | `npm run test:corporate-directory` | Run the QA-only deterministic directory lookup |
+| `npm run test:corporate-events` | Run the opt-in QA corporate-event fixture flow |
 | `npm run test:appointment-cards` | Run the opt-in QA appointment-card fixture test |
 | `npm run test:user-settings` | Verify and restore persisted user settings in isolation |
 | `npm run test:user-settings:logout` | Add isolated logout/login coverage to User Settings |
