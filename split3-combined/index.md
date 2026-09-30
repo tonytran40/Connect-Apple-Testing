@@ -21,7 +21,7 @@
 | Test body | 14m 38s |
 | Screenshot capture | 16s |
 | Recovery | 4s |
-| Report generation | 1s |
+| Report generation | 2s |
 | Room creation (test-owned) | 16s |
 
 ## Tests
