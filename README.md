@@ -411,7 +411,7 @@ Cleanup is advisory by default. Add `SPLIT_POST_RUN_CLEANUP_STRICT=1` only when 
 
 ### Scribe-style documentation
 
-Every report-aware test command generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Timestamped local history is opt-in with `SCRIBE_ARCHIVE_ENABLED=1`; archived output is ignored by Git so repeated runs do not inflate repository history.
+Every report-aware test command generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Timestamped local history is enabled by default and kept under the bounded retention policy; archived output is ignored by Git so repeated runs do not inflate repository history. Set `SCRIBE_ARCHIVE_ENABLED=0` only when you explicitly do not want to preserve a run.
 
 Use one command for any individual test:
 
@@ -422,6 +422,8 @@ npm run test:one -- favoriteRoom
 That writes the latest report to `docs/generated/scribe/favoriteRoom-latest/`. Existing shortcuts such as `npm run test:attachments`, `npm run test:members-room`, and `npm run test:reactions` use the same behavior.
 
 The report contains status cards, search/filter controls, lane/device health, slow-test callouts, failure categories, rerun commands, copyable share links, Connect build metadata, run environment details, coverage completeness, freshness, failure timelines, screenshot compare panels, failure snippets, and step-by-step screenshots. Passing details stay collapsed while failures open first.
+
+CCL release-checklist coverage is mapped in `Tests/testManifest.js` with requirement definitions from `Tests/cclRequirements.js`. Generated reports show each mapped `I-###` requirement as passing, partial, needing attention, or not run. These mappings supplement rather than replace the manual CCL checklist.
 
 App-under-test identity is kept separate from the automation repository identity. The automation branch and commit are detected from Git. Set `APP_BRANCH`, `APP_COMMIT`, `CONNECT_APP_VERSION`, and `CONNECT_APP_BUILD` when the installed build cannot provide those values automatically. Set `TEST_REPORT_ENVIRONMENT` or `CONNECT_SERVER_NAME` to identify the server under test.
 

@@ -1,55 +1,44 @@
 # RoomNotificationPreferences
 
-- Status: FAIL
-- Duration: 1m 10s
-- Lane: Conversation-List
+- Status: PASS
+- Duration: 59s
+- Lane: ConversationView
 - Logical category: ConversationView
-- Device: iPhone 17 Pro Max
-- Appium port: 4725
-- Started: 2026-09-01T18:57:44.845Z
-- Finished: 2026-09-01T18:58:54.428Z
-
-## Failure
-
-```text
-element ("~notificationPreferencesButton") still not displayed after 20000ms
-```
+- Device: iPhone 17
+- Appium port: 4727
+- Started: 2026-09-30T15:09:33.914Z
+- Finished: 2026-09-30T15:10:32.451Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 10s |
-| Test body | 59s |
-| Screenshot capture | 675ms |
-| Recovery | 15s |
+| Login/readiness | 15s |
+| Test body | 43s |
+| Screenshot capture | 583ms |
+| Recovery | 0ms |
 | Report generation | 0ms |
+| Room creation (test-owned) | 4s |
 
 ## Steps
 
 ### Step 1: Room Opened
 
-![Room Opened](assets/Conversation-List/RoomNotificationPreferences/01_room_opened.png)
+![Room Opened](assets/ConversationView/RoomNotificationPreferences/01_room_opened.png)
 
 ### Step 2: Preferences Open
 
-![Preferences Open](assets/Conversation-List/RoomNotificationPreferences/02_preferences_open.png)
+![Preferences Open](assets/ConversationView/RoomNotificationPreferences/02_preferences_open.png)
 
 ### Step 3: Preference Selected
 
-![Preference Selected](assets/Conversation-List/RoomNotificationPreferences/03_preference_selected.png)
+![Preference Selected](assets/ConversationView/RoomNotificationPreferences/03_preference_selected.png)
 
-### Step 4: Restore Persisted
+### Step 4: Preference Persisted
 
-![Restore Persisted](assets/Conversation-List/RoomNotificationPreferences/05_restore_persisted.png)
+![Preference Persisted](assets/ConversationView/RoomNotificationPreferences/04_preference_persisted.png)
 
-### Step 5: ERROR - Failed here
+### Step 5: Restore Persisted
 
-![ERROR](assets/Conversation-List/RoomNotificationPreferences/ERROR.png)
-
-**Failure at this step:**
-
-```text
-element ("~notificationPreferencesButton") still not displayed after 20000ms
-```
+![Restore Persisted](assets/ConversationView/RoomNotificationPreferences/05_restore_persisted.png)

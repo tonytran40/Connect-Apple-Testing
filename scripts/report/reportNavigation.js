@@ -41,14 +41,10 @@ function reportSwitcherStyles() {
     .report-switcher .report-menu { position: absolute; z-index: 20; top: calc(100% + .65rem); right: 0; width: min(28rem, calc(100vw - 2rem)); padding: .85rem; border: 1px solid rgba(215,226,241,.95); border-radius: 1rem; background: rgba(255,255,255,.98); color: #17233a; box-shadow: 0 24px 60px rgba(8,22,47,.25); backdrop-filter: blur(16px); }
     .report-switcher .report-menu-heading { display: flex; justify-content: space-between; align-items: center; margin: .15rem 0 .45rem; color: #6b7a90; }
     .report-switcher .report-menu-heading span { border-radius: 999px; padding: .1rem .45rem; background: #edf3fb; color: #0e61d8; font-size: .72rem; }
-    .report-switcher .viewing-heading { margin-top: .85rem; }
-    .report-switcher .archived-heading { margin-top: .95rem; }
-    .report-switcher .report-latest, .report-switcher .report-run { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .7rem .75rem; border: 1px solid #dce5ef; border-radius: .8rem; color: #17233a; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
-    .report-switcher .report-latest { border-color: rgba(40,109,222,.5); background: linear-gradient(135deg,#e8f1ff,#f6faff); }
+    .report-switcher .report-run { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .7rem .75rem; border: 1px solid #dce5ef; border-radius: .7rem; color: #17233a; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
     .report-switcher .report-run-list { display: grid; gap: .4rem; max-height: min(23rem,52vh); overflow: auto; padding-right: .15rem; }
-    .report-switcher .report-run { border-radius: .7rem; }
-    .report-switcher .report-latest:hover, .report-switcher .report-run:hover { border-color: rgba(14,97,216,.55); background: #f3f8ff; transform: translateX(-2px); }
-    .report-switcher .report-latest.is-viewing, .report-switcher .report-run.is-viewing { border-color: rgba(14,97,216,.75); box-shadow: inset 3px 0 0 #0e61d8; }
+    .report-switcher .report-run:hover { border-color: rgba(14,97,216,.55); background: #f3f8ff; transform: translateX(-2px); }
+    .report-switcher .report-run.is-viewing { border-color: rgba(14,97,216,.75); box-shadow: inset 3px 0 0 #0e61d8; }
     .report-switcher .report-run-copy { flex: 1; }
     .report-switcher .report-run-copy small { color: #6b7a90; font-size: .78rem; font-weight: 700; }
     .report-switcher .status-pill { flex: 0 0 auto; }
@@ -61,15 +57,20 @@ function buildReportNav(reports, currentFile) {
   const current = path.resolve(currentFile);
   const currentReport = reports.find(report => path.resolve(reportFile(report)) === current);
   const latestReport = reports.find(report => report.reportType !== 'archive') || currentReport || reports[0];
+  const currentIdentity = currentReport ? reportIdentity(currentReport) : '';
+  const latestIdentity = latestReport ? reportIdentity(latestReport) : '';
   const seenFiles = new Set();
+  const seenIdentities = new Set();
   const navigation = [];
 
   function addReport(report, { selected = false, latest = false } = {}) {
     if (!report) return;
     const targetFile = reportFile(report);
     const targetPath = path.resolve(targetFile);
-    if (seenFiles.has(targetPath)) return;
+    const identity = reportIdentity(report);
+    if (seenFiles.has(targetPath) || seenIdentities.has(identity)) return;
     seenFiles.add(targetPath);
+    seenIdentities.add(identity);
 
     navigation.push({
       href: relativeLink(currentFile, targetFile),
@@ -81,15 +82,14 @@ function buildReportNav(reports, currentFile) {
     });
   }
 
-  addReport(latestReport, {
-    latest: true,
-    selected: path.resolve(reportFile(latestReport)) === current,
-  });
-  addReport(currentReport, { selected: true });
-
   for (const report of reports) {
-    const isCurrent = path.resolve(reportFile(report)) === current;
-    addReport(isCurrent ? report : immutableReportFor(report, reports), { selected: isCurrent });
+    const identity = reportIdentity(report);
+    const isLatest = identity === latestIdentity;
+    const target = isLatest ? latestReport : immutableReportFor(report, reports);
+    addReport(target, {
+      latest: isLatest,
+      selected: identity === currentIdentity,
+    });
   }
 
   return navigation;
@@ -97,12 +97,10 @@ function buildReportNav(reports, currentFile) {
 
 function reportSwitcherMarkup(reportNav) {
   if (!reportNav.length) return '';
-  const latest = reportNav.find(report => report.latest) || reportNav[0];
-  const selected = reportNav.find(report => report.selected) || latest;
-  const archived = reportNav.filter(report => !report.latest && !report.selected);
+  const selected = reportNav.find(report => report.selected) || reportNav[0];
 
-  function reportLink(report, className = 'report-run') {
-    return `<a class="${className}${report.selected ? ' is-viewing' : ''}" href="${escapeHtml(report.href)}">
+  function reportLink(report) {
+    return `<a class="report-run${report.selected ? ' is-viewing' : ''}" href="${escapeHtml(report.href)}">
               <span class="report-run-copy">
                 <strong>${escapeHtml(report.runId)}</strong>
                 <small>${escapeHtml(report.date)}</small>
@@ -124,12 +122,9 @@ function reportSwitcherMarkup(reportNav) {
           <span class="report-switcher-toggle" aria-hidden="true">v</span>
         </summary>
         <div class="report-menu">
-          <div class="report-menu-heading">Latest report</div>
-          ${reportLink(latest, 'report-latest')}
-          ${!latest.selected ? `<div class="report-menu-heading viewing-heading">Viewing</div>${reportLink(selected)}` : ''}
-          <div class="report-menu-heading archived-heading">Saved runs <span>${archived.length}</span></div>
+          <div class="report-menu-heading">Reports <span>${reportNav.length}</span></div>
           <div class="report-run-list">
-            ${archived.map(report => reportLink(report)).join('\n') || '<p class="report-menu-empty">No older saved runs yet.</p>'}
+            ${reportNav.map(report => reportLink(report)).join('\n')}
           </div>
         </div>
       </details>`;
@@ -137,7 +132,6 @@ function reportSwitcherMarkup(reportNav) {
 
 function refreshReportNavigation(reports) {
   for (const report of reports) {
-    if (report.reportType === 'archive') continue;
     const file = reportFile(report);
     const html = readTextIfExists(file);
     if (!html) continue;

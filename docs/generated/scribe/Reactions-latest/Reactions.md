@@ -1,11 +1,22 @@
 # Reactions
 
 - Status: PASS
-- Duration: 49s
+- Duration: 55s
 - Lane: Reactions-latest
 - Appium port: 4723
-- Started: 2026-08-11T19:06:27.492Z
-- Finished: 2026-08-11T19:07:16.230Z
+- Started: 2026-09-28T18:01:31.440Z
+- Finished: 2026-09-28T18:02:26.098Z
+
+## Phase Timings
+
+| Phase | Duration |
+| --- | --- |
+| Session creation | 0ms |
+| Login/readiness | 5s |
+| Test body | 48s |
+| Screenshot capture | 2s |
+| Recovery | 0ms |
+| Report generation | 0ms |
 
 ## Steps
 

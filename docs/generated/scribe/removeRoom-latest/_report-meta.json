@@ -1,0 +1,794 @@
+{
+  "runId": "removeRoom-latest",
+  "reportType": "latest",
+  "source": "summary.json",
+  "status": "PASS",
+  "evidenceDecision": "INCOMPLETE",
+  "startedAt": "2026-09-30T15:24:35.938Z",
+  "updatedAt": "2026-09-30T15:25:27.316Z",
+  "durationMs": 51378,
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "blocked": 0,
+  "inconclusive": 0,
+  "total": 1,
+  "app": {
+    "bundleId": "com.powerhrg.connect.v3.debug",
+    "version": "",
+    "build": "",
+    "branch": "main",
+    "commit": "86ae86038"
+  },
+  "automation": {
+    "branch": "main",
+    "commit": "51ac146",
+    "node": "v24.14.0"
+  },
+  "environment": {
+    "branch": "main",
+    "commit": "86ae86038",
+    "automationBranch": "main",
+    "automationCommit": "51ac146",
+    "appBranch": "main",
+    "appCommit": "86ae86038",
+    "node": "v24.14.0",
+    "bundleId": "com.powerhrg.connect.v3.debug",
+    "appVersion": "",
+    "appBuild": "",
+    "appInstalled": false,
+    "serverEnvironment": "",
+    "source": "summary.json",
+    "devices": [],
+    "appiumPorts": [
+      4723
+    ],
+    "wdaPorts": [
+      8100
+    ]
+  },
+  "coverage": {
+    "available": true,
+    "environment": "UNSPECIFIED",
+    "rows": [
+      {
+        "feature": "Room creation",
+        "classification": "required",
+        "required": true,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Direct messaging",
+        "classification": "required",
+        "required": true,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Conversation list",
+        "classification": "required",
+        "required": true,
+        "total": 3,
+        "scheduled": 1,
+        "completed": 1,
+        "executed": 1,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Notifications",
+        "classification": "partial",
+        "required": false,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Conversation view",
+        "classification": "required",
+        "required": true,
+        "total": 5,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Room settings",
+        "classification": "required",
+        "required": true,
+        "total": 2,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Room membership",
+        "classification": "required",
+        "required": true,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Composer",
+        "classification": "required",
+        "required": true,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Message actions",
+        "classification": "required",
+        "required": true,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Conversation search",
+        "classification": "required",
+        "required": true,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "User settings",
+        "classification": "required",
+        "required": true,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "System lifecycle",
+        "classification": "opt-in",
+        "required": false,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Authentication",
+        "classification": "opt-in",
+        "required": false,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "User settings",
+        "classification": "opt-in",
+        "required": false,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Message actions",
+        "classification": "opt-in",
+        "required": false,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Pinned messages",
+        "classification": "opt-in",
+        "required": false,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      },
+      {
+        "feature": "Cleanup",
+        "classification": "opt-in",
+        "required": false,
+        "total": 1,
+        "scheduled": 0,
+        "completed": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "blocked": 0,
+        "inconclusive": 0
+      }
+    ],
+    "requiredTotal": 17,
+    "requiredScheduled": 1,
+    "requiredCompleted": 1,
+    "requiredExecuted": 1,
+    "ccl": {
+      "available": true,
+      "rows": [
+        {
+          "id": "I-017",
+          "title": "Sign out returns to the login screen",
+          "status": "NOT RUN",
+          "tests": [
+            "Login_Signout"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-019",
+          "title": "Classic conversation layout",
+          "status": "NOT RUN",
+          "tests": [
+            "ConversationList"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-020",
+          "title": "Cozy conversation layout",
+          "status": "NOT RUN",
+          "tests": [
+            "ConversationList"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-021",
+          "title": "Self-Managed conversation sorting",
+          "status": "NOT RUN",
+          "tests": [
+            "ConversationList"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-023",
+          "title": "Recent Activity conversation sorting",
+          "status": "NOT RUN",
+          "tests": [
+            "ConversationList"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-024",
+          "title": "Alphabetical conversation sorting",
+          "status": "NOT RUN",
+          "tests": [
+            "ConversationList"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-046",
+          "title": "Remove a bookmark without leaving the room",
+          "status": "PASS",
+          "tests": [
+            "removeRoom"
+          ],
+          "scheduled": true,
+          "coverage": "full"
+        },
+        {
+          "id": "I-054",
+          "title": "Mark a conversation as unread",
+          "status": "NOT RUN",
+          "tests": [
+            "markAsRead"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-055",
+          "title": "Mark a conversation as read",
+          "status": "NOT RUN",
+          "tests": [
+            "markAsRead"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-056",
+          "title": "Open the New Message flow",
+          "status": "NOT RUN",
+          "tests": [
+            "newMessage"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-058",
+          "title": "Select a recipient from typeahead",
+          "status": "NOT RUN",
+          "tests": [
+            "newMessage"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-059",
+          "title": "Search for a New Message recipient",
+          "status": "NOT RUN",
+          "tests": [
+            "newMessage"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-061",
+          "title": "Send a new direct message",
+          "status": "NOT RUN",
+          "tests": [
+            "newMessage"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-066",
+          "title": "Open the Rooms action menu",
+          "status": "NOT RUN",
+          "tests": [
+            "CreateRoom"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-067",
+          "title": "Open Create a Room",
+          "status": "NOT RUN",
+          "tests": [
+            "CreateRoom"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-069",
+          "title": "Create a public or private room",
+          "status": "NOT RUN",
+          "tests": [
+            "CreateRoom"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-070",
+          "title": "Complete the Add Members room-creation step",
+          "status": "NOT RUN",
+          "tests": [
+            "CreateRoom"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-083",
+          "title": "Pin a message",
+          "status": "NOT RUN",
+          "tests": [
+            "PinnedMessageEditFlow",
+            "PinnedMessages"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-084",
+          "title": "Open the pinned-message drawer",
+          "status": "NOT RUN",
+          "tests": [
+            "PinnedMessageEditFlow",
+            "PinnedMessages"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-093",
+          "title": "Open Conversation Search",
+          "status": "NOT RUN",
+          "tests": [
+            "ConversationSearch"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-094",
+          "title": "Search and sort conversation messages",
+          "status": "NOT RUN",
+          "tests": [
+            "ConversationSearch"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-095",
+          "title": "Open room notification preferences",
+          "status": "NOT RUN",
+          "tests": [
+            "RoomNotificationPreferences"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-102",
+          "title": "Render a bulleted Markdown list",
+          "status": "NOT RUN",
+          "tests": [
+            "markdowns"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-103",
+          "title": "Render Markdown headings",
+          "status": "NOT RUN",
+          "tests": [
+            "markdowns"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-104",
+          "title": "Render Markdown emphasis",
+          "status": "NOT RUN",
+          "tests": [
+            "markdowns"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-105",
+          "title": "Render a Markdown link",
+          "status": "NOT RUN",
+          "tests": [
+            "markdowns"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-106",
+          "title": "Render Markdown code styling",
+          "status": "NOT RUN",
+          "tests": [
+            "markdowns"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-107",
+          "title": "Render Markdown strikethrough",
+          "status": "NOT RUN",
+          "tests": [
+            "markdowns"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-113",
+          "title": "Open the message long-press menu",
+          "status": "NOT RUN",
+          "tests": [
+            "Reactions"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-114",
+          "title": "Add a message reaction",
+          "status": "NOT RUN",
+          "tests": [
+            "Reactions"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-115",
+          "title": "Add and remove message reactions",
+          "status": "NOT RUN",
+          "tests": [
+            "Reactions"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-116",
+          "title": "Use message Copy, Edit, and Delete actions",
+          "status": "NOT RUN",
+          "tests": [
+            "MessageActions"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-118",
+          "title": "Copy an entire message",
+          "status": "NOT RUN",
+          "tests": [
+            "MessageActions"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-122",
+          "title": "Edit a plaintext message",
+          "status": "NOT RUN",
+          "tests": [
+            "PinnedMessageEditFlow",
+            "EditMessage"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-128",
+          "title": "Open and edit Room Info as an admin",
+          "status": "NOT RUN",
+          "tests": [
+            "editRoom"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-129",
+          "title": "Open the room member list",
+          "status": "NOT RUN",
+          "tests": [
+            "membersRoom"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-130",
+          "title": "Open member management as an admin",
+          "status": "NOT RUN",
+          "tests": [
+            "membersRoom"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-131",
+          "title": "Open member actions",
+          "status": "NOT RUN",
+          "tests": [
+            "membersRoom"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-132",
+          "title": "Edit room membership",
+          "status": "NOT RUN",
+          "tests": [
+            "membersRoom"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-134",
+          "title": "Persist room notification preferences",
+          "status": "NOT RUN",
+          "tests": [
+            "RoomNotificationPreferences"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-141",
+          "title": "Add or remove room members",
+          "status": "NOT RUN",
+          "tests": [
+            "membersRoom"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-157",
+          "title": "Attach an image or file",
+          "status": "NOT RUN",
+          "tests": [
+            "attachments"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        },
+        {
+          "id": "I-159",
+          "title": "Send a GIF",
+          "status": "NOT RUN",
+          "tests": [
+            "attachments"
+          ],
+          "scheduled": false,
+          "coverage": "partial"
+        },
+        {
+          "id": "I-168",
+          "title": "Persist an unsent message draft",
+          "status": "NOT RUN",
+          "tests": [
+            "DraftPersistence"
+          ],
+          "scheduled": false,
+          "coverage": "full"
+        }
+      ],
+      "total": 44,
+      "passed": 1,
+      "partial": 0,
+      "attention": 0,
+      "notRun": 43
+    },
+    "complete": false
+  },
+  "freshness": {
+    "fresh": true,
+    "ageMs": 1038,
+    "thresholdMs": 86400000,
+    "timestamp": "2026-09-30T15:25:27.316Z"
+  },
+  "timings": {
+    "unit": "milliseconds",
+    "phases": {
+      "sessionCreationMs": 5995,
+      "loginReadinessMs": 9417,
+      "testBodyMs": 35151,
+      "screenshotCaptureMs": 672,
+      "recoveryMs": 0,
+      "reportGenerationMs": 843,
+      "roomCreationMs": 0
+    }
+  },
+  "cleanup": null,
+  "results": [
+    {
+      "name": "removeRoom",
+      "status": "PASS",
+      "duration": "42s",
+      "durationMs": 41622,
+      "laneRunId": "removeRoom-latest",
+      "logicalCategory": "",
+      "deviceName": "",
+      "appiumPort": 4723,
+      "startedAt": "2026-09-30T15:24:45.554Z",
+      "finishedAt": "2026-09-30T15:25:27.177Z",
+      "timings": {
+        "sessionCreationMs": 0,
+        "loginReadinessMs": 5797,
+        "testBodyMs": 35151,
+        "screenshotCaptureMs": 672,
+        "recoveryMs": 0,
+        "reportGenerationMs": 0,
+        "roomCreationMs": 0
+      }
+    }
+  ]
+}

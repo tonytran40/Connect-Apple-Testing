@@ -1,20 +1,20 @@
 # Reactions
 
 - Status: PASS
-- Duration: 1m 7s
-- Lane: main-suite
+- Duration: 1m 14s
+- Lane: Conversation-List
 - Logical category: ConversationView
-- Device: iPhone 17 Pro
-- Appium port: 4723
-- Started: 2026-09-01T18:55:13.971Z
-- Finished: 2026-09-01T18:56:21.144Z
+- Device: iPhone 17 Pro Max
+- Appium port: 4725
+- Started: 2026-09-30T15:08:35.200Z
+- Finished: 2026-09-30T15:09:49.394Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 9s |
+| Login/readiness | 17s |
 | Test body | 56s |
 | Screenshot capture | 2s |
 | Recovery | 0ms |
@@ -24,52 +24,52 @@
 
 ### Step 1: Room Opened
 
-![Room Opened](assets/main-suite/Reactions/01_room_opened.png)
+![Room Opened](assets/Conversation-List/Reactions/01_room_opened.png)
 
 ### Step 2: Message Sent
 
-![Message Sent](assets/main-suite/Reactions/02_message_sent.png)
+![Message Sent](assets/Conversation-List/Reactions/02_message_sent.png)
 
 ### Step 3: Reaction Picker Open
 
-![Reaction Picker Open](assets/main-suite/Reactions/03_reaction_picker_open.png)
+![Reaction Picker Open](assets/Conversation-List/Reactions/03_reaction_picker_open.png)
 
 ### Step 4: Thumbs Up Added
 
-![Thumbs Up Added](assets/main-suite/Reactions/04_thumbs_up_added.png)
+![Thumbs Up Added](assets/Conversation-List/Reactions/04_thumbs_up_added.png)
 
 ### Step 5: Thumbs Down Added
 
-![Thumbs Down Added](assets/main-suite/Reactions/05_thumbs_down_added.png)
+![Thumbs Down Added](assets/Conversation-List/Reactions/05_thumbs_down_added.png)
 
 ### Step 6: Smile Added
 
-![Smile Added](assets/main-suite/Reactions/06_smile_added.png)
+![Smile Added](assets/Conversation-List/Reactions/06_smile_added.png)
 
 ### Step 7: Heart Added
 
-![Heart Added](assets/main-suite/Reactions/07_heart_added.png)
+![Heart Added](assets/Conversation-List/Reactions/07_heart_added.png)
 
 ### Step 8: Laugh Added
 
-![Laugh Added](assets/main-suite/Reactions/08_laugh_added.png)
+![Laugh Added](assets/Conversation-List/Reactions/08_laugh_added.png)
 
 ### Step 9: Thumbs Up Removed
 
-![Thumbs Up Removed](assets/main-suite/Reactions/09_thumbs_up_removed.png)
+![Thumbs Up Removed](assets/Conversation-List/Reactions/09_thumbs_up_removed.png)
 
 ### Step 10: Thumbs Down Removed
 
-![Thumbs Down Removed](assets/main-suite/Reactions/010_thumbs_down_removed.png)
+![Thumbs Down Removed](assets/Conversation-List/Reactions/010_thumbs_down_removed.png)
 
 ### Step 11: Smile Removed
 
-![Smile Removed](assets/main-suite/Reactions/011_smile_removed.png)
+![Smile Removed](assets/Conversation-List/Reactions/011_smile_removed.png)
 
 ### Step 12: Heart Removed
 
-![Heart Removed](assets/main-suite/Reactions/012_heart_removed.png)
+![Heart Removed](assets/Conversation-List/Reactions/012_heart_removed.png)
 
 ### Step 13: Laugh Removed
 
-![Laugh Removed](assets/main-suite/Reactions/013_laugh_removed.png)
+![Laugh Removed](assets/Conversation-List/Reactions/013_laugh_removed.png)

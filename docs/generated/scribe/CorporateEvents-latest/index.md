@@ -21,7 +21,7 @@
 | Test body | 51s |
 | Screenshot capture | 1s |
 | Recovery | 7s |
-| Report generation | 694ms |
+| Report generation | 248ms |
 
 ## Tests
 

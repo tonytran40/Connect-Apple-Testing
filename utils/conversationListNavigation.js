@@ -12,6 +12,9 @@ const DEFAULT_ROOMS_TOP_SETTLE_MS = boundedInt(process.env.CONNECT_ROOMS_TOP_SET
 const DEFAULT_ROOMS_TOP_SWIPE_PAUSE_MS = boundedInt(process.env.CONNECT_ROOMS_TOP_SWIPE_PAUSE_MS, 100, 0, 500);
 const DEFAULT_ENTRY_MAX_SCROLLS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_MAX_SCROLLS, 24, 4, 40);
 const DEFAULT_ENTRY_SCROLL_PAUSE_MS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_SCROLL_PAUSE_MS, 250, 120, 600);
+const DEFAULT_ENTRY_SCROLL_DURATION_MS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_SCROLL_DURATION_MS, 550, 250, 900);
+const DEFAULT_ENTRY_SCROLL_PERCENT = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_SCROLL_PERCENT, 32, 18, 60);
+const DEFAULT_ENTRY_TOP_SETTLE_MS = boundedInt(process.env.CONNECT_CONVERSATION_ENTRY_TOP_SETTLE_MS, 600, 0, 2000);
 
 async function getVisibleRoomsHeader(driver, timeout = 800) {
   for (const selector of [ROOMS_HEADER_SELECTOR, SELECTORS.roomsSectionHeader]) {
@@ -35,8 +38,9 @@ async function scrollConversationListToTop(driver, options = {}) {
   const maxSwipes = options.maxSwipes ?? 8;
   const settleMs = options.settleMs ?? DEFAULT_ROOMS_TOP_SETTLE_MS;
   const swipePauseMs = options.swipePauseMs ?? DEFAULT_ROOMS_TOP_SWIPE_PAUSE_MS;
+  const force = options.force === true;
 
-  if (await getConversationListRoomsHeader(driver, 300)) return true;
+  if (!force && await getConversationListRoomsHeader(driver, 300)) return true;
 
   try {
     const rect = await driver.getWindowRect();
@@ -62,7 +66,11 @@ async function scrollConversationListToTop(driver, options = {}) {
   } catch {}
 
   for (let i = 0; i < maxSwipes; i++) {
-    await swipeConversationList(driver, 'down', { holdMs: 20, durationMs: 180 });
+    await swipeConversationList(driver, 'down', {
+      holdMs: 20,
+      durationMs: 180,
+      travelRatio: 0.5,
+    });
     // Preserve the short XCTest/gesture settling delay before querying a fresh tree.
     if (swipePauseMs > 0) await driver.pause(swipePauseMs);
     if (await getConversationListRoomsHeader(driver, 300)) {
@@ -81,6 +89,9 @@ async function waitForConversationRow(driver, names, opts = {}) {
   const timeout = opts.timeout ?? 30000;
   const maxScrolls = opts.maxScrolls ?? DEFAULT_ENTRY_MAX_SCROLLS;
   const pauseMs = opts.pauseMs ?? DEFAULT_ENTRY_SCROLL_PAUSE_MS;
+  const scrollDurationMs = opts.scrollDurationMs ?? DEFAULT_ENTRY_SCROLL_DURATION_MS;
+  const scrollTravelRatio = opts.scrollTravelRatio ?? DEFAULT_ENTRY_SCROLL_PERCENT / 100;
+  const topSettleMs = opts.topSettleMs ?? DEFAULT_ENTRY_TOP_SETTLE_MS;
   const comparisons = candidates.map(name => {
     const safe = escapePredicateString(name);
     const operator = exact ? '==' : 'CONTAINS[c]';
@@ -94,19 +105,50 @@ async function waitForConversationRow(driver, names, opts = {}) {
   await waitForConnectivity(driver, { timeout: opts.connectivityTimeout });
   const deadline = Date.now() + timeout;
 
-  for (let scrolls = 0; Date.now() < deadline; scrolls++) {
+  async function findVisibleRow() {
     const title = await driver.$(selector);
     if (await title.isDisplayed().catch(() => false)) {
       const name = await title.getAttribute('name').catch(() => '');
       const label = await title.getAttribute('label').catch(() => '');
       const roomTitle = (name && String(name).trim()) || (label && String(label).trim()) || candidates[0];
-      if (scrolls > 0) console.log(`waitForConversationRow: found "${roomTitle}" after ${scrolls} scroll(s)`);
       return { el: title, roomTitle };
     }
-    if (scrolls >= maxScrolls) break;
-    await swipeConversationList(driver, 'up');
-    // The list must settle before XCTest can return a fresh, non-stale row.
-    await driver.pause(pauseMs);
+    return null;
+  }
+
+  const initiallyVisible = await findVisibleRow();
+  if (initiallyVisible) return initiallyVisible;
+
+  // A previous scenario can leave the virtualized list midway down. Always start a
+  // full lookup at the top so an alphabetically early or newly-created row cannot
+  // be skipped forever by one-directional scrolling.
+  if (opts.startAtTop !== false && maxScrolls > 0 && Date.now() < deadline) {
+    await scrollConversationListToTop(driver, {
+      force: true,
+      maxSwipes: opts.topMaxSwipes ?? 8,
+      settleMs: Math.min(topSettleMs, Math.max(0, deadline - Date.now())),
+    });
+    if (topSettleMs > 0 && Date.now() < deadline) {
+      await driver.pause(Math.min(topSettleMs, Math.max(0, deadline - Date.now())));
+    }
+    const atTop = await findVisibleRow();
+    if (atTop) return atTop;
+  }
+
+  for (let scrolls = 0; scrolls < maxScrolls && Date.now() < deadline; scrolls++) {
+    await swipeConversationList(driver, 'up', {
+      holdMs: 80,
+      durationMs: scrollDurationMs,
+      travelRatio: scrollTravelRatio,
+    });
+    // Shorter drags plus an explicit settle keep the lazy list from skipping rows
+    // while XCTest is still returning the accessibility tree from the last frame.
+    if (pauseMs > 0) await driver.pause(pauseMs);
+    const row = await findVisibleRow();
+    if (row) {
+      console.log(`waitForConversationRow: found "${row.roomTitle}" after ${scrolls + 1} smooth scroll(s)`);
+      return row;
+    }
   }
 
   throw new Error(`None of [${candidates.join(', ')}] became visible after ${maxScrolls} list scroll(s)`);

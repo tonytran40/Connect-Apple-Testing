@@ -73,3 +73,29 @@ test('overview page keeps extracted styles and client behavior inline', () => {
     fs.rmSync(outDir, { recursive: true, force: true });
   }
 });
+
+test('overview opens only the first failed test to keep the result list compact', () => {
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'overview-failures-'));
+  try {
+    const file = writeHtmlReport({
+      outDir,
+      runId: 'failure-density',
+      summary: {
+        source: 'unit test',
+        status: 'FAIL',
+        startedAt: '2026-09-23T12:00:00.000Z',
+        updatedAt: '2026-09-23T12:01:00.000Z',
+        results: [
+          { name: 'Alpha', status: 'FAIL', error: 'first failure' },
+          { name: 'Beta', status: 'FAIL', error: 'second failure' },
+        ],
+      },
+      testDocs: {},
+    });
+    const html = fs.readFileSync(file, 'utf8');
+
+    assert.equal((html.match(/<details class="test-card fail"[^>]* open>/g) || []).length, 1);
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});

@@ -1,21 +1,21 @@
 # markdowns
 
 - Status: PASS
-- Duration: 1m 33s
-- Lane: ConversationView
+- Duration: 1m 41s
+- Lane: main-suite
 - Logical category: ConversationView
-- Device: iPhone 17
-- Appium port: 4727
-- Started: 2026-09-01T18:53:40.623Z
-- Finished: 2026-09-01T18:55:13.144Z
+- Device: iPhone 17 Pro
+- Appium port: 4723
+- Started: 2026-09-30T15:03:15.614Z
+- Finished: 2026-09-30T15:04:56.729Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 3s |
-| Test body | 1m 28s |
+| Login/readiness | 5s |
+| Test body | 1m 34s |
 | Screenshot capture | 2s |
 | Recovery | 0ms |
 | Report generation | 0ms |
@@ -24,44 +24,44 @@
 
 ### Step 1: Headings
 
-![Headings](assets/ConversationView/markdowns/01_headings.png)
+![Headings](assets/main-suite/markdowns/01_headings.png)
 
 ### Step 2: Room Opened
 
-![Room Opened](assets/ConversationView/markdowns/01_room_opened.png)
+![Room Opened](assets/main-suite/markdowns/01_room_opened.png)
 
 ### Step 3: Emphasis
 
-![Emphasis](assets/ConversationView/markdowns/02_emphasis.png)
+![Emphasis](assets/main-suite/markdowns/02_emphasis.png)
 
 ### Step 4: Links
 
-![Links](assets/ConversationView/markdowns/03_links.png)
+![Links](assets/main-suite/markdowns/03_links.png)
 
 ### Step 5: Inline Code
 
-![Inline Code](assets/ConversationView/markdowns/04_inline_code.png)
+![Inline Code](assets/main-suite/markdowns/04_inline_code.png)
 
 ### Step 6: Code Block
 
-![Code Block](assets/ConversationView/markdowns/05_code_block.png)
+![Code Block](assets/main-suite/markdowns/05_code_block.png)
 
 ### Step 7: Lists
 
-![Lists](assets/ConversationView/markdowns/06_lists.png)
+![Lists](assets/main-suite/markdowns/06_lists.png)
 
 ### Step 8: Blockquote
 
-![Blockquote](assets/ConversationView/markdowns/07_blockquote.png)
+![Blockquote](assets/main-suite/markdowns/07_blockquote.png)
 
 ### Step 9: Mixed
 
-![Mixed](assets/ConversationView/markdowns/08_mixed.png)
+![Mixed](assets/main-suite/markdowns/08_mixed.png)
 
 ### Step 10: Emojis
 
-![Emojis](assets/ConversationView/markdowns/09_emojis.png)
+![Emojis](assets/main-suite/markdowns/09_emojis.png)
 
 ### Step 11: Appointments
 
-![Appointments](assets/ConversationView/markdowns/10_appointments.png)
+![Appointments](assets/main-suite/markdowns/10_appointments.png)

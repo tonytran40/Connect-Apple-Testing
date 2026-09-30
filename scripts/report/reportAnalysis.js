@@ -452,6 +452,103 @@ function itemSupportsEnvironment(item, environment) {
   return environments.includes('ANY') || environments.includes(environment);
 }
 
+function normalizeCclRequirement(requirement) {
+  if (typeof requirement === 'string') {
+    return { id: requirement, title: requirement, coverage: 'full' };
+  }
+  if (!requirement || typeof requirement !== 'object' || !requirement.id) return null;
+  return {
+    id: String(requirement.id),
+    title: String(requirement.title || requirement.id),
+    coverage: requirement.coverage === 'partial' ? 'partial' : 'full',
+  };
+}
+
+function cclCoverageForSummary(summary, options = {}) {
+  const resultPriority = ['FAIL', 'BLOCKED', 'INCONCLUSIVE', 'UNKNOWN', 'SKIPPED', 'PASS'];
+  const resultsByName = new Map();
+  for (const result of summary.results || []) {
+    const status = normalizeStatus(result.status);
+    const current = resultsByName.get(result.name);
+    if (!current || resultPriority.indexOf(status) < resultPriority.indexOf(current)) {
+      resultsByName.set(result.name, status);
+    }
+  }
+  const environment = normalizedEnvironment(options.environment || environmentForSummary(summary));
+  const requirementsById = new Map();
+
+  for (const item of coverageItems(summary)) {
+    if (!item || typeof item !== 'object' || !itemSupportsEnvironment(item, environment)) continue;
+    const testName = item.name || item.testName || item.entryPoint;
+    if (!testName) continue;
+    const mappedRequirements = Array.isArray(item.cclRequirements) ? item.cclRequirements : [];
+    for (const rawRequirement of mappedRequirements) {
+      const requirement = normalizeCclRequirement(rawRequirement);
+      if (!requirement) continue;
+      const row = requirementsById.get(requirement.id) || {
+        id: requirement.id,
+        title: requirement.title,
+        mappings: [],
+      };
+      if (row.title === row.id && requirement.title !== requirement.id) row.title = requirement.title;
+      const existingMapping = row.mappings.find(mapping => mapping.testName === testName);
+      if (existingMapping) {
+        if (requirement.coverage === 'full') existingMapping.coverage = 'full';
+        existingMapping.scheduled ||= item.scheduled === true || resultsByName.has(testName);
+        existingMapping.status = resultsByName.get(testName) || existingMapping.status;
+      } else {
+        row.mappings.push({
+          testName,
+          coverage: requirement.coverage,
+          scheduled: item.scheduled === true || resultsByName.has(testName),
+          status: resultsByName.get(testName) || '',
+        });
+      }
+      requirementsById.set(requirement.id, row);
+    }
+  }
+
+  const attentionPriority = ['FAIL', 'BLOCKED', 'INCONCLUSIVE'];
+  const rows = [...requirementsById.values()]
+    .map(row => {
+      const executed = row.mappings.filter(mapping => mapping.status);
+      const attention = attentionPriority.find(status =>
+        executed.some(mapping => mapping.status === status)
+      );
+      const passing = executed.filter(mapping => mapping.status === 'PASS');
+      let status = 'NOT RUN';
+      if (attention) status = attention;
+      else if (passing.some(mapping => mapping.coverage === 'full')) status = 'PASS';
+      else if (passing.length) status = 'PARTIAL';
+      else if (executed.some(mapping => mapping.status === 'UNKNOWN')) status = 'UNKNOWN';
+      else if (executed.some(mapping => mapping.status === 'SKIPPED')) status = 'SKIPPED';
+
+      return {
+        id: row.id,
+        title: row.title,
+        status,
+        tests: row.mappings.map(mapping => mapping.testName),
+        scheduled: row.mappings.some(mapping => mapping.scheduled),
+        coverage: row.mappings.some(mapping => mapping.coverage === 'full') ? 'full' : 'partial',
+      };
+    })
+    .sort((a, b) => {
+      const aNumber = Number(a.id.match(/\d+/)?.[0] || Number.MAX_SAFE_INTEGER);
+      const bNumber = Number(b.id.match(/\d+/)?.[0] || Number.MAX_SAFE_INTEGER);
+      return aNumber - bNumber || a.id.localeCompare(b.id);
+    });
+
+  return {
+    available: rows.length > 0,
+    rows,
+    total: rows.length,
+    passed: rows.filter(row => row.status === 'PASS').length,
+    partial: rows.filter(row => row.status === 'PARTIAL').length,
+    attention: rows.filter(row => ['FAIL', 'BLOCKED', 'INCONCLUSIVE'].includes(row.status)).length,
+    notRun: rows.filter(row => ['NOT RUN', 'SKIPPED', 'UNKNOWN'].includes(row.status)).length,
+  };
+}
+
 function coverageForSummary(summary, options = {}) {
   const results = summary.results || [];
   const resultsByName = new Map(results.map(result => [result.name, normalizeStatus(result.status)]));
@@ -532,6 +629,7 @@ function coverageForSummary(summary, options = {}) {
     requiredScheduled,
     requiredCompleted,
     requiredExecuted: requiredCompleted,
+    ccl: cclCoverageForSummary(summary, { environment }),
     complete:
       available &&
       requiredTotal > 0 &&
@@ -616,6 +714,7 @@ module.exports = {
   buildLaneStats,
   buildRunComparison,
   countsForSummary,
+  cclCoverageForSummary,
   coverageForSummary,
   failureCategory,
   failureSnippet,

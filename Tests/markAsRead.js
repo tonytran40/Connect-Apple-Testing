@@ -90,7 +90,9 @@ async function elementVisualSignature(driver, element) {
     );
   }
 
-  const screenshot = await driver.takeElementScreenshot(element.elementId, true);
+  // Appium's W3C element screenshot endpoint is a bodyless GET. Passing the
+  // legacy scroll flag makes current WebdriverIO send an invalid request body.
+  const screenshot = await driver.takeElementScreenshot(element.elementId);
   if (!screenshot) {
     throw new Error('markAsRead: Appium returned an empty room-title screenshot');
   }

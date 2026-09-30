@@ -101,8 +101,12 @@ test('room-title visual signatures are stable for equal element screenshots', as
     ['read', Buffer.from('read-title').toString('base64')],
     ['unread', Buffer.from('bold-unread-title').toString('base64')],
   ]);
+  const calls = [];
   const driver = {
-    takeElementScreenshot: async elementId => screenshots.get(elementId),
+    takeElementScreenshot: async (...args) => {
+      calls.push(args);
+      return screenshots.get(args[0]);
+    },
   };
 
   const firstRead = await elementVisualSignature(driver, { elementId: 'read' });
@@ -110,6 +114,7 @@ test('room-title visual signatures are stable for equal element screenshots', as
   const unread = await elementVisualSignature(driver, { elementId: 'unread' });
   assert.equal(firstRead, secondRead);
   assert.notEqual(firstRead, unread);
+  assert.deepEqual(calls, [['read'], ['read'], ['unread']]);
 });
 
 test('clipboard capability gaps return INCONCLUSIVE metadata instead of PASS', () => {

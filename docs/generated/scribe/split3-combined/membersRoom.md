@@ -1,18 +1,18 @@
 # membersRoom
 
 - Status: FAIL
-- Duration: 44s
-- Lane: ConversationView
+- Duration: 1m 14s
+- Lane: main-suite
 - Logical category: ConversationView
-- Device: iPhone 17
-- Appium port: 4727
-- Started: 2026-09-01T18:58:37.221Z
-- Finished: 2026-09-01T18:59:20.979Z
+- Device: iPhone 17 Pro
+- Appium port: 4723
+- Started: 2026-09-30T15:04:56.738Z
+- Finished: 2026-09-30T15:06:10.740Z
 
 ## Failure
 
 ```text
-membersRoom: could not find Add Individuals TextField
+element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
 ```
 
 ## Phase Timings
@@ -20,40 +20,20 @@ membersRoom: could not find Add Individuals TextField
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 19s |
-| Test body | 24s |
-| Screenshot capture | 764ms |
-| Recovery | 46s |
+| Login/readiness | 18s |
+| Test body | 54s |
+| Screenshot capture | 1s |
+| Recovery | 290ms |
 | Report generation | 0ms |
 
 ## Steps
 
-### Step 1: In Room
+### Step 1: ERROR - Failed here
 
-![In Room](assets/ConversationView/membersRoom/01_in_room.png)
-
-### Step 2: Edit Modal Open
-
-![Edit Modal Open](assets/ConversationView/membersRoom/02_edit_modal_open.png)
-
-### Step 3: Members Screen
-
-![Members Screen](assets/ConversationView/membersRoom/03_members_screen.png)
-
-### Step 4: Edit Members
-
-![Edit Members](assets/ConversationView/membersRoom/04_edit_members.png)
-
-### Step 5: After Remove X
-
-![After Remove X](assets/ConversationView/membersRoom/05_after_remove_x.png)
-
-### Step 6: ERROR - Failed here
-
-![ERROR](assets/ConversationView/membersRoom/ERROR.png)
+![ERROR](assets/main-suite/membersRoom/ERROR.png)
 
 **Failure at this step:**
 
 ```text
-membersRoom: could not find Add Individuals TextField
+element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
 ```

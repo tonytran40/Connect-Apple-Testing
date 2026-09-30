@@ -36,6 +36,17 @@ test('every manifest entry declares evidence and execution metadata', () => {
     assert.match(entry.requirement, /^(required|partial|opt-in)$/, entry.name);
     assert.match(entry.timeoutClass, /^(standard|long)$/, entry.name);
     assert.ok(entry.cleanup, `${entry.name} must declare a cleanup contract`);
+    assert.ok(Array.isArray(entry.cclRequirements), `${entry.name} must expose CCL mappings`);
+    for (const requirement of entry.cclRequirements) {
+      assert.match(requirement.id, /^I-\d{3}$/, `${entry.name} has an invalid CCL ID`);
+      assert.ok(requirement.title, `${requirement.id} must include a title`);
+      assert.match(requirement.coverage, /^(full|partial)$/);
+    }
+    assert.equal(
+      new Set(entry.cclRequirements.map(requirement => requirement.id)).size,
+      entry.cclRequirements.length,
+      `${entry.name} must not map the same CCL requirement twice`
+    );
   }
 });
 
@@ -64,6 +75,16 @@ test('coverage records eligibility and scheduling separately', () => {
   assert.equal(createRoom.eligible, true);
   assert.equal(createRoom.classification, 'required');
   assert.equal(createRoom.cleanup, 'generated-room');
+  assert.deepEqual(
+    createRoom.cclRequirements.map(requirement => requirement.id),
+    ['I-066', 'I-067', 'I-069', 'I-070']
+  );
+  assert.equal(createRoom.cclRequirements.at(-1).coverage, 'partial');
+  const conversationList = coverage.find(item => item.name === 'ConversationList');
+  assert.equal(
+    conversationList.cclRequirements.find(requirement => requirement.id === 'I-023').coverage,
+    'partial'
+  );
   assert.equal(browseRooms.scheduled, false);
   assert.equal(browseRooms.eligible, false);
 });

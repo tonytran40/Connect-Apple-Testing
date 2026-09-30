@@ -1,13 +1,22 @@
 const { SELECTORS } = require('./selectors');
 const { getElementRect } = require('./uiActions');
 
+function swipeTravelRatio(options = {}) {
+  const value = Number(options.travelRatio ?? 0.32);
+  if (!Number.isFinite(value)) return 0.32;
+  return Math.max(0.18, Math.min(0.6, value));
+}
+
 async function swipeViewport(driver, direction, options = {}) {
   const rect = await driver.getWindowRect();
   const x = Math.round(rect.width * 0.5);
-  const startY = Math.round(rect.height * (direction === 'down' ? 0.35 : 0.75));
-  const endY = Math.round(rect.height * (direction === 'down' ? 0.78 : 0.35));
-  const holdMs = options.holdMs ?? 100;
-  const durationMs = options.durationMs ?? 450;
+  const halfTravel = swipeTravelRatio(options) / 2;
+  const upperY = Math.round(rect.height * (0.5 - halfTravel));
+  const lowerY = Math.round(rect.height * (0.5 + halfTravel));
+  const startY = direction === 'down' ? upperY : lowerY;
+  const endY = direction === 'down' ? lowerY : upperY;
+  const holdMs = options.holdMs ?? 80;
+  const durationMs = options.durationMs ?? 550;
 
   await driver.performActions([
     {
@@ -26,7 +35,7 @@ async function swipeViewport(driver, direction, options = {}) {
   await driver.releaseActions().catch(() => {});
 }
 
-function scopedSwipeCoordinates(rect, direction) {
+function scopedSwipeCoordinates(rect, direction, options = {}) {
   if (direction !== 'up' && direction !== 'down') {
     throw new Error(`Unsupported swipe direction: ${direction}`);
   }
@@ -39,8 +48,9 @@ function scopedSwipeCoordinates(rect, direction) {
 
   const [left, top, width, height] = values;
   const x = Math.round(left + width * 0.5);
-  const upperY = Math.round(top + height * 0.25);
-  const lowerY = Math.round(top + height * 0.75);
+  const halfTravel = swipeTravelRatio(options) / 2;
+  const upperY = Math.round(top + height * (0.5 - halfTravel));
+  const lowerY = Math.round(top + height * (0.5 + halfTravel));
   return {
     x,
     startY: direction === 'down' ? upperY : lowerY,
@@ -59,8 +69,8 @@ function clipRectToViewport(rect, viewport) {
 }
 
 async function performScopedSwipe(driver, coordinates, options = {}) {
-  const holdMs = options.holdMs ?? 100;
-  const durationMs = options.durationMs ?? 450;
+  const holdMs = options.holdMs ?? 80;
+  const durationMs = options.durationMs ?? 550;
   try {
     await driver.performActions([
       {
@@ -88,7 +98,7 @@ async function swipeConversationList(driver, direction, options = {}) {
     const container = await driver.$(SELECTORS.bookmarksScrollView);
     if (await container.isDisplayed().catch(() => false)) {
       const visibleRect = clipRectToViewport(await getElementRect(container), await driver.getWindowRect());
-      const coordinates = scopedSwipeCoordinates(visibleRect, direction);
+      const coordinates = scopedSwipeCoordinates(visibleRect, direction, options);
       if (coordinates) {
         await performScopedSwipe(driver, coordinates, options);
         return true;

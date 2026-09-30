@@ -50,7 +50,7 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
         (statusPriority[normalizeStatus(a.status)] ?? 4) -
           (statusPriority[normalizeStatus(b.status)] ?? 4) || a.name.localeCompare(b.name)
     )
-    .map(result => {
+    .map((result, index) => {
       const resultStatus = normalizeStatus(result.status);
       const laneRunId = laneForResult(result, runId);
       const screenshots = listScreenshots(laneRunId, result.name, result);
@@ -63,20 +63,22 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
       const failure = resultStatus === 'FAIL' ? failureSnippet(result) : '';
       const rerunCommand = rerunCommandForResult(result);
       return `
-        <details class="test-card ${statusClass(resultStatus)}${isSlow ? ' slow' : ''}" data-test-card data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(resultStatus)}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshots.length ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}"${resultStatus === 'FAIL' ? ' open' : ''}>
+        <details class="test-card ${statusClass(resultStatus)}${isSlow ? ' slow' : ''}" data-test-card data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(resultStatus)}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshots.length ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}"${resultStatus === 'FAIL' && index === 0 ? ' open' : ''}>
           <summary class="test-card-summary">
-          <div class="test-card-top">
             <span class="status-pill ${statusClass(resultStatus)}">${escapeHtml(resultStatus)}</span>
-            <span class="duration">${escapeHtml(result.duration || formatDurationMs(durationMs))}</span>
-          </div>
-          <h3>${escapeHtml(result.name)}</h3>
-          <p>${escapeHtml(result.logicalCategory || 'Uncategorized')} / ${escapeHtml(laneRunId)}${result.deviceName ? ` / ${escapeHtml(result.deviceName)}` : ''}</p>
-          <div class="card-tags">
-            <span>${screenshots.length} screenshot${screenshots.length === 1 ? '' : 's'}</span>
-            ${isSlow ? '<span>Slow</span>' : ''}
-            ${isFlaky ? `<span>Flaky: ${escapeHtml(flake)}</span>` : ''}
-            <span class="open-details">Evidence</span>
-          </div>
+            <div class="test-card-copy">
+              <h3>${escapeHtml(result.name)}</h3>
+              <p>${escapeHtml(result.logicalCategory || 'Uncategorized')} · ${escapeHtml(laneRunId)}${result.deviceName ? ` · ${escapeHtml(result.deviceName)}` : ''}</p>
+              <div class="card-tags">
+                <span>${screenshots.length} screenshot${screenshots.length === 1 ? '' : 's'}</span>
+                ${isSlow ? '<span>Slow</span>' : ''}
+                ${isFlaky ? `<span>Flaky: ${escapeHtml(flake)}</span>` : ''}
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">${escapeHtml(result.duration || formatDurationMs(durationMs))}</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
           </summary>
           <div class="test-card-evidence">
             ${failure ? `<p class="evidence-error">${escapeHtml(failure)}</p>` : `<p>${escapeHtml(resultStatus === 'PASS' ? 'Passing evidence is collapsed by default.' : result.error || result.reason || `Result: ${resultStatus}`)}</p>`}
@@ -234,20 +236,48 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
         .join('\n')
     : '';
   const coveragePanel = evidence.coverage.available
-    ? `<section class="panel coverage-panel">
-        <div class="panel-heading">
-          <h2>Coverage</h2>
-          <p>${escapeHtml(evidence.coverage.requiredCompleted)}/${escapeHtml(evidence.coverage.requiredTotal)} eligible required tests completed</p>
-        </div>
-        <div class="coverage-scroll"><table>
+    ? `<details class="panel disclosure coverage-panel">
+        <summary class="section-summary">
+          <span><strong>Automation coverage</strong><small>Required and optional tests by feature</small></span>
+          <span class="summary-value">${escapeHtml(evidence.coverage.requiredCompleted)}/${escapeHtml(evidence.coverage.requiredTotal)} required</span>
+        </summary>
+        <div class="disclosure-body coverage-scroll"><table>
           <thead><tr><th>Feature</th><th>Class</th><th>Scheduled</th><th>Completed</th><th>Passed</th><th>Attention</th></tr></thead>
           <tbody>${coverageRows}</tbody>
         </table></div>
-      </section>`
-    : `<section class="panel coverage-panel coverage-fallback">
-        <div class="panel-heading"><h2>Coverage</h2><p>Not assessed</p></div>
-        <p>No registry or coverage contract was attached to this run. Results are visible, but required-suite completeness cannot be claimed.</p>
-      </section>`;
+      </details>`
+    : `<details class="panel disclosure coverage-panel coverage-fallback">
+        <summary class="section-summary"><span><strong>Automation coverage</strong><small>No coverage contract attached</small></span><span class="summary-value">Not assessed</span></summary>
+        <div class="disclosure-body"><p>No registry or coverage contract was attached to this run. Results are visible, but required-suite completeness cannot be claimed.</p></div>
+      </details>`;
+  const ccl = evidence.coverage.ccl;
+  const cclRows = ccl?.available
+    ? ccl.rows
+        .map(
+          row => `
+            <tr>
+              <th scope="row">${escapeHtml(row.id)}</th>
+              <td>${escapeHtml(row.title)}</td>
+              <td>${escapeHtml(row.tests.join(', '))}</td>
+              <td><span class="ccl-status ${escapeHtml(row.status.toLowerCase().replace(/\s+/g, '-'))}">${escapeHtml(row.status)}</span></td>
+            </tr>`
+        )
+        .join('\n')
+    : '';
+  const cclCoveragePanel = ccl?.available
+    ? `<details class="panel disclosure coverage-panel ccl-coverage-panel">
+        <summary class="section-summary">
+          <span><strong>CCL regression coverage</strong><small>Automated evidence mapped to release requirements</small></span>
+          <span class="summary-value">${escapeHtml(ccl.passed)} passed · ${escapeHtml(ccl.attention)} attention</span>
+        </summary>
+        <div class="disclosure-body">
+        <p class="coverage-note">${escapeHtml(ccl.passed)} passed · ${escapeHtml(ccl.partial)} partial · ${escapeHtml(ccl.attention)} attention · ${escapeHtml(ccl.notRun)} not run. Automation supplements the manual CCL checklist.</p>
+        <div class="coverage-scroll"><table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Automated by</th><th>Result</th></tr></thead>
+          <tbody>${cclRows}</tbody>
+        </table></div></div>
+      </details>`
+    : '';
 
   return {
     passed,
@@ -269,6 +299,7 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
     environmentRows,
     evidenceTone,
     coveragePanel,
+    cclCoveragePanel,
   };
 }
 

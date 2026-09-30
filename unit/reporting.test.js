@@ -8,6 +8,7 @@ const { hasFreshCombinedSummary, validateRunId } = require('../scripts/runSplit3
 const {
   buildEnvironmentSummary,
   buildEvidenceDecision,
+  cclCoverageForSummary,
   coverageForSummary,
   failureCategory,
   rerunCommandForResult,
@@ -16,7 +17,11 @@ const {
 } = require('../scripts/report/reportAnalysis');
 const { enforceReportRetention } = require('../scripts/report/reportFiles');
 const { discoverReports, reportsForNavigation } = require('../scripts/report/reportCatalog');
-const { buildReportNav, reportSwitcherMarkup } = require('../scripts/report/reportNavigation');
+const {
+  buildReportNav,
+  refreshReportNavigation,
+  reportSwitcherMarkup,
+} = require('../scripts/report/reportNavigation');
 
 const COMPLETE_APP_ENVIRONMENT = Object.freeze({
   bundleId: 'com.powerhrg.connect.v3.debug',
@@ -273,6 +278,101 @@ test('QA completeness requires QA-only tests to be scheduled and completed', () 
   assert.equal(coverage.complete, false);
 });
 
+test('CCL coverage reports full, partial, failed, and not-run requirements', () => {
+  const summary = freshSummary({
+    results: [
+      { name: 'FullTest', status: 'PASS' },
+      { name: 'PartialTest', status: 'PASS' },
+      { name: 'FailingTest', status: 'FAIL' },
+      { name: 'OptionalDuplicate', status: 'SKIPPED' },
+    ],
+    coverage: [
+      {
+        name: 'FullTest',
+        environments: ['ANY'],
+        scheduled: true,
+        cclRequirements: [{ id: 'I-023', title: 'Recent Activity sorting', coverage: 'full' }],
+      },
+      {
+        name: 'PartialTest',
+        environments: ['ANY'],
+        scheduled: true,
+        cclRequirements: [{ id: 'I-024', title: 'Alphabetical sorting', coverage: 'partial' }],
+      },
+      {
+        name: 'OptionalDuplicate',
+        environments: ['ANY'],
+        scheduled: true,
+        cclRequirements: [{ id: 'I-023', title: 'Recent Activity sorting', coverage: 'full' }],
+      },
+      {
+        name: 'FailingTest',
+        environments: ['ANY'],
+        scheduled: true,
+        cclRequirements: [{ id: 'I-021', title: 'Self-Managed sorting', coverage: 'full' }],
+      },
+      {
+        name: 'FutureTest',
+        environments: ['ANY'],
+        scheduled: false,
+        cclRequirements: [{ id: 'I-019', title: 'Classic layout', coverage: 'full' }],
+      },
+    ],
+  });
+
+  const ccl = cclCoverageForSummary(summary, { environment: 'LOCAL' });
+  assert.deepEqual(ccl.rows.map(row => [row.id, row.status]), [
+    ['I-019', 'NOT RUN'],
+    ['I-021', 'FAIL'],
+    ['I-023', 'PASS'],
+    ['I-024', 'PARTIAL'],
+  ]);
+  assert.deepEqual(
+    { total: ccl.total, passed: ccl.passed, partial: ccl.partial, attention: ccl.attention, notRun: ccl.notRun },
+    { total: 4, passed: 1, partial: 1, attention: 1, notRun: 1 }
+  );
+  assert.deepEqual(ccl.rows.find(row => row.id === 'I-023').tests, ['FullTest', 'OptionalDuplicate']);
+});
+
+test('CCL coverage supports legacy mappings and ignores malformed or ineligible metadata', () => {
+  const summary = freshSummary({
+    results: [{ name: 'LegacyTest', status: 'PASS' }],
+    coverage: [
+      {
+        name: 'LegacyTest',
+        environments: ['ANY'],
+        scheduled: true,
+        cclRequirements: ['I-023'],
+      },
+      {
+        name: 'RichTitleTest',
+        environments: ['ANY'],
+        scheduled: false,
+        cclRequirements: [{ id: 'I-023', title: 'Recent Activity sorting', coverage: 'partial' }],
+      },
+      {
+        name: 'QaOnlyTest',
+        environments: ['QA'],
+        scheduled: false,
+        cclRequirements: [{ id: 'I-024', title: 'Alphabetical sorting', coverage: 'full' }],
+      },
+      {
+        name: 'MalformedTest',
+        environments: ['ANY'],
+        scheduled: false,
+        cclRequirements: 'I-999',
+      },
+    ],
+  });
+
+  const local = cclCoverageForSummary(summary, { environment: 'LOCAL' });
+  assert.deepEqual(local.rows.map(row => [row.id, row.title, row.status]), [
+    ['I-023', 'Recent Activity sorting', 'PASS'],
+  ]);
+  const qa = cclCoverageForSummary(summary, { environment: 'QA' });
+  assert.deepEqual(qa.rows.map(row => row.id), ['I-023', 'I-024']);
+});
+
 test('release evidence is READY only for fresh, identified, complete, conclusive runs', () => {
   const summary = freshSummary();
   const evidence = buildEvidenceDecision(summary, {
@@ -441,7 +541,7 @@ test('report navigation keeps the active report and tracked history when filteri
   assert.deepEqual(reports, [current, tracked]);
 });
 
-test('report switcher pins latest and resolves mutable history to immutable archives', () => {
+test('report switcher keeps one static chronological list and highlights the viewed report', () => {
   const root = path.join(os.tmpdir(), 'connect-report-switcher');
   const latest = {
     dir: path.join(root, 'split3-combined'),
@@ -464,10 +564,55 @@ test('report switcher pins latest and resolves mutable history to immutable arch
   };
 
   const navigation = buildReportNav([latest, archive, older], path.join(older.dir, 'index.html'));
+  const latestNavigation = buildReportNav([latest, archive, older], path.join(latest.dir, 'index.html'));
 
   assert.equal(navigation[0].latest, true);
   assert.equal(navigation[0].runId, 'Full Suite');
   assert.equal(navigation.find(report => report.selected).status, 'FAIL');
-  assert.match(reportSwitcherMarkup(navigation), /Saved runs/);
+  assert.deepEqual(
+    navigation.map(({ runId, date, status }) => ({ runId, date, status })),
+    latestNavigation.map(({ runId, date, status }) => ({ runId, date, status }))
+  );
+  assert.match(reportSwitcherMarkup(navigation), /Reports <span>2<\/span>/);
+  assert.doesNotMatch(reportSwitcherMarkup(navigation), />Latest report<|>Viewing<|>Saved runs/);
+  assert.equal((reportSwitcherMarkup(navigation).match(/class="report-run is-viewing"/g) || []).length, 1);
   assert.match(reportSwitcherMarkup(navigation), /Full Suite/);
+  assert.equal(navigation.length, 2);
+});
+
+test('navigation refresh keeps archived report dropdowns current', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'connect-report-refresh-'));
+  try {
+    const latest = {
+      dir: path.join(root, 'Reactions-latest'),
+      runId: 'Reactions-latest',
+      reportType: 'latest',
+      startedAt: '2026-09-30T12:00:00.000Z',
+      status: 'PASS',
+    };
+    const archive = {
+      dir: path.join(root, 'archive', 'older-reactions'),
+      runId: 'Reactions-latest',
+      reportType: 'archive',
+      startedAt: '2026-09-29T12:00:00.000Z',
+      status: 'FAIL',
+    };
+    for (const report of [latest, archive]) {
+      fs.mkdirSync(report.dir, { recursive: true });
+      fs.writeFileSync(
+        path.join(report.dir, 'index.html'),
+        '<details class="report-switcher"><summary>Old menu</summary></details>'
+      );
+    }
+
+    refreshReportNavigation([latest, archive]);
+
+    const archivedHtml = fs.readFileSync(path.join(archive.dir, 'index.html'), 'utf8');
+    assert.match(archivedHtml, /Reports <span>2<\/span>/);
+    assert.doesNotMatch(archivedHtml, />Latest report<|>Viewing<|>Saved runs/);
+    assert.match(archivedHtml, /Reactions-latest/);
+    assert.doesNotMatch(archivedHtml, /Old menu/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

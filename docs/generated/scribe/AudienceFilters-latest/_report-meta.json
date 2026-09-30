@@ -3,7 +3,7 @@
   "reportType": "latest",
   "source": "summary.json",
   "status": "PASS",
-  "evidenceDecision": "INCOMPLETE",
+  "evidenceDecision": "STALE",
   "startedAt": "2026-09-09T14:52:24.709Z",
   "updatedAt": "2026-09-09T14:54:24.188Z",
   "durationMs": 119478,
@@ -18,26 +18,26 @@
     "version": "",
     "build": "",
     "branch": "main",
-    "commit": "c394a1bb3"
+    "commit": "86ae86038"
   },
   "automation": {
     "branch": "main",
-    "commit": "ef79482",
+    "commit": "51ac146",
     "node": "v24.14.0"
   },
   "environment": {
     "branch": "main",
-    "commit": "c394a1bb3",
+    "commit": "86ae86038",
     "automationBranch": "main",
-    "automationCommit": "ef79482",
+    "automationCommit": "51ac146",
     "appBranch": "main",
-    "appCommit": "c394a1bb3",
+    "appCommit": "86ae86038",
     "node": "v24.14.0",
     "bundleId": "com.powerhrg.connect.v3.debug",
     "appVersion": "",
     "appBuild": "",
     "appInstalled": false,
-    "serverEnvironment": "QA",
+    "serverEnvironment": "",
     "source": "summary.json",
     "devices": [],
     "appiumPorts": [
@@ -49,7 +49,7 @@
   },
   "coverage": {
     "available": true,
-    "environment": "QA",
+    "environment": "UNSPECIFIED",
     "rows": [
       {
         "feature": "Room creation",
@@ -336,11 +336,20 @@
     "requiredScheduled": 1,
     "requiredCompleted": 1,
     "requiredExecuted": 1,
+    "ccl": {
+      "available": false,
+      "rows": [],
+      "total": 0,
+      "passed": 0,
+      "partial": 0,
+      "attention": 0,
+      "notRun": 0
+    },
     "complete": false
   },
   "freshness": {
-    "fresh": true,
-    "ageMs": 1996,
+    "fresh": false,
+    "ageMs": 1814623596,
     "thresholdMs": 86400000,
     "timestamp": "2026-09-09T14:54:24.188Z"
   },
@@ -352,7 +361,7 @@
       "testBodyMs": 101576,
       "screenshotCaptureMs": 1322,
       "recoveryMs": 0,
-      "reportGenerationMs": 1321,
+      "reportGenerationMs": 230,
       "roomCreationMs": 622
     }
   },

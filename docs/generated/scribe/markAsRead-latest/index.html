@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>markAsRead-latest test report</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #687386;
+      --line: #dce3ec;
+      --line-strong: #c9d3e1;
+      --paper: #f4f6f9;
+      --panel: #ffffff;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --pass: #15805d;
+      --fail: #c2413a;
+      --fail-soft: #fff1f0;
+      --warning: #a16207;
+      --skipped: #64748b;
+      --blocked: #b45309;
+      --inconclusive: #7c3aed;
+      --unknown: #64748b;
+      --radius: 1rem;
+      --shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 15px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    a { color: inherit; }
+    button, input, select { font: inherit; }
+
+    .hero { padding: 2rem clamp(1rem,4vw,3rem) 5.25rem; color: white; background: linear-gradient(135deg,#10182b,#182946 72%,#1d3a61); }
+    .hero-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(18rem,25rem); gap: 2rem; align-items: start; max-width: 76rem; margin: 0 auto; }
+    .hero-copy { min-width: 0; }
+    .hero-eyebrow, .section-label { margin: 0 0 .35rem; color: #8fa5c6; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .hero h1 { margin: 0; font-size: clamp(2rem,5vw,3.6rem); line-height: 1; letter-spacing: -.055em; overflow-wrap: anywhere; }
+    .hero-copy > p:not(.hero-eyebrow) { margin: .65rem 0 0; color: #b8c5d8; font-size: 1rem; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: 1.2rem; }
+    .hero-meta span { border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: .32rem .62rem; color: #d8e0ed; background: rgba(255,255,255,.06); font-size: .8rem; font-weight: 700; }
+    .hero-meta .stale-report { border-color: rgba(251,191,36,.48); color: #fde68a; }
+
+    main { max-width: 76rem; margin: -3.25rem auto 0; padding: 0 clamp(1rem,4vw,3rem) 4rem; }
+    .panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+
+    .run-summary { position: relative; z-index: 2; padding: 1.25rem; }
+    .release-summary { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 1rem; align-items: start; }
+    .decision-badge { min-width: 7.4rem; border-radius: .8rem; padding: .75rem .85rem; color: white; background: var(--unknown); text-align: center; font-size: .78rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .decision-badge.pass { background: var(--pass); }
+    .decision-badge.fail { background: var(--fail); }
+    .decision-badge.warning { background: var(--warning); }
+    .decision-copy h2 { margin: .05rem 0 .25rem; font-size: 1.25rem; line-height: 1.2; letter-spacing: -.02em; }
+    .decision-copy p { margin: 0; color: var(--muted); }
+    .decision-facts { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .65rem; }
+    .decision-facts span { border-radius: 999px; padding: .25rem .55rem; color: #40506a; background: #f1f5f9; font-size: .76rem; font-weight: 800; }
+    .summary-metrics { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 0; margin: 1.15rem 0 0; border-top: 1px solid var(--line); }
+    .summary-metrics div { min-width: 0; padding: .9rem .75rem 0; border-left: 1px solid var(--line); }
+    .summary-metrics div:first-child { border-left: 0; padding-left: 0; }
+    dt { color: var(--muted); font-size: .68rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    dd { margin: .12rem 0 0; font-size: 1.25rem; font-weight: 850; overflow-wrap: anywhere; }
+    .summary-metrics .metric-alert dd { color: var(--fail); }
+    button { border: 1px solid var(--line-strong); border-radius: .7rem; padding: .55rem .75rem; color: var(--blue); background: white; font-weight: 850; cursor: pointer; }
+    button:hover { border-color: var(--blue); background: var(--blue-soft); }
+    .copy-report { position: absolute; right: 1.25rem; top: 1.25rem; }
+
+    .results-section { margin-top: 2rem; }
+    .results-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: .85rem; }
+    .results-heading h2 { margin: 0; font-size: 1.65rem; letter-spacing: -.035em; }
+    .results-heading > span { color: var(--muted); font-weight: 800; }
+    .toolbar { display: grid; grid-template-columns: minmax(13rem,1fr) 11rem 13rem auto; gap: .6rem; align-items: start; margin-bottom: .8rem; }
+    input, select, .filter-more > summary { width: 100%; min-height: 2.75rem; border: 1px solid var(--line-strong); border-radius: .72rem; padding: .65rem .8rem; color: var(--ink); background: white; }
+    input:focus, select:focus { outline: 3px solid rgba(37,99,235,.14); border-color: var(--blue); }
+    .filter-more { position: relative; }
+    .filter-more > summary { display: grid; place-items: center; cursor: pointer; list-style: none; color: #40506a; font-weight: 800; white-space: nowrap; }
+    .filter-more > summary::-webkit-details-marker { display: none; }
+    .filter-more > div { position: absolute; z-index: 10; top: calc(100% + .4rem); right: 0; display: grid; gap: .4rem; min-width: 12rem; border: 1px solid var(--line); border-radius: .8rem; padding: .55rem; background: white; box-shadow: var(--shadow); }
+    .check-filter { display: flex; gap: .5rem; align-items: center; padding: .4rem; color: #40506a; font-weight: 750; white-space: nowrap; }
+    .check-filter input { width: auto; min-height: 0; margin: 0; }
+
+    .test-grid { display: grid; gap: .55rem; }
+    .test-card { border: 1px solid var(--line); border-radius: .85rem; background: white; overflow: hidden; }
+    .test-card.fail { border-color: rgba(194,65,58,.42); }
+    .test-card.slow:not(.fail) { border-color: rgba(161,98,7,.35); }
+    .test-card-summary { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: .85rem; align-items: center; padding: .85rem 1rem; cursor: pointer; list-style: none; }
+    .test-card-summary::-webkit-details-marker { display: none; }
+    .test-card-summary:hover { background: #fafbfd; }
+    .test-card-copy { min-width: 0; }
+    .test-card h3 { margin: 0; font-size: 1rem; line-height: 1.25; letter-spacing: -.01em; }
+    .test-card p { margin: .15rem 0 0; color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; }
+    .status-pill { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: .23rem .52rem; color: white; background: var(--unknown); font-size: .68rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+    .status-pill.pass { background: var(--pass); }
+    .status-pill.fail { background: var(--fail); }
+    .status-pill.skipped { background: var(--skipped); }
+    .status-pill.blocked { background: var(--blocked); }
+    .status-pill.inconclusive { background: var(--inconclusive); }
+    .test-card-result { display: flex; gap: .75rem; align-items: center; color: var(--muted); font-weight: 800; }
+    .open-details { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; background: #f1f5f9; transition: transform 150ms ease; }
+    .test-card[open] .open-details { transform: rotate(180deg); }
+    .card-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+    .card-tags span { border-radius: 999px; padding: .12rem .4rem; color: #536176; background: #f1f5f9; font-size: .68rem; font-weight: 800; }
+    .test-card-evidence { display: grid; gap: .7rem; border-top: 1px solid var(--line); padding: .9rem 1rem 1rem 4.65rem; background: #fafbfd; }
+    .test-card-evidence p { margin: 0; white-space: pre-wrap; }
+    .test-card-evidence code { overflow-x: auto; border-radius: .55rem; padding: .6rem .7rem; color: #e5eefc; background: #152034; font-size: .78rem; white-space: nowrap; }
+    .test-card-evidence a { justify-self: start; color: var(--blue); font-weight: 850; text-decoration: none; }
+    .test-card-evidence .evidence-error { color: #922f2a; font-weight: 750; }
+
+    .evidence-stack { display: grid; gap: .65rem; margin-top: 2rem; }
+    .disclosure { box-shadow: none; overflow: clip; }
+    .section-summary { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 1rem; align-items: center; min-height: 4rem; padding: .85rem 1rem; cursor: pointer; list-style: none; }
+    .section-summary::-webkit-details-marker { display: none; }
+    .section-summary:hover { background: #fafbfd; }
+    .section-summary > span:first-child { display: grid; gap: .08rem; }
+    .section-summary strong { font-size: .96rem; }
+    .section-summary small { color: var(--muted); }
+    .summary-value { color: #40506a; font-size: .82rem; font-weight: 850; text-align: right; }
+    .section-summary::after { content: '+'; color: var(--muted); font-size: 1.25rem; font-weight: 400; }
+    .disclosure[open] > .section-summary::after { content: '−'; }
+    .disclosure-body { border-top: 1px solid var(--line); padding: 1rem; }
+    .disclosure-body > :first-child { margin-top: 0; }
+    .disclosure-body > :last-child { margin-bottom: 0; }
+
+    .coverage-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    th, td { padding: .66rem .7rem; border-bottom: 1px solid #e8edf3; text-align: left; vertical-align: middle; }
+    thead th { color: var(--muted); background: #f8fafc; font-size: .67rem; letter-spacing: .07em; text-transform: uppercase; }
+    tbody th { font-weight: 800; }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    .coverage-class { border-radius: 999px; padding: .18rem .45rem; color: #40506a; background: #edf2f7; font-size: .68rem; font-weight: 850; text-transform: capitalize; }
+    .coverage-note { margin: 0 0 .8rem; color: var(--muted); }
+    .ccl-status { display: inline-flex; border-radius: 999px; padding: .2rem .48rem; color: white; background: var(--unknown); font-size: .67rem; font-weight: 900; white-space: nowrap; }
+    .ccl-status.pass { background: var(--pass); }
+    .ccl-status.fail { background: var(--fail); }
+    .ccl-status.partial, .ccl-status.blocked { background: var(--warning); }
+
+    .panel-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: .75rem; }
+    .panel-heading h2, .panel-heading h3 { margin: 0; font-size: 1rem; }
+    .panel-heading p { margin: 0; color: var(--muted); font-size: .8rem; font-weight: 750; }
+    .phase-panel { margin-bottom: 1rem; }
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(9rem,1fr)); gap: .5rem; margin: 0; }
+    .meta-grid > div { min-width: 0; border: 1px solid var(--line); border-radius: .65rem; padding: .6rem; background: #fafbfd; }
+    .meta-grid dd { font-size: .9rem; }
+    .cleanup-panel { margin: 0 0 1rem; padding: .8rem; box-shadow: none; }
+    .cleanup-panel p { margin: 0; }
+    .overview-grid { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(16rem,.7fr); gap: 1rem; }
+    .lane-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(13rem,1fr)); gap: .55rem; }
+    .lane-card { border: 1px solid var(--line); border-radius: .7rem; padding: .7rem; background: #fafbfd; }
+    .lane-card.fail { border-color: rgba(194,65,58,.32); background: var(--fail-soft); }
+    .eyebrow { color: var(--muted); font-size: .65rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .lane-card h3 { margin: .12rem 0 .6rem; font-size: .9rem; }
+    .lane-card dl { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .35rem; margin: 0; }
+    .lane-card dl div { min-width: 0; }
+    .lane-card dd { font-size: .82rem; }
+    .slow-list, .comparison-list { display: grid; gap: .4rem; }
+    .slow-list a, .comparison-list a { display: flex; justify-content: space-between; gap: .75rem; border: 1px solid var(--line); border-radius: .65rem; padding: .58rem; text-decoration: none; }
+    .slow-list span, .comparison-list span { color: var(--muted); font-size: .76rem; font-weight: 750; text-align: right; }
+    .muted { color: var(--muted); }
+    .insight-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(16rem,1fr)); gap: 1rem; }
+    .comparison-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .4rem; margin-bottom: .55rem; }
+    .comparison-grid div { border: 1px solid var(--line); border-radius: .6rem; padding: .5rem; background: #fafbfd; }
+    .comparison-grid dd { font-size: .95rem; }
+    .category-list { display: grid; gap: .5rem; }
+    .category-row { display: grid; grid-template-columns: 6rem minmax(3rem,1fr) 1.5rem; gap: .5rem; align-items: center; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .category-row div { height: .45rem; border-radius: 999px; overflow: hidden; background: #edf2f7; }
+    .category-row i { display: block; height: 100%; border-radius: inherit; background: var(--fail); }
+
+    [hidden] { display: none !important; }
+    @media (max-width: 800px) {
+      .hero { padding-bottom: 4.25rem; }
+      .hero-layout { grid-template-columns: 1fr; gap: 1.25rem; }
+      main { margin-top: -2.6rem; }
+      .summary-metrics { grid-template-columns: repeat(3,1fr); }
+      .summary-metrics div:nth-child(4) { border-left: 0; padding-left: 0; }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .toolbar input { grid-column: 1 / -1; }
+      .overview-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .release-summary { grid-template-columns: 1fr; }
+      .decision-badge { justify-self: start; min-width: 0; }
+      .copy-report { position: static; margin-top: 1rem; }
+      .summary-metrics { grid-template-columns: repeat(2,1fr); }
+      .summary-metrics div:nth-child(odd) { border-left: 0; padding-left: 0; }
+      .toolbar { grid-template-columns: 1fr; }
+      .toolbar input { grid-column: auto; }
+      .filter-more > div { left: 0; right: auto; }
+      .test-card-summary { grid-template-columns: auto minmax(0,1fr); }
+      .test-card-result { grid-column: 2; justify-content: space-between; }
+      .test-card-evidence { padding-left: 1rem; }
+      .summary-value { display: none; }
+      .lane-card dl { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-layout">
+      <div class="hero-copy">
+        <p class="hero-eyebrow">Connect iOS automation</p>
+        <h1>markAsRead-latest</h1>
+        <p>Regression results and release evidence.</p>
+        <div class="hero-meta">
+          <span>main</span>
+          <span>Build not reported</span>
+
+          <span>Sep 30, 11:23 AM</span>
+          <span class="">0m ago</span>
+        </div>
+      </div>
+
+      <style id="report-switcher-styles">
+    .report-switcher { position: relative; border: 1px solid rgba(255,255,255,.18); border-radius: 1rem; background: rgba(255,255,255,.08); color: white; box-shadow: 0 16px 36px rgba(0,0,0,.14); }
+    .report-switcher summary { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: .75rem; align-items: center; padding: .85rem 1rem; cursor: pointer; list-style: none; }
+    .report-switcher summary::-webkit-details-marker { display: none; }
+    .report-switcher .report-switcher-copy, .report-switcher .report-run-copy { display: grid; min-width: 0; gap: .1rem; }
+    .report-switcher .report-switcher-copy strong, .report-switcher .report-run-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .report-switcher .report-switcher-eyebrow, .report-switcher .report-menu-heading { font-size: .76rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+    .report-switcher .report-switcher-copy small { color: rgba(255,255,255,.7); font-size: .78rem; font-weight: 700; }
+    .report-switcher .report-switcher-toggle { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border-radius: 999px; background: rgba(255,255,255,.14); font-weight: 900; transition: transform 150ms ease; }
+    .report-switcher[open] .report-switcher-toggle { transform: rotate(180deg); }
+    .report-switcher .report-menu { position: absolute; z-index: 20; top: calc(100% + .65rem); right: 0; width: min(28rem, calc(100vw - 2rem)); padding: .85rem; border: 1px solid rgba(215,226,241,.95); border-radius: 1rem; background: rgba(255,255,255,.98); color: #17233a; box-shadow: 0 24px 60px rgba(8,22,47,.25); backdrop-filter: blur(16px); }
+    .report-switcher .report-menu-heading { display: flex; justify-content: space-between; align-items: center; margin: .15rem 0 .45rem; color: #6b7a90; }
+    .report-switcher .report-menu-heading span { border-radius: 999px; padding: .1rem .45rem; background: #edf3fb; color: #0e61d8; font-size: .72rem; }
+    .report-switcher .report-run { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .7rem .75rem; border: 1px solid #dce5ef; border-radius: .7rem; color: #17233a; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
+    .report-switcher .report-run-list { display: grid; gap: .4rem; max-height: min(23rem,52vh); overflow: auto; padding-right: .15rem; }
+    .report-switcher .report-run:hover { border-color: rgba(14,97,216,.55); background: #f3f8ff; transform: translateX(-2px); }
+    .report-switcher .report-run.is-viewing { border-color: rgba(14,97,216,.75); box-shadow: inset 3px 0 0 #0e61d8; }
+    .report-switcher .report-run-copy { flex: 1; }
+    .report-switcher .report-run-copy small { color: #6b7a90; font-size: .78rem; font-weight: 700; }
+    .report-switcher .status-pill { flex: 0 0 auto; }
+    .report-switcher .report-menu-empty { margin: 0; padding: .75rem; color: #6b7a90; font-weight: 700; }
+    @media (max-width: 780px) { .report-switcher .report-menu { right: auto; left: 0; } }
+  </style>
+      <details class="report-switcher">
+        <summary aria-label="Browse test report history">
+          <span class="report-switcher-copy">
+            <span class="report-switcher-eyebrow">Viewing now</span>
+            <strong>markAsRead-latest</strong>
+            <small>Sep 30, 11:23 AM</small>
+          </span>
+          <span class="status-pill pass">PASS</span>
+          <span class="report-switcher-toggle" aria-hidden="true">v</span>
+        </summary>
+        <div class="report-menu">
+          <div class="report-menu-heading">Reports <span>10</span></div>
+          <div class="report-run-list">
+            <a class="report-run" href="../ComposerTypeahead-latest/index.html">
+              <span class="report-run-copy">
+                <strong>ComposerTypeahead-latest</strong>
+                <small>Sep 30, 12:39 PM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-30T15-24-35Z-removeRoom-latest/index.html">
+              <span class="report-run-copy">
+                <strong>removeRoom-latest</strong>
+                <small>Sep 30, 11:24 AM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run is-viewing" href="../archive/2026-09-30T15-23-24Z-markAsRead-latest/index.html">
+              <span class="report-run-copy">
+                <strong>markAsRead-latest</strong>
+                <small>Sep 30, 11:23 AM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-30T15-20-45Z-markAsRead-latest/index.html">
+              <span class="report-run-copy">
+                <strong>markAsRead-latest</strong>
+                <small>Sep 30, 11:20 AM</small>
+              </span>
+              <span class="status-pill fail">FAIL</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html">
+              <span class="report-run-copy">
+                <strong>Full Suite</strong>
+                <small>Sep 30, 11:02 AM</small>
+              </span>
+              <span class="status-pill fail">FAIL</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-28T18-01-00Z-Reactions-latest/index.html">
+              <span class="report-run-copy">
+                <strong>Reactions-latest</strong>
+                <small>Sep 28, 2:01 PM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-22T19-05-53Z-CorporateEvents-latest/index.html">
+              <span class="report-run-copy">
+                <strong>CorporateEvents-latest</strong>
+                <small>Sep 22, 3:05 PM</small>
+              </span>
+              <span class="status-pill fail">FAIL</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-09T14-52-24Z-AudienceFilters-latest/index.html">
+              <span class="report-run-copy">
+                <strong>AudienceFilters-latest</strong>
+                <small>Sep 9, 10:52 AM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-01T18-53-17Z-split3-combined/index.html">
+              <span class="report-run-copy">
+                <strong>Full Suite</strong>
+                <small>Sep 1, 2:53 PM</small>
+              </span>
+              <span class="status-pill fail">FAIL</span>
+            </a>
+<a class="report-run" href="../archive/2026-08-11T19-06-27Z-Reactions-latest/index.html">
+              <span class="report-run-copy">
+                <strong>Reactions-latest</strong>
+                <small>Aug 11, 3:06 PM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+          </div>
+        </div>
+      </details>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel run-summary" aria-label="Run summary">
+      <div class="release-summary">
+        <div class="decision-badge warning">INCOMPLETE</div>
+        <div class="decision-copy">
+          <span class="section-label">Release evidence</span>
+          <h2>Run completed successfully</h2>
+          <p>App version, build unavailable · Server environment unavailable · 1/17 required scheduled; 1/17 completed</p>
+          <div class="decision-facts">
+            <span>Fresh</span>
+            <span>1/17 required completed</span>
+          </div>
+        </div>
+      </div>
+      <dl class="summary-metrics">
+        <div><dt>Passed</dt><dd>1</dd></div>
+        <div class=""><dt>Failed</dt><dd>0</dd></div>
+        <div><dt>Other</dt><dd>0</dd></div>
+        <div><dt>Total</dt><dd>1</dd></div>
+        <div><dt>Elapsed</dt><dd>59s</dd></div>
+      </dl>
+      <button class="copy-report" type="button" data-copy-link="">Copy report link</button>
+    </section>
+
+    <section class="results-section" aria-labelledby="results-title">
+      <div class="results-heading">
+        <div><span class="section-label">Results</span><h2 id="results-title">Test results</h2></div>
+        <span>1 test</span>
+      </div>
+      <div class="toolbar" aria-label="Report filters">
+        <input id="search" type="search" placeholder="Search tests">
+        <select id="statusFilter" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          <option value="PASS">Pass</option>
+          <option value="FAIL">Fail</option>
+          <option value="SKIPPED">Skipped</option>
+          <option value="BLOCKED">Blocked</option>
+          <option value="INCONCLUSIVE">Inconclusive</option>
+          <option value="UNKNOWN">Unknown</option>
+        </select>
+        <select id="laneFilter" aria-label="Filter by lane">
+          <option value="">All lanes</option>
+          <option value="markAsRead-latest">markAsRead-latest</option>
+        </select>
+        <details class="filter-more">
+          <summary>More filters</summary>
+          <div>
+            <label class="check-filter"><input id="failedOnly" type="checkbox"> Failed only</label>
+            <label class="check-filter"><input id="slowOnly" type="checkbox"> Slow only</label>
+            <label class="check-filter"><input id="screenshotsOnly" type="checkbox"> Has screenshots</label>
+          </div>
+        </details>
+      </div>
+
+      <div class="test-grid" aria-label="Tests">
+
+        <details class="test-card pass" data-test-card data-name="markasread" data-status="PASS" data-lane="markAsRead-latest" data-slow="0" data-screenshots="1" data-flaky="1">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>markAsRead</h3>
+              <p>Uncategorized · markAsRead-latest</p>
+              <div class="card-tags">
+                <span>4 screenshots</span>
+
+                <span>Flaky: 3/4 failed in last 4 runs</span>
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">47s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 node Tests/markAsRead.js</code>
+            <a href="tests/markasread/index.html">Open full evidence →</a>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="evidence-stack" aria-label="Additional report details">
+      <details class="panel disclosure coverage-panel">
+        <summary class="section-summary">
+          <span><strong>Automation coverage</strong><small>Required and optional tests by feature</small></span>
+          <span class="summary-value">1/17 required</span>
+        </summary>
+        <div class="disclosure-body coverage-scroll"><table>
+          <thead><tr><th>Feature</th><th>Class</th><th>Scheduled</th><th>Completed</th><th>Passed</th><th>Attention</th></tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row">Room creation</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Direct messaging</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Conversation list</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>1/3</td>
+              <td>1/3</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Notifications</th>
+              <td><span class="coverage-class">partial</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Conversation view</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/5</td>
+              <td>0/5</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Room settings</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/2</td>
+              <td>0/2</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Room membership</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Composer</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Message actions</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Conversation search</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">User settings</th>
+              <td><span class="coverage-class">required</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">System lifecycle</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Authentication</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">User settings</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Message actions</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Pinned messages</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+
+            <tr>
+              <th scope="row">Cleanup</th>
+              <td><span class="coverage-class">opt-in</span></td>
+              <td>0/1</td>
+              <td>0/1</td>
+              <td>0</td>
+              <td>0</td>
+            </tr></tbody>
+        </table></div>
+      </details>
+      <details class="panel disclosure coverage-panel ccl-coverage-panel">
+        <summary class="section-summary">
+          <span><strong>CCL regression coverage</strong><small>Automated evidence mapped to release requirements</small></span>
+          <span class="summary-value">2 passed · 0 attention</span>
+        </summary>
+        <div class="disclosure-body">
+        <p class="coverage-note">2 passed · 0 partial · 0 attention · 42 not run. Automation supplements the manual CCL checklist.</p>
+        <div class="coverage-scroll"><table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Automated by</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row">I-017</th>
+              <td>Sign out returns to the login screen</td>
+              <td>Login_Signout</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-019</th>
+              <td>Classic conversation layout</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-020</th>
+              <td>Cozy conversation layout</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-021</th>
+              <td>Self-Managed conversation sorting</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-023</th>
+              <td>Recent Activity conversation sorting</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-024</th>
+              <td>Alphabetical conversation sorting</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-046</th>
+              <td>Remove a bookmark without leaving the room</td>
+              <td>removeRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-054</th>
+              <td>Mark a conversation as unread</td>
+              <td>markAsRead</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-055</th>
+              <td>Mark a conversation as read</td>
+              <td>markAsRead</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-056</th>
+              <td>Open the New Message flow</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-058</th>
+              <td>Select a recipient from typeahead</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-059</th>
+              <td>Search for a New Message recipient</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-061</th>
+              <td>Send a new direct message</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-066</th>
+              <td>Open the Rooms action menu</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-067</th>
+              <td>Open Create a Room</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-069</th>
+              <td>Create a public or private room</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-070</th>
+              <td>Complete the Add Members room-creation step</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-083</th>
+              <td>Pin a message</td>
+              <td>PinnedMessageEditFlow, PinnedMessages</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-084</th>
+              <td>Open the pinned-message drawer</td>
+              <td>PinnedMessageEditFlow, PinnedMessages</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-093</th>
+              <td>Open Conversation Search</td>
+              <td>ConversationSearch</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-094</th>
+              <td>Search and sort conversation messages</td>
+              <td>ConversationSearch</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-095</th>
+              <td>Open room notification preferences</td>
+              <td>RoomNotificationPreferences</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-102</th>
+              <td>Render a bulleted Markdown list</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-103</th>
+              <td>Render Markdown headings</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-104</th>
+              <td>Render Markdown emphasis</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-105</th>
+              <td>Render a Markdown link</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-106</th>
+              <td>Render Markdown code styling</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-107</th>
+              <td>Render Markdown strikethrough</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-113</th>
+              <td>Open the message long-press menu</td>
+              <td>Reactions</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-114</th>
+              <td>Add a message reaction</td>
+              <td>Reactions</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-115</th>
+              <td>Add and remove message reactions</td>
+              <td>Reactions</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-116</th>
+              <td>Use message Copy, Edit, and Delete actions</td>
+              <td>MessageActions</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-118</th>
+              <td>Copy an entire message</td>
+              <td>MessageActions</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-122</th>
+              <td>Edit a plaintext message</td>
+              <td>PinnedMessageEditFlow, EditMessage</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-128</th>
+              <td>Open and edit Room Info as an admin</td>
+              <td>editRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-129</th>
+              <td>Open the room member list</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-130</th>
+              <td>Open member management as an admin</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-131</th>
+              <td>Open member actions</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-132</th>
+              <td>Edit room membership</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-134</th>
+              <td>Persist room notification preferences</td>
+              <td>RoomNotificationPreferences</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-141</th>
+              <td>Add or remove room members</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-157</th>
+              <td>Attach an image or file</td>
+              <td>attachments</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-159</th>
+              <td>Send a GIF</td>
+              <td>attachments</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-168</th>
+              <td>Persist an unsent message draft</td>
+              <td>DraftPersistence</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr></tbody>
+        </table></div></div>
+      </details>
+
+      <details class="panel disclosure execution-details">
+        <summary class="section-summary">
+          <span><strong>Execution details</strong><small>Timing, simulator lanes, and slow tests</small></span>
+          <span class="summary-value">59s elapsed</span>
+        </summary>
+        <div class="disclosure-body">
+          <section class="phase-panel"><div class="panel-heading"><h3>Phase timing</h3><p>Workload timing</p></div><dl class="meta-grid compact"><div><dt>Session creation</dt><dd>7s</dd></div>
+<div><dt>Login/readiness</dt><dd>10s</dd></div>
+<div><dt>Test body</dt><dd>40s</dd></div>
+<div><dt>Screenshot capture</dt><dd>587ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>1s</dd></div></dl></section>
+
+          <section class="overview-grid">
+            <div class="lane-health">
+              <div class="panel-heading"><h3>Lane health</h3><p>1 lane</p></div>
+              <div class="lane-grid">
+        <article class="lane-card pass">
+          <div>
+            <span class="eyebrow">markAsRead-latest</span>
+            <h3>Unknown device</h3>
+          </div>
+          <dl>
+            <div><dt>Port</dt><dd>4723</dd></div>
+            <div><dt>Passed</dt><dd>1</dd></div>
+            <div><dt>Failed</dt><dd>0</dd></div>
+            <div><dt>Test time</dt><dd>47s</dd></div>
+          </dl>
+        </article></div>
+            </div>
+            <div class="slow-panel">
+              <div class="panel-heading"><h3>Slow tests</h3><p>Average 47s</p></div>
+              <div class="slow-list"><p class="muted">No tests were more than 25% slower than the average.</p></div>
+            </div>
+          </section>
+        </div>
+      </details>
+
+      <details class="report-insights panel disclosure">
+      <summary class="section-summary"><span><strong>Run context</strong><small>Comparison, failures, and environment metadata</small></span><span class="summary-value">Sep 30, 11:24 AM</span></summary>
+      <div class="disclosure-body insight-grid">
+        <div class="comparison-panel">
+          <div class="panel-heading">
+            <h3>Run comparison</h3>
+            <p>Compared with Sep 30, 11:20 AM</p>
+          </div>
+
+      <div class="comparison-grid">
+        <div><dt>New failures</dt><dd>0</dd></div>
+        <div><dt>New fixes</dt><dd>1</dd></div>
+        <div><dt>Slower</dt><dd>0</dd></div>
+        <div><dt>Faster</dt><dd>0</dd></div>
+      </div>
+      <div class="comparison-list">
+
+              <a class="pass" href="tests/markasread/index.html">
+                <strong>markAsRead</strong>
+                <span>Fixed since previous</span>
+              </a>
+      </div>
+        </div>
+        <div class="category-panel">
+          <div class="panel-heading">
+            <h3>Failure categories</h3>
+            <p>0 failed tests</p>
+          </div>
+          <div class="category-list"><p class="muted">No failures to categorize.</p></div>
+        </div>
+        <div class="environment-panel">
+          <div class="panel-heading">
+            <h3>Environment</h3>
+            <p>Run context</p>
+          </div>
+          <dl class="meta-grid compact"><div><dt>App branch</dt><dd>main</dd></div>
+<div><dt>App commit</dt><dd>86ae86038</dd></div>
+<div><dt>Bundle ID</dt><dd>com.powerhrg.connect.v3.debug</dd></div>
+<div><dt>Automation branch</dt><dd>main</dd></div>
+<div><dt>Automation commit</dt><dd>51ac146</dd></div>
+<div><dt>Node</dt><dd>v24.14.0</dd></div>
+<div><dt>Appium ports</dt><dd>4723</dd></div>
+<div><dt>WDA ports</dt><dd>8100</dd></div>
+<div><dt>Source</dt><dd>summary.json</dd></div></dl>
+        </div>
+      </div>
+      </details>
+    </section>
+
+  </main>
+
+  <script>
+    const search = document.querySelector('#search');
+    const statusFilter = document.querySelector('#statusFilter');
+    const laneFilter = document.querySelector('#laneFilter');
+    const failedOnly = document.querySelector('#failedOnly');
+    const slowOnly = document.querySelector('#slowOnly');
+    const screenshotsOnly = document.querySelector('#screenshotsOnly');
+    const cards = [...document.querySelectorAll('[data-test-card]')];
+
+    function shouldShow(element) {
+      const term = search.value.trim().toLowerCase();
+      const status = statusFilter.value;
+      const lane = laneFilter.value;
+      const onlyFailures = failedOnly.checked;
+      const onlySlow = slowOnly.checked;
+      const onlyScreenshots = screenshotsOnly.checked;
+      return (!term || element.dataset.name.includes(term)) &&
+        (!status || element.dataset.status === status) &&
+        (!lane || element.dataset.lane === lane) &&
+        (!onlyFailures || element.dataset.status === 'FAIL') &&
+        (!onlySlow || element.dataset.slow === '1') &&
+        (!onlyScreenshots || element.dataset.screenshots === '1');
+    }
+
+    function applyFilters() {
+      cards.forEach(card => { card.hidden = !shouldShow(card); });
+    }
+
+    async function copyText(value) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+
+    [search, statusFilter, laneFilter, failedOnly, slowOnly, screenshotsOnly].forEach(input => input.addEventListener('input', applyFilters));
+    document.querySelectorAll('[data-copy]').forEach(button => {
+      button.addEventListener('click', async () => {
+        await copyText(button.dataset.copy || '');
+        const original = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = original; }, 1200);
+      });
+    });
+    document.querySelectorAll('[data-copy-link]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const hash = button.dataset.copyLink || '';
+        const url = new URL(window.location.href);
+        url.hash = hash.replace(/^#/, '');
+        await copyText(url.toString());
+        const original = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = original; }, 1200);
+      });
+    });
+  </script>
+</body>
+</html>

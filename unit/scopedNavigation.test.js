@@ -30,13 +30,18 @@ test('scopedSwipeCoordinates keeps both endpoints inside the container rect', ()
 
   assert.deepEqual(scopedSwipeCoordinates(rect, 'up'), {
     x: 110,
-    startY: 320,
-    endY: 120,
+    startY: 284,
+    endY: 156,
   });
   assert.deepEqual(scopedSwipeCoordinates(rect, 'down'), {
     x: 110,
-    startY: 120,
-    endY: 320,
+    startY: 156,
+    endY: 284,
+  });
+  assert.deepEqual(scopedSwipeCoordinates(rect, 'up', { travelRatio: 0.5 }), {
+    x: 110,
+    startY: 320,
+    endY: 120,
   });
   assert.equal(scopedSwipeCoordinates({ x: 0, y: 0, width: 100, height: 20 }, 'up'), null);
   assert.equal(scopedSwipeCoordinates({ x: null, y: 0, width: 100, height: 200 }, 'up'), null);
@@ -126,9 +131,64 @@ test('swipeConversationList falls back to the existing viewport gesture when una
   assert.equal(await swipeConversationList(driver, 'up'), false);
   assert.equal(performed[0].id, 'finger1');
   assert.deepEqual(actionCoordinates(performed).map(({ x, y }) => ({ x, y })), [
-    { x: 150, y: 450 },
-    { x: 150, y: 210 },
+    { x: 150, y: 396 },
+    { x: 150, y: 204 },
   ]);
+});
+
+test('conversation row lookup returns to the top before smooth-scrolling downward', async () => {
+  let atTop = false;
+  let swipeCount = 0;
+  let performed;
+  const hidden = {
+    isDisplayed: async () => false,
+    waitForDisplayed: async () => {
+      throw new Error('not displayed');
+    },
+  };
+  const driver = {
+    $: async selector => {
+      if (selector.includes('Lost connection')) return hidden;
+      if (selector.includes('Target Room')) {
+        return atTop && swipeCount > 0
+          ? visibleElement({ getAttribute: async name => (name === 'name' ? 'Target Room' : '') })
+          : hidden;
+      }
+      if (selector === PREDICATES.roomsHeaderButton || selector === SELECTORS.roomsSectionHeader) {
+        return visibleElement({ getLocation: async () => ({ y: 150 }) });
+      }
+      if (selector.includes('Events')) return hidden;
+      if (selector === SELECTORS.bookmarksScrollView) {
+        return visibleElement({ getRect: async () => ({ x: 0, y: 100, width: 300, height: 500 }) });
+      }
+      throw new Error(`Unexpected selector: ${selector}`);
+    },
+    execute: async command => {
+      assert.equal(command, 'mobile: tap');
+      atTop = true;
+    },
+    performActions: async actions => {
+      performed = actions;
+      swipeCount++;
+    },
+    getWindowRect: async () => ({ x: 0, y: 0, width: 300, height: 700 }),
+    releaseActions: async () => {},
+    pause: async () => {},
+  };
+
+  const result = await waitForConversationRow(driver, 'Target Room', {
+    timeout: 1000,
+    maxScrolls: 2,
+    pauseMs: 0,
+    topSettleMs: 0,
+  });
+
+  assert.equal(result.roomTitle, 'Target Room');
+  assert.equal(swipeCount, 1);
+  const [start, end] = actionCoordinates(performed);
+  assert.ok(start.y > end.y);
+  assert.equal(end.duration, 550);
+  assert.equal(start.y - end.y, 160);
 });
 
 test('visible conversation rows return before looking up the scroll container', async () => {

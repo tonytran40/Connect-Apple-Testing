@@ -1,18 +1,18 @@
 # markAsRead
 
 - Status: FAIL
-- Duration: 1m 5s
+- Duration: 1m 33s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-09-01T18:54:11.422Z
-- Finished: 2026-09-01T18:55:16.300Z
+- Started: 2026-09-30T15:05:13.701Z
+- Finished: 2026-09-30T15:06:46.280Z
 
 ## Failure
 
 ```text
-None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)
+WebDriverError: Request with GET/HEAD method cannot have body. when running "element/70020000-0000-0000-5579-000000000000/screenshot" with method "GET" and args "{"scroll":true}"
 ```
 
 ## Phase Timings
@@ -20,10 +20,10 @@ None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 9s |
-| Test body | 56s |
-| Screenshot capture | 133ms |
-| Recovery | 3s |
+| Login/readiness | 45s |
+| Test body | 47s |
+| Screenshot capture | 285ms |
+| Recovery | 397ms |
 | Report generation | 0ms |
 
 ## Steps
@@ -35,5 +35,5 @@ None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)
 **Failure at this step:**
 
 ```text
-None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)
+WebDriverError: Request with GET/HEAD method cannot have body. when running "element/70020000-0000-0000-5579-000000000000/screenshot" with method "GET" and args "{"scroll":true}"
 ```

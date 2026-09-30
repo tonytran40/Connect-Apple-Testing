@@ -82,6 +82,24 @@ test('builds deterministic A-prefixed room names and unique message markers', ()
   assert.equal(buildUniqueMessage('Composer Typeahead', 'xyz789'), 'Composer-Typeahead message xyz789');
 });
 
+test('composer emoji typeahead starts at grin and advances one character at a time', () => {
+  assert.deepEqual(
+    ComposerTypeahead.progressiveShortcodePrefixes('grinning_face'),
+    [
+      'grin',
+      'grinn',
+      'grinni',
+      'grinnin',
+      'grinning',
+      'grinning_',
+      'grinning_f',
+      'grinning_fa',
+      'grinning_fac',
+      'grinning_face',
+    ]
+  );
+});
+
 test('buildLabelPredicate escapes source labels and supports contains matching', () => {
   const exact = buildLabelPredicate('A "quoted" \\ label');
   const contains = buildLabelPredicate('No notifications', { contains: true });

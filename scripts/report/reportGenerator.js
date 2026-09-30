@@ -14,7 +14,6 @@ const {
 const {
   buildReportNav,
   refreshReportNavigation,
-  reportFile,
 } = require('./reportNavigation');
 const {
   writeArchivePages,
@@ -26,6 +25,10 @@ const { argValue } = require('./reportUtils');
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_OUTPUT_ROOT = path.join(REPO_ROOT, 'docs', 'generated', 'scribe');
+
+function archiveEnabledFor(argv = process.argv, env = process.env) {
+  return argValue('archive', env.SCRIBE_ARCHIVE_ENABLED ?? '1', argv) !== '0';
+}
 
 function generateReportAt({ outputRoot, outputRunId, sourceRunId, summary, reportType }) {
   const outDir = path.join(outputRoot, outputRunId);
@@ -68,7 +71,7 @@ function generate() {
   const generationStartedAtMs = Number.isFinite(inheritedStart) ? inheritedStart : Date.now();
   const runId = argValue('run', process.env.SCRIBE_DOC_RUN_ID || 'split3-combined');
   const outputRoot = path.resolve(argValue('out', process.env.SCRIBE_DOC_OUTPUT_DIR || DEFAULT_OUTPUT_ROOT));
-  const archiveEnabled = argValue('archive', process.env.SCRIBE_ARCHIVE_ENABLED || '0') !== '0';
+  const archiveEnabled = archiveEnabledFor();
   const summary = withPreviewFailures(loadRunSummary(runId), previewFailureSpec());
   const archiveId = argValue('archive-id', process.env.SCRIBE_DOC_ARCHIVE_ID || archiveRunId(runId, summary));
   const latest = generateReportAt({
@@ -112,9 +115,7 @@ function generate() {
       allReports: reports,
     });
   }
-  refreshReportNavigation(
-    reports.filter(report => path.resolve(reportFile(report)) !== path.resolve(latest.htmlPath))
-  );
+  refreshReportNavigation(reports);
   const archivePages = writeArchivePages(outputRoot, reports);
 
   const reportGenerationMs = Math.max(0, Date.now() - generationStartedAtMs);
@@ -156,4 +157,4 @@ function generate() {
   console.log(`Report archive page updated at ${archivePages.repoRootIndex} (${archivePages.reportCount} reports)`);
 }
 
-module.exports = { generate, generateReportAt, loadRunSummary };
+module.exports = { archiveEnabledFor, generate, generateReportAt, loadRunSummary };

@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const { formatDurationMs } = require('../utils/reportWriter');
 const { failedStepIndex } = require('../scripts/report/reportAssets');
-const { generateReportAt } = require('../scripts/report/reportGenerator');
+const { archiveEnabledFor, generateReportAt } = require('../scripts/report/reportGenerator');
 const {
   buildTestHistory,
   durationFromText,
@@ -31,10 +31,18 @@ function freshSummary(overrides = {}) {
       classification: 'required',
       environments: ['ANY'],
       scheduled: true,
+      cclRequirements: [{ id: 'I-023', title: 'Recent Activity conversation sorting', coverage: 'full' }],
     }],
     ...overrides,
   };
 }
+
+test('report history is preserved by default and can be explicitly disabled', () => {
+  assert.equal(archiveEnabledFor(['node', 'report'], {}), true);
+  assert.equal(archiveEnabledFor(['node', 'report'], { SCRIBE_ARCHIVE_ENABLED: '0' }), false);
+  assert.equal(archiveEnabledFor(['node', 'report', '--archive=0'], { SCRIBE_ARCHIVE_ENABLED: '1' }), false);
+  assert.equal(archiveEnabledFor(['node', 'report', '--archive=1'], { SCRIBE_ARCHIVE_ENABLED: '0' }), true);
+});
 
 test('formatDurationMs formats short and minute-scale durations', () => {
   assert.equal(formatDurationMs(900), '1s');
@@ -107,6 +115,8 @@ test('report generator writes the expected latest report contract', () => {
   assert.equal(fs.existsSync(report.metaPath), true);
   assert.equal(fs.existsSync(path.join(report.outDir, 'LocalTest.md')), true);
   assert.match(fs.readFileSync(report.htmlPath, 'utf8'), /LocalTest/);
+  assert.match(fs.readFileSync(report.htmlPath, 'utf8'), /CCL regression coverage/);
+  assert.match(fs.readFileSync(report.htmlPath, 'utf8'), /I-023/);
   assert.equal(JSON.parse(fs.readFileSync(report.metaPath, 'utf8')).runId, 'sample');
   fs.rmSync(outputRoot, { recursive: true, force: true });
 });

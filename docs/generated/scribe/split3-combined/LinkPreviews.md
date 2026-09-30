@@ -1,52 +1,39 @@
 # LinkPreviews
 
-- Status: PASS
-- Duration: 53s
+- Status: FAIL
+- Duration: 41s
 - Lane: ConversationView
 - Logical category: ConversationView
 - Device: iPhone 17
 - Appium port: 4727
-- Started: 2026-09-01T18:55:13.160Z
-- Finished: 2026-09-01T18:56:05.887Z
+- Started: 2026-09-30T15:04:30.932Z
+- Finished: 2026-09-30T15:05:11.888Z
+
+## Failure
+
+```text
+element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
+```
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 11s |
-| Test body | 41s |
-| Screenshot capture | 1s |
-| Recovery | 0ms |
+| Login/readiness | 5s |
+| Test body | 36s |
+| Screenshot capture | 385ms |
+| Recovery | 176ms |
 | Report generation | 0ms |
-| Room creation (test-owned) | 13s |
 
 ## Steps
 
-### Step 1: Room Opened
+### Step 1: ERROR - Failed here
 
-![Room Opened](assets/ConversationView/LinkPreviews/01_room_opened.png)
+![ERROR](assets/ConversationView/LinkPreviews/ERROR.png)
 
-### Step 2: Youtube Link Sent
+**Failure at this step:**
 
-![Youtube Link Sent](assets/ConversationView/LinkPreviews/02_youtube_link_sent.png)
-
-### Step 3: Youtube Preview Loaded
-
-![Youtube Preview Loaded](assets/ConversationView/LinkPreviews/03_youtube_preview_loaded.png)
-
-### Step 4: Apple Link Sent
-
-![Apple Link Sent](assets/ConversationView/LinkPreviews/04_apple_link_sent.png)
-
-### Step 5: Apple Preview Loaded
-
-![Apple Preview Loaded](assets/ConversationView/LinkPreviews/05_apple_preview_loaded.png)
-
-### Step 6: Google Maps Link Sent
-
-![Google Maps Link Sent](assets/ConversationView/LinkPreviews/06_google_maps_link_sent.png)
-
-### Step 7: Google Maps Preview Loaded
-
-![Google Maps Preview Loaded](assets/ConversationView/LinkPreviews/07_google_maps_preview_loaded.png)
+```text
+element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
+```

@@ -6,820 +6,205 @@
   <title>split3-combined test report</title>
   <style>
     :root {
-      --ink: #162033;
-      --muted: #6c7789;
-      --line: #dfe6ef;
-      --paper: #f7f9fc;
+      --ink: #172033;
+      --muted: #687386;
+      --line: #dce3ec;
+      --line-strong: #c9d3e1;
+      --paper: #f4f6f9;
       --panel: #ffffff;
-      --pass: #0f9f6e;
-      --fail: #d93f3f;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --pass: #15805d;
+      --fail: #c2413a;
+      --fail-soft: #fff1f0;
+      --warning: #a16207;
       --skipped: #64748b;
       --blocked: #b45309;
       --inconclusive: #7c3aed;
-      --unknown: #7c8798;
-      --navy: #090222;
-      --blue: #0e61d8;
-      --shadow: 0 18px 60px rgba(22, 32, 51, 0.12);
+      --unknown: #64748b;
+      --radius: 1rem;
+      --shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at top left, rgba(14, 97, 216, 0.18), transparent 34rem),
-        linear-gradient(180deg, #eef4fb 0%, var(--paper) 24rem);
-      font: 16px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 15px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
     a { color: inherit; }
-    .hero {
-      padding: 3rem clamp(1rem, 4vw, 4rem) 2rem;
-      color: white;
-      background:
-        linear-gradient(135deg, rgba(9, 2, 34, 0.96), rgba(13, 45, 88, 0.94)),
-        radial-gradient(circle at 70% 10%, rgba(255, 255, 255, 0.2), transparent 20rem);
-    }
-    .hero-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(16rem, 25rem);
-      gap: 1.5rem;
-      align-items: start;
-    }
-    .hero h1 {
-      margin: 0 0 0.5rem;
-      font-size: clamp(2.2rem, 5vw, 4.7rem);
-      letter-spacing: -0.06em;
-      line-height: 0.95;
-    }
-    .hero p { margin: 0; color: rgba(255, 255, 255, 0.72); }
-    .hero-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-top: 1.5rem;
-    }
-    .hero-meta span {
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 999px;
-      padding: 0.45rem 0.75rem;
-      background: rgba(255, 255, 255, 0.08);
-      color: rgba(255, 255, 255, 0.86);
-    }
-    .hero-meta .stale-report {
-      border-color: rgba(251, 191, 36, 0.7);
-      background: rgba(146, 64, 14, 0.42);
-      color: #fef3c7;
-    }
-    .report-switcher {
-      position: relative;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 1rem;
-      background: rgba(255, 255, 255, 0.08);
-      color: white;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
-    }
-    .report-switcher summary {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 0.75rem;
-      align-items: center;
-      padding: 0.85rem 1rem;
-      cursor: pointer;
-      list-style: none;
-    }
-    .report-switcher summary::-webkit-details-marker { display: none; }
-    .report-switcher-copy {
-      display: grid;
-      gap: 0.08rem;
-      min-width: 0;
-    }
-    .report-switcher-copy strong,
-    .report-run-copy strong {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .report-switcher-eyebrow,
-    .report-menu-heading {
-      font-size: 0.76rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-weight: 900;
-    }
-    .report-switcher-copy small {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-    .report-switcher-toggle {
-      display: grid;
-      place-items: center;
-      width: 1.65rem;
-      height: 1.65rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.14);
-      font-weight: 900;
-      transition: transform 150ms ease;
-    }
-    .report-switcher[open] .report-switcher-toggle { transform: rotate(180deg); }
-    .report-menu {
-      position: absolute;
-      z-index: 20;
-      top: calc(100% + 0.65rem);
-      right: 0;
-      width: min(28rem, calc(100vw - 2rem));
-      padding: 0.85rem;
-      border: 1px solid rgba(215, 226, 241, 0.95);
-      border-radius: 1rem;
-      background: rgba(255, 255, 255, 0.98);
-      color: var(--ink);
-      box-shadow: 0 24px 60px rgba(8, 22, 47, 0.25);
-      backdrop-filter: blur(16px);
-    }
-    .report-menu-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 0.15rem 0 0.45rem;
-      color: var(--muted);
-    }
-    .report-menu-heading span {
-      border-radius: 999px;
-      padding: 0.1rem 0.45rem;
-      background: #edf3fb;
-      color: var(--blue);
-      font-size: 0.72rem;
-    }
-    .viewing-heading { margin-top: 0.85rem; }
-    .archived-heading { margin-top: 0.95rem; }
-    .report-latest,
-    .report-run {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.75rem;
-      align-items: center;
-      padding: 0.7rem 0.75rem;
-      border: 1px solid var(--line);
-      border-radius: 0.8rem;
-      color: var(--ink);
-      text-decoration: none;
-      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
-    }
-    .report-latest {
-      border-color: rgba(40, 109, 222, 0.5);
-      background: linear-gradient(135deg, #e8f1ff, #f6faff);
-    }
-    .report-run-list {
-      display: grid;
-      gap: 0.4rem;
-      max-height: min(23rem, 52vh);
-      overflow: auto;
-      padding-right: 0.15rem;
-    }
-    .report-run { border-radius: 0.7rem; }
-    .report-latest:hover,
-    .report-run:hover {
-      border-color: rgba(14, 97, 216, 0.55);
-      background: #f3f8ff;
-      transform: translateX(-2px);
-    }
-    .report-latest.is-viewing,
-    .report-run.is-viewing {
-      border-color: rgba(14, 97, 216, 0.75);
-      box-shadow: inset 3px 0 0 var(--blue);
-    }
-    .report-run-copy {
-      display: grid;
-      min-width: 0;
-      gap: 0.1rem;
-    }
-    .report-run-copy small {
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-    .report-menu-empty {
-      margin: 0;
-      padding: 0.75rem;
-      color: var(--muted);
-      font-weight: 700;
-    }
-    main { padding: 2rem clamp(1rem, 4vw, 4rem) 4rem; }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 1rem;
-      margin-top: -3.5rem;
-    }
-    .stat, .panel, .test-section {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(223, 230, 239, 0.85);
-      border-radius: 1.3rem;
-      box-shadow: var(--shadow);
-    }
-    .stat { padding: 1.2rem; }
-    .stat span { display: block; color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    .stat strong { display: block; margin-top: 0.35rem; font-size: 2rem; line-height: 1; }
-    .sticky-summary {
-      position: sticky;
-      top: 0.75rem;
-      z-index: 5;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      align-items: center;
-      margin: 1rem 0 1.5rem;
-      padding: 0.7rem;
-      border: 1px solid rgba(223, 230, 239, 0.92);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.88);
-      box-shadow: 0 12px 36px rgba(22, 32, 51, 0.1);
-      backdrop-filter: blur(14px);
-    }
-    .sticky-summary strong,
-    .sticky-summary span {
-      border-radius: 999px;
-      padding: 0.35rem 0.65rem;
-      background: #f4f7fb;
-      font-weight: 800;
-    }
-    button {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0.55rem 0.8rem;
-      background: #edf4ff;
-      color: var(--blue);
-      font: inherit;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    .overview-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .overview-grid .panel {
-      margin-bottom: 0;
-    }
-    .phase-panel, .cleanup-panel { margin-bottom:1.5rem; padding:1.25rem; }
-    .phase-panel .meta-grid { margin-bottom:0; }
-    .cleanup-panel.fail { border-color:rgba(217,63,63,.42); background:#fff7f7; }
-    .panel-heading {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      align-items: start;
-      margin-bottom: 1rem;
-    }
-    .panel-heading h2,
-    .panel h2 {
-      margin: 0;
-      letter-spacing: -0.04em;
-    }
-    .panel-heading p {
-      margin: 0;
-      color: var(--muted);
-      font-weight: 700;
-    }
-    .lane-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-      gap: 0.8rem;
-    }
-    .lane-card {
-      border: 1px solid var(--line);
-      border-radius: 1rem;
-      padding: 0.9rem;
-      background: #fbfdff;
-    }
-    .lane-card.fail {
-      border-color: rgba(217, 63, 63, 0.42);
-      background: #fff7f7;
-    }
-    .lane-card h3 {
-      margin: 0.2rem 0 0.8rem;
-      line-height: 1.1;
-    }
-    .lane-card dl,
-    .run-environment dl {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.55rem;
-      margin: 0;
-    }
-    .lane-card dl div {
-      border: 1px solid var(--line);
-      border-radius: 0.7rem;
-      padding: 0.55rem;
-      background: white;
-    }
-    .eyebrow {
-      color: var(--muted);
-      font-size: 0.75rem;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .slow-list {
-      display: grid;
-      gap: 0.55rem;
-    }
-    .slow-list a {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      border: 1px solid var(--line);
-      border-radius: 0.8rem;
-      padding: 0.65rem;
-      background: #fbfdff;
-      text-decoration: none;
-    }
-    .slow-list span {
-      color: var(--muted);
-      font-weight: 700;
-      text-align: right;
-    }
-    .comparison-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.55rem;
-      margin-bottom: 0.8rem;
-    }
-    .comparison-grid div {
-      border: 1px solid var(--line);
-      border-radius: 0.8rem;
-      padding: 0.65rem;
-      background: #fbfdff;
-    }
-    .comparison-list {
-      display: grid;
-      gap: 0.55rem;
-    }
-    .comparison-list a {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      border: 1px solid var(--line);
-      border-radius: 0.8rem;
-      padding: 0.65rem;
-      background: #fbfdff;
-      text-decoration: none;
-    }
-    .comparison-list a.fail { border-color: rgba(217, 63, 63, 0.42); background: #fff7f7; }
-    .comparison-list a.pass { border-color: rgba(15, 159, 110, 0.32); background: #f2fbf7; }
-    .comparison-list a.slow { border-color: rgba(245, 158, 11, 0.42); background: #fffbeb; }
-    .comparison-list span {
-      color: var(--muted);
-      font-weight: 800;
-      text-align: right;
-    }
-    .category-list {
-      display: grid;
-      gap: 0.65rem;
-    }
-    .category-row {
-      display: grid;
-      grid-template-columns: 7rem minmax(4rem, 1fr) 2rem;
-      gap: 0.75rem;
-      align-items: center;
-      color: var(--muted);
-      font-weight: 900;
-    }
-    .category-row div {
-      height: 0.7rem;
-      overflow: hidden;
-      border-radius: 999px;
-      background: #edf2f7;
-    }
-    .category-row i {
-      display: block;
-      height: 100%;
-      border-radius: inherit;
-      background: var(--fail);
-    }
-    .report-insights {
-      margin-bottom: 1.5rem;
-    }
-    .report-insights > summary {
-      cursor: pointer;
-      color: var(--ink);
-      font-weight: 900;
-      letter-spacing: -0.02em;
-    }
-    .insight-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-      gap: 1.25rem;
-      margin-top: 1.25rem;
-    }
-    .compact {
-      grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-      margin-bottom: 0;
-    }
-    .toolbar {
-      display: grid;
-      grid-template-columns: minmax(12rem, 1fr) 12rem 14rem repeat(3, max-content);
-      gap: 0.75rem;
-      margin: 1.5rem 0;
-      align-items: center;
-    }
-    input, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 0.9rem;
-      padding: 0.85rem 1rem;
-      background: white;
-      color: var(--ink);
-      font: inherit;
-    }
-    .check-filter {
-      display: inline-flex;
-      gap: 0.4rem;
-      align-items: center;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0.65rem 0.8rem;
-      background: white;
-      color: var(--muted);
-      font-weight: 800;
-      white-space: nowrap;
-    }
-    .check-filter input {
-      width: auto;
-    }
-    .test-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .test-card {
-      display: block;
-      text-decoration: none;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 1.2rem;
-      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-    }
-    .test-card-summary { min-height: 11rem; padding: 1rem; cursor: pointer; list-style: none; }
+    button, input, select { font: inherit; }
+
+    .hero { padding: 2rem clamp(1rem,4vw,3rem) 5.25rem; color: white; background: linear-gradient(135deg,#10182b,#182946 72%,#1d3a61); }
+    .hero-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(18rem,25rem); gap: 2rem; align-items: start; max-width: 76rem; margin: 0 auto; }
+    .hero-copy { min-width: 0; }
+    .hero-eyebrow, .section-label { margin: 0 0 .35rem; color: #8fa5c6; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .hero h1 { margin: 0; font-size: clamp(2rem,5vw,3.6rem); line-height: 1; letter-spacing: -.055em; overflow-wrap: anywhere; }
+    .hero-copy > p:not(.hero-eyebrow) { margin: .65rem 0 0; color: #b8c5d8; font-size: 1rem; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: 1.2rem; }
+    .hero-meta span { border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: .32rem .62rem; color: #d8e0ed; background: rgba(255,255,255,.06); font-size: .8rem; font-weight: 700; }
+    .hero-meta .stale-report { border-color: rgba(251,191,36,.48); color: #fde68a; }
+
+    main { max-width: 76rem; margin: -3.25rem auto 0; padding: 0 clamp(1rem,4vw,3rem) 4rem; }
+    .panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+
+    .run-summary { position: relative; z-index: 2; padding: 1.25rem; }
+    .release-summary { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 1rem; align-items: start; }
+    .decision-badge { min-width: 7.4rem; border-radius: .8rem; padding: .75rem .85rem; color: white; background: var(--unknown); text-align: center; font-size: .78rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .decision-badge.pass { background: var(--pass); }
+    .decision-badge.fail { background: var(--fail); }
+    .decision-badge.warning { background: var(--warning); }
+    .decision-copy h2 { margin: .05rem 0 .25rem; font-size: 1.25rem; line-height: 1.2; letter-spacing: -.02em; }
+    .decision-copy p { margin: 0; color: var(--muted); }
+    .decision-facts { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .65rem; }
+    .decision-facts span { border-radius: 999px; padding: .25rem .55rem; color: #40506a; background: #f1f5f9; font-size: .76rem; font-weight: 800; }
+    .summary-metrics { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 0; margin: 1.15rem 0 0; border-top: 1px solid var(--line); }
+    .summary-metrics div { min-width: 0; padding: .9rem .75rem 0; border-left: 1px solid var(--line); }
+    .summary-metrics div:first-child { border-left: 0; padding-left: 0; }
+    dt { color: var(--muted); font-size: .68rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    dd { margin: .12rem 0 0; font-size: 1.25rem; font-weight: 850; overflow-wrap: anywhere; }
+    .summary-metrics .metric-alert dd { color: var(--fail); }
+    button { border: 1px solid var(--line-strong); border-radius: .7rem; padding: .55rem .75rem; color: var(--blue); background: white; font-weight: 850; cursor: pointer; }
+    button:hover { border-color: var(--blue); background: var(--blue-soft); }
+    .copy-report { position: absolute; right: 1.25rem; top: 1.25rem; }
+
+    .results-section { margin-top: 2rem; }
+    .results-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: .85rem; }
+    .results-heading h2 { margin: 0; font-size: 1.65rem; letter-spacing: -.035em; }
+    .results-heading > span { color: var(--muted); font-weight: 800; }
+    .toolbar { display: grid; grid-template-columns: minmax(13rem,1fr) 11rem 13rem auto; gap: .6rem; align-items: start; margin-bottom: .8rem; }
+    input, select, .filter-more > summary { width: 100%; min-height: 2.75rem; border: 1px solid var(--line-strong); border-radius: .72rem; padding: .65rem .8rem; color: var(--ink); background: white; }
+    input:focus, select:focus { outline: 3px solid rgba(37,99,235,.14); border-color: var(--blue); }
+    .filter-more { position: relative; }
+    .filter-more > summary { display: grid; place-items: center; cursor: pointer; list-style: none; color: #40506a; font-weight: 800; white-space: nowrap; }
+    .filter-more > summary::-webkit-details-marker { display: none; }
+    .filter-more > div { position: absolute; z-index: 10; top: calc(100% + .4rem); right: 0; display: grid; gap: .4rem; min-width: 12rem; border: 1px solid var(--line); border-radius: .8rem; padding: .55rem; background: white; box-shadow: var(--shadow); }
+    .check-filter { display: flex; gap: .5rem; align-items: center; padding: .4rem; color: #40506a; font-weight: 750; white-space: nowrap; }
+    .check-filter input { width: auto; min-height: 0; margin: 0; }
+
+    .test-grid { display: grid; gap: .55rem; }
+    .test-card { border: 1px solid var(--line); border-radius: .85rem; background: white; overflow: hidden; }
+    .test-card.fail { border-color: rgba(194,65,58,.42); }
+    .test-card.slow:not(.fail) { border-color: rgba(161,98,7,.35); }
+    .test-card-summary { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: .85rem; align-items: center; padding: .85rem 1rem; cursor: pointer; list-style: none; }
     .test-card-summary::-webkit-details-marker { display: none; }
-    .test-card-evidence { display: grid; gap: .75rem; padding: 1rem; border-top: 1px solid var(--line); }
-    .test-card-evidence p { margin: 0; white-space: pre-wrap; }
-    .test-card-evidence code { overflow-x: auto; border-radius: .65rem; padding: .65rem; background: #101828; color: #e9f1ff; white-space: nowrap; }
-    .test-card-evidence a { justify-self: start; color: var(--blue); font-weight: 800; text-decoration: none; }
-    .test-card-evidence .evidence-error { color: #8f2424; font-weight: 700; }
-    .test-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: rgba(14, 97, 216, 0.4); }
-    .test-card.fail { border-color: rgba(217, 63, 63, 0.45); }
-    .test-card.slow { border-color: rgba(245, 158, 11, 0.55); }
-    .test-card-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      align-items: center;
-    }
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 0.25rem 0.6rem;
-      color: white;
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-    }
+    .test-card-summary:hover { background: #fafbfd; }
+    .test-card-copy { min-width: 0; }
+    .test-card h3 { margin: 0; font-size: 1rem; line-height: 1.25; letter-spacing: -.01em; }
+    .test-card p { margin: .15rem 0 0; color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; }
+    .status-pill { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: .23rem .52rem; color: white; background: var(--unknown); font-size: .68rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
     .status-pill.pass { background: var(--pass); }
     .status-pill.fail { background: var(--fail); }
     .status-pill.skipped { background: var(--skipped); }
     .status-pill.blocked { background: var(--blocked); }
     .status-pill.inconclusive { background: var(--inconclusive); }
-    .status-pill.unknown { background: var(--unknown); }
-    .slow-pill { background: #d97706; margin-left: 0.35rem; }
-    .duration, .muted, .test-card p, .screenshot-count { color: var(--muted); }
-    .test-card h3 { margin: 1.1rem 0 0.35rem; font-size: 1.35rem; line-height: 1.1; }
-    .card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 1rem;
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 800;
-    }
-    .card-tags span {
-      border-radius: 999px;
-      padding: 0.25rem 0.55rem;
-      background: #f4f7fb;
-    }
-    .panel { padding: 1.25rem; margin-bottom: 1.5rem; }
-    .evidence-decision { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 1rem; align-items: center; }
-    .decision-badge { display: grid; place-items: center; min-width: 8rem; min-height: 5rem; border-radius: 1rem; color: white; font-size: 1.05rem; font-weight: 900; letter-spacing: .05em; }
-    .decision-badge.pass { background: var(--pass); }
-    .decision-badge.fail { background: var(--fail); }
-    .decision-badge.warning { background: var(--blocked); }
-    .decision-badge.unknown { background: var(--inconclusive); }
-    .decision-copy h2 { margin: 0 0 .25rem; }
-    .decision-copy p { margin: 0; color: var(--muted); font-weight: 700; }
-    .decision-facts { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .75rem; }
-    .decision-facts span { border-radius: 999px; padding: .28rem .58rem; background: #eef3f9; color: var(--ink); font-size: .82rem; font-weight: 800; }
-    .coverage-panel table { width: 100%; border-collapse: collapse; }
-    .coverage-panel th, .coverage-panel td { padding: .65rem; border-top: 1px solid var(--line); text-align: left; }
-    .coverage-panel thead th { border-top: 0; color: var(--muted); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
-    .coverage-scroll { overflow-x: auto; }
-    .coverage-class { border-radius: 999px; padding: .2rem .5rem; background: #eef3f9; font-size: .78rem; font-weight: 800; text-transform: capitalize; white-space: nowrap; }
-    .coverage-fallback > p { margin-bottom: 0; color: var(--muted); }
-    .failures a {
-      display: grid;
-      gap: 0.25rem;
-      padding: 0.85rem 0;
-      border-top: 1px solid var(--line);
-      text-decoration: none;
-    }
-    .failures span {
-      color: var(--muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .failures em {
-      justify-self: start;
-      border-radius: 999px;
-      padding: 0.2rem 0.5rem;
-      background: #fff5f5;
-      color: #a32929;
-      font-size: 0.75rem;
-      font-style: normal;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .test-section {
-      margin-top: 1.5rem;
-      overflow: hidden;
-    }
-    .section-summary {
-      display: flex;
-      align-items: start;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: clamp(1rem, 3vw, 1.6rem);
-      cursor: pointer;
-      list-style: none;
-    }
+    .test-card-result { display: flex; gap: .75rem; align-items: center; color: var(--muted); font-weight: 800; }
+    .open-details { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; background: #f1f5f9; transition: transform 150ms ease; }
+    .test-card[open] .open-details { transform: rotate(180deg); }
+    .card-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .35rem; }
+    .card-tags span { border-radius: 999px; padding: .12rem .4rem; color: #536176; background: #f1f5f9; font-size: .68rem; font-weight: 800; }
+    .test-card-evidence { display: grid; gap: .7rem; border-top: 1px solid var(--line); padding: .9rem 1rem 1rem 4.65rem; background: #fafbfd; }
+    .test-card-evidence p { margin: 0; white-space: pre-wrap; }
+    .test-card-evidence code { overflow-x: auto; border-radius: .55rem; padding: .6rem .7rem; color: #e5eefc; background: #152034; font-size: .78rem; white-space: nowrap; }
+    .test-card-evidence a { justify-self: start; color: var(--blue); font-weight: 850; text-decoration: none; }
+    .test-card-evidence .evidence-error { color: #922f2a; font-weight: 750; }
+
+    .evidence-stack { display: grid; gap: .65rem; margin-top: 2rem; }
+    .disclosure { box-shadow: none; overflow: clip; }
+    .section-summary { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 1rem; align-items: center; min-height: 4rem; padding: .85rem 1rem; cursor: pointer; list-style: none; }
     .section-summary::-webkit-details-marker { display: none; }
-    .section-summary h2 {
-      margin: 0.5rem 0 0;
-      font-size: clamp(1.5rem, 3vw, 2.35rem);
-      letter-spacing: -0.04em;
-    }
-    .section-summary p {
-      margin: 0.35rem 0 0;
-      color: var(--muted);
-      font-weight: 700;
-    }
-    .summary-meta {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: end;
-      gap: 0.55rem;
-      color: var(--muted);
-      font-weight: 800;
-    }
-    .summary-meta span {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0.35rem 0.65rem;
-      background: #fbfdff;
-    }
-    .collapse-label {
-      color: var(--blue);
-    }
-    .collapse-label::before {
-      content: 'Open ';
-    }
-    .test-section[open] .collapse-label::before {
-      content: 'Close ';
-    }
-    .test-section-body {
-      padding: 0 clamp(1rem, 3vw, 1.6rem) clamp(1rem, 3vw, 1.6rem);
-      border-top: 1px solid var(--line);
-    }
-    .test-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.65rem;
-      align-items: center;
-      margin: 1rem 0;
-    }
-    .markdown-link {
-      display: inline-flex;
-      border-radius: 999px;
-      padding: 0.55rem 0.8rem;
-      background: #edf4ff;
-      color: var(--blue);
-      font-weight: 700;
-      text-decoration: none;
-    }
-    .command-box,
-    .failure-timeline,
-    .compare-box,
-    .history-box {
-      border: 1px solid var(--line);
-      border-radius: 1rem;
-      background: #fbfdff;
-      padding: 1rem;
-      margin-bottom: 1.25rem;
-    }
-    .command-box h4,
-    .failure-timeline h4,
-    .compare-box h4,
-    .history-box h4 {
-      margin: 0 0 0.5rem;
-    }
-    .command-box code {
-      display: block;
-      overflow-x: auto;
-      border-radius: 0.75rem;
-      padding: 0.8rem;
-      background: #101828;
-      color: #e9f1ff;
-      white-space: nowrap;
-    }
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-      gap: 0.75rem;
-      margin: 0 0 1.25rem;
-    }
-    .meta-grid div {
-      border: 1px solid var(--line);
-      border-radius: 0.9rem;
-      padding: 0.75rem;
-      background: #fbfdff;
-    }
-    dt { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
-    dd { margin: 0.25rem 0 0; font-weight: 700; }
-    .failure-box {
-      border: 1px solid rgba(217, 63, 63, 0.28);
-      border-radius: 1rem;
-      background: #fff5f5;
-      padding: 1rem;
-      margin-bottom: 1.25rem;
-    }
-    .timeline-strip,
-    .compare-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-      gap: 0.8rem;
-    }
-    .timeline-strip a,
-    .compare-grid figure {
-      margin: 0;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 0.9rem;
-      background: white;
-      text-decoration: none;
-    }
-    .timeline-strip span {
-      display: block;
-      padding: 0.5rem 0.65rem;
-      color: var(--muted);
-      font-size: 0.75rem;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .timeline-failed {
-      border-color: rgba(217, 63, 63, 0.62) !important;
-      box-shadow: 0 14px 36px rgba(217, 63, 63, 0.18);
-    }
-    .timeline-strip img,
-    .compare-grid img {
-      display: block;
-      width: 100%;
-      height: 18rem;
-      object-fit: contain;
-      background: #111827;
-    }
-    .history-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-      gap: 0.65rem;
-    }
-    .history-list a {
-      display: grid;
-      gap: 0.35rem;
-      border: 1px solid var(--line);
-      border-radius: 0.85rem;
-      padding: 0.75rem;
-      background: white;
-      text-decoration: none;
-    }
-    .history-list small {
-      color: var(--muted);
-      font-weight: 800;
-    }
-    pre {
-      overflow: auto;
-      white-space: pre-wrap;
-      margin: 0;
-      color: #7a2020;
-      font-size: 0.9rem;
-    }
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-      gap: 1rem;
-    }
-    .step {
-      margin: 0;
-      border: 1px solid var(--line);
-      border-radius: 1rem;
-      overflow: hidden;
-      background: white;
-    }
-    .failed-step {
-      border: 3px solid var(--fail);
-      box-shadow: 0 18px 50px rgba(217, 63, 63, 0.24);
-      position: relative;
-    }
-    .failed-step::before {
-      content: 'Failed here';
-      position: absolute;
-      z-index: 1;
-      top: 0.8rem;
-      left: 0.8rem;
-      border-radius: 999px;
-      padding: 0.35rem 0.7rem;
-      background: var(--fail);
-      color: white;
-      font-size: 0.78rem;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      box-shadow: 0 10px 28px rgba(217, 63, 63, 0.3);
-    }
-    .step img {
-      display: block;
-      width: 100%;
-      height: min(34rem, 68vh);
-      object-fit: contain;
-      background: #111827;
-    }
-    figcaption {
-      display: grid;
-      gap: 0.2rem;
-      padding: 0.85rem;
-      color: var(--ink);
-      font-weight: 700;
-    }
-    figcaption span {
-      color: var(--muted);
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .step-error {
-      margin-top: 0.65rem;
-      border-radius: 0.75rem;
-      padding: 0.75rem;
-      background: #fff5f5;
-      color: #7a2020;
-      font-size: 0.82rem;
-      font-weight: 600;
-      text-transform: none;
-      letter-spacing: 0;
-    }
+    .section-summary:hover { background: #fafbfd; }
+    .section-summary > span:first-child { display: grid; gap: .08rem; }
+    .section-summary strong { font-size: .96rem; }
+    .section-summary small { color: var(--muted); }
+    .summary-value { color: #40506a; font-size: .82rem; font-weight: 850; text-align: right; }
+    .section-summary::after { content: '+'; color: var(--muted); font-size: 1.25rem; font-weight: 400; }
+    .disclosure[open] > .section-summary::after { content: '−'; }
+    .disclosure-body { border-top: 1px solid var(--line); padding: 1rem; }
+    .disclosure-body > :first-child { margin-top: 0; }
+    .disclosure-body > :last-child { margin-bottom: 0; }
+
+    .coverage-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    th, td { padding: .66rem .7rem; border-bottom: 1px solid #e8edf3; text-align: left; vertical-align: middle; }
+    thead th { color: var(--muted); background: #f8fafc; font-size: .67rem; letter-spacing: .07em; text-transform: uppercase; }
+    tbody th { font-weight: 800; }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    .coverage-class { border-radius: 999px; padding: .18rem .45rem; color: #40506a; background: #edf2f7; font-size: .68rem; font-weight: 850; text-transform: capitalize; }
+    .coverage-note { margin: 0 0 .8rem; color: var(--muted); }
+    .ccl-status { display: inline-flex; border-radius: 999px; padding: .2rem .48rem; color: white; background: var(--unknown); font-size: .67rem; font-weight: 900; white-space: nowrap; }
+    .ccl-status.pass { background: var(--pass); }
+    .ccl-status.fail { background: var(--fail); }
+    .ccl-status.partial, .ccl-status.blocked { background: var(--warning); }
+
+    .panel-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: .75rem; }
+    .panel-heading h2, .panel-heading h3 { margin: 0; font-size: 1rem; }
+    .panel-heading p { margin: 0; color: var(--muted); font-size: .8rem; font-weight: 750; }
+    .phase-panel { margin-bottom: 1rem; }
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(9rem,1fr)); gap: .5rem; margin: 0; }
+    .meta-grid > div { min-width: 0; border: 1px solid var(--line); border-radius: .65rem; padding: .6rem; background: #fafbfd; }
+    .meta-grid dd { font-size: .9rem; }
+    .cleanup-panel { margin: 0 0 1rem; padding: .8rem; box-shadow: none; }
+    .cleanup-panel p { margin: 0; }
+    .overview-grid { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(16rem,.7fr); gap: 1rem; }
+    .lane-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(13rem,1fr)); gap: .55rem; }
+    .lane-card { border: 1px solid var(--line); border-radius: .7rem; padding: .7rem; background: #fafbfd; }
+    .lane-card.fail { border-color: rgba(194,65,58,.32); background: var(--fail-soft); }
+    .eyebrow { color: var(--muted); font-size: .65rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .lane-card h3 { margin: .12rem 0 .6rem; font-size: .9rem; }
+    .lane-card dl { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .35rem; margin: 0; }
+    .lane-card dl div { min-width: 0; }
+    .lane-card dd { font-size: .82rem; }
+    .slow-list, .comparison-list { display: grid; gap: .4rem; }
+    .slow-list a, .comparison-list a { display: flex; justify-content: space-between; gap: .75rem; border: 1px solid var(--line); border-radius: .65rem; padding: .58rem; text-decoration: none; }
+    .slow-list span, .comparison-list span { color: var(--muted); font-size: .76rem; font-weight: 750; text-align: right; }
+    .muted { color: var(--muted); }
+    .insight-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(16rem,1fr)); gap: 1rem; }
+    .comparison-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .4rem; margin-bottom: .55rem; }
+    .comparison-grid div { border: 1px solid var(--line); border-radius: .6rem; padding: .5rem; background: #fafbfd; }
+    .comparison-grid dd { font-size: .95rem; }
+    .category-list { display: grid; gap: .5rem; }
+    .category-row { display: grid; grid-template-columns: 6rem minmax(3rem,1fr) 1.5rem; gap: .5rem; align-items: center; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .category-row div { height: .45rem; border-radius: 999px; overflow: hidden; background: #edf2f7; }
+    .category-row i { display: block; height: 100%; border-radius: inherit; background: var(--fail); }
+
     [hidden] { display: none !important; }
-    @media (max-width: 780px) {
-      .stats, .toolbar, .overview-grid { grid-template-columns: 1fr; }
-      .sticky-summary { border-radius: 1rem; }
-      .hero-layout { grid-template-columns: 1fr; }
-      .hero { padding-top: 2rem; }
-      .report-menu { right: auto; left: 0; }
-      .section-summary { display: block; }
-      .summary-meta { justify-content: start; margin-top: 1rem; }
-      .markdown-link { display: inline-block; margin-top: 1rem; }
-      .evidence-decision { grid-template-columns: 1fr; }
+    @media (max-width: 800px) {
+      .hero { padding-bottom: 4.25rem; }
+      .hero-layout { grid-template-columns: 1fr; gap: 1.25rem; }
+      main { margin-top: -2.6rem; }
+      .summary-metrics { grid-template-columns: repeat(3,1fr); }
+      .summary-metrics div:nth-child(4) { border-left: 0; padding-left: 0; }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .toolbar input { grid-column: 1 / -1; }
+      .overview-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .release-summary { grid-template-columns: 1fr; }
+      .decision-badge { justify-self: start; min-width: 0; }
+      .copy-report { position: static; margin-top: 1rem; }
+      .summary-metrics { grid-template-columns: repeat(2,1fr); }
+      .summary-metrics div:nth-child(odd) { border-left: 0; padding-left: 0; }
+      .toolbar { grid-template-columns: 1fr; }
+      .toolbar input { grid-column: auto; }
+      .filter-more > div { left: 0; right: auto; }
+      .test-card-summary { grid-template-columns: auto minmax(0,1fr); }
+      .test-card-result { grid-column: 2; justify-content: space-between; }
+      .test-card-evidence { padding-left: 1rem; }
+      .summary-value { display: none; }
+      .lane-card dl { grid-template-columns: repeat(2,1fr); }
     }
   </style>
 </head>
 <body>
   <header class="hero">
     <div class="hero-layout">
-      <div>
-        <h1>Test Run Report</h1>
-        <p>Scribe-style browser report generated from Appium screenshots and runner results.</p>
+      <div class="hero-copy">
+        <p class="hero-eyebrow">Connect iOS automation</p>
+        <h1>split3-combined</h1>
+        <p>Regression results and release evidence.</p>
         <div class="hero-meta">
-          <span>Run: split3-combined</span>
-          <span>App branch: main</span>
-          <span>App commit: c53a191a3</span>
-          <span>App build: 1</span>
+          <span>main</span>
+          <span>Build 1</span>
 
-          <span>Source: summary.json</span>
-          <span>Started: Sep 1, 2:53 PM</span>
-          <span>Updated: Sep 1, 3:02 PM</span>
-          <span class="">Report age: 0m ago</span>
+          <span>Sep 30, 11:02 AM</span>
+          <span class="">0m ago</span>
         </div>
       </div>
 
@@ -836,14 +221,10 @@
     .report-switcher .report-menu { position: absolute; z-index: 20; top: calc(100% + .65rem); right: 0; width: min(28rem, calc(100vw - 2rem)); padding: .85rem; border: 1px solid rgba(215,226,241,.95); border-radius: 1rem; background: rgba(255,255,255,.98); color: #17233a; box-shadow: 0 24px 60px rgba(8,22,47,.25); backdrop-filter: blur(16px); }
     .report-switcher .report-menu-heading { display: flex; justify-content: space-between; align-items: center; margin: .15rem 0 .45rem; color: #6b7a90; }
     .report-switcher .report-menu-heading span { border-radius: 999px; padding: .1rem .45rem; background: #edf3fb; color: #0e61d8; font-size: .72rem; }
-    .report-switcher .viewing-heading { margin-top: .85rem; }
-    .report-switcher .archived-heading { margin-top: .95rem; }
-    .report-switcher .report-latest, .report-switcher .report-run { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .7rem .75rem; border: 1px solid #dce5ef; border-radius: .8rem; color: #17233a; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
-    .report-switcher .report-latest { border-color: rgba(40,109,222,.5); background: linear-gradient(135deg,#e8f1ff,#f6faff); }
+    .report-switcher .report-run { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .7rem .75rem; border: 1px solid #dce5ef; border-radius: .7rem; color: #17233a; text-decoration: none; transition: border-color 150ms ease, background 150ms ease, transform 150ms ease; }
     .report-switcher .report-run-list { display: grid; gap: .4rem; max-height: min(23rem,52vh); overflow: auto; padding-right: .15rem; }
-    .report-switcher .report-run { border-radius: .7rem; }
-    .report-switcher .report-latest:hover, .report-switcher .report-run:hover { border-color: rgba(14,97,216,.55); background: #f3f8ff; transform: translateX(-2px); }
-    .report-switcher .report-latest.is-viewing, .report-switcher .report-run.is-viewing { border-color: rgba(14,97,216,.75); box-shadow: inset 3px 0 0 #0e61d8; }
+    .report-switcher .report-run:hover { border-color: rgba(14,97,216,.55); background: #f3f8ff; transform: translateX(-2px); }
+    .report-switcher .report-run.is-viewing { border-color: rgba(14,97,216,.75); box-shadow: inset 3px 0 0 #0e61d8; }
     .report-switcher .report-run-copy { flex: 1; }
     .report-switcher .report-run-copy small { color: #6b7a90; font-size: .78rem; font-weight: 700; }
     .report-switcher .status-pill { flex: 0 0 auto; }
@@ -855,35 +236,76 @@
           <span class="report-switcher-copy">
             <span class="report-switcher-eyebrow">Viewing now</span>
             <strong>Full Suite</strong>
-            <small>Sep 1, 2:53 PM</small>
+            <small>Sep 30, 11:02 AM</small>
           </span>
           <span class="status-pill fail">FAIL</span>
           <span class="report-switcher-toggle" aria-hidden="true">v</span>
         </summary>
         <div class="report-menu">
-          <div class="report-menu-heading">Latest report</div>
-          <a class="report-latest" href="../CorporateEvents-latest/index.html">
+          <div class="report-menu-heading">Reports <span>10</span></div>
+          <div class="report-run-list">
+            <a class="report-run" href="../ComposerTypeahead-latest/index.html">
+              <span class="report-run-copy">
+                <strong>ComposerTypeahead-latest</strong>
+                <small>Sep 30, 12:39 PM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-30T15-24-35Z-removeRoom-latest/index.html">
+              <span class="report-run-copy">
+                <strong>removeRoom-latest</strong>
+                <small>Sep 30, 11:24 AM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-30T15-23-24Z-markAsRead-latest/index.html">
+              <span class="report-run-copy">
+                <strong>markAsRead-latest</strong>
+                <small>Sep 30, 11:23 AM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-30T15-20-45Z-markAsRead-latest/index.html">
+              <span class="report-run-copy">
+                <strong>markAsRead-latest</strong>
+                <small>Sep 30, 11:20 AM</small>
+              </span>
+              <span class="status-pill fail">FAIL</span>
+            </a>
+<a class="report-run is-viewing" href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html">
+              <span class="report-run-copy">
+                <strong>Full Suite</strong>
+                <small>Sep 30, 11:02 AM</small>
+              </span>
+              <span class="status-pill fail">FAIL</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-28T18-01-00Z-Reactions-latest/index.html">
+              <span class="report-run-copy">
+                <strong>Reactions-latest</strong>
+                <small>Sep 28, 2:01 PM</small>
+              </span>
+              <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-22T19-05-53Z-CorporateEvents-latest/index.html">
               <span class="report-run-copy">
                 <strong>CorporateEvents-latest</strong>
                 <small>Sep 22, 3:05 PM</small>
               </span>
               <span class="status-pill fail">FAIL</span>
             </a>
-          <div class="report-menu-heading viewing-heading">Viewing</div><a class="report-run is-viewing" href="index.html">
-              <span class="report-run-copy">
-                <strong>Full Suite</strong>
-                <small>Sep 1, 2:53 PM</small>
-              </span>
-              <span class="status-pill fail">FAIL</span>
-            </a>
-          <div class="report-menu-heading archived-heading">Saved runs <span>2</span></div>
-          <div class="report-run-list">
-            <a class="report-run" href="../AudienceFilters-latest/index.html">
+<a class="report-run" href="../archive/2026-09-09T14-52-24Z-AudienceFilters-latest/index.html">
               <span class="report-run-copy">
                 <strong>AudienceFilters-latest</strong>
                 <small>Sep 9, 10:52 AM</small>
               </span>
               <span class="status-pill pass">PASS</span>
+            </a>
+<a class="report-run" href="../archive/2026-09-01T18-53-17Z-split3-combined/index.html">
+              <span class="report-run-copy">
+                <strong>Full Suite</strong>
+                <small>Sep 1, 2:53 PM</small>
+              </span>
+              <span class="status-pill fail">FAIL</span>
             </a>
 <a class="report-run" href="../archive/2026-08-11T19-06-27Z-Reactions-latest/index.html">
               <span class="report-run-copy">
@@ -899,76 +321,481 @@
   </header>
 
   <main>
-    <section class="panel evidence-decision" aria-label="Release evidence decision">
-      <div class="decision-badge fail">NOT READY</div>
-      <div class="decision-copy">
-        <h2>Release evidence</h2>
-        <p>5 failed</p>
-        <div class="decision-facts">
-          <span>Fresh</span>
-          <span>17/17 eligible required completed</span>
-          <span>FAIL test result</span>
+    <section class="panel run-summary" aria-label="Run summary">
+      <div class="release-summary">
+        <div class="decision-badge fail">NOT READY</div>
+        <div class="decision-copy">
+          <span class="section-label">Release evidence</span>
+          <h2>Run needs attention</h2>
+          <p>7 failed</p>
+          <div class="decision-facts">
+            <span>Fresh</span>
+            <span>17/17 required completed</span>
+          </div>
         </div>
+      </div>
+      <dl class="summary-metrics">
+        <div><dt>Passed</dt><dd>10</dd></div>
+        <div class="metric-alert"><dt>Failed</dt><dd>7</dd></div>
+        <div><dt>Other</dt><dd>0</dd></div>
+        <div><dt>Total</dt><dd>17</dd></div>
+        <div><dt>Elapsed</dt><dd>9m 43s</dd></div>
+      </dl>
+      <button class="copy-report" type="button" data-copy-link="">Copy report link</button>
+    </section>
+
+    <section class="results-section" aria-labelledby="results-title">
+      <div class="results-heading">
+        <div><span class="section-label">Results</span><h2 id="results-title">Test results</h2></div>
+        <span>17 tests</span>
+      </div>
+      <div class="toolbar" aria-label="Report filters">
+        <input id="search" type="search" placeholder="Search tests">
+        <select id="statusFilter" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          <option value="PASS">Pass</option>
+          <option value="FAIL">Fail</option>
+          <option value="SKIPPED">Skipped</option>
+          <option value="BLOCKED">Blocked</option>
+          <option value="INCONCLUSIVE">Inconclusive</option>
+          <option value="UNKNOWN">Unknown</option>
+        </select>
+        <select id="laneFilter" aria-label="Filter by lane">
+          <option value="">All lanes</option>
+          <option value="main-suite">main-suite</option>
+<option value="Conversation-List">Conversation-List</option>
+<option value="ConversationView">ConversationView</option>
+<option value="Conversation-List-settings">Conversation-List-settings</option>
+        </select>
+        <details class="filter-more">
+          <summary>More filters</summary>
+          <div>
+            <label class="check-filter"><input id="failedOnly" type="checkbox"> Failed only</label>
+            <label class="check-filter"><input id="slowOnly" type="checkbox"> Slow only</label>
+            <label class="check-filter"><input id="screenshotsOnly" type="checkbox"> Has screenshots</label>
+          </div>
+        </details>
+      </div>
+
+      <div class="test-grid" aria-label="Tests">
+
+        <details class="test-card fail" data-test-card data-name="composertypeahead" data-status="FAIL" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0" open>
+          <summary class="test-card-summary">
+            <span class="status-pill fail">FAIL</span>
+            <div class="test-card-copy">
+              <h3>ComposerTypeahead</h3>
+              <p>ConversationView · ConversationView · iPhone 17</p>
+              <div class="card-tags">
+                <span>2 screenshots</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 8s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">Visible control with source label &quot;:grinning_face:&quot; did not appear</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/ComposerTypeahead.js</code>
+            <a href="tests/composertypeahead/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="createroom" data-status="FAIL" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="1">
+          <summary class="test-card-summary">
+            <span class="status-pill fail">FAIL</span>
+            <div class="test-card-copy">
+              <h3>CreateRoom</h3>
+              <p>main-suite · main-suite · iPhone 17 Pro</p>
+              <div class="card-tags">
+                <span>1 screenshot</span>
+
+                <span>Flaky: 1/2 failed in last 2 runs</span>
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">36s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">element (&quot;~createRoomButton&quot;) still not displayed after 20000ms</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js</code>
+            <a href="tests/createroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="favoriteroom" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="1">
+          <summary class="test-card-summary">
+            <span class="status-pill fail">FAIL</span>
+            <div class="test-card-copy">
+              <h3>favoriteRoom</h3>
+              <p>Conversation-List · Conversation-List · iPhone 17 Pro Max</p>
+              <div class="card-tags">
+                <span>1 screenshot</span>
+
+                <span>Flaky: 1/2 failed in last 2 runs</span>
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">43s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">element (&quot;-ios predicate string:(type == &quot;XCUIElementTypeButton&quot; OR type == &quot;XCUIElementTypeStaticText&quot;) AND (label == &quot;Skip for now&quot; OR name == &quot;Skip for now&quot;)&quot;) still not displayed after 20000ms</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js</code>
+            <a href="tests/favoriteroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="linkpreviews" data-status="FAIL" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="1">
+          <summary class="test-card-summary">
+            <span class="status-pill fail">FAIL</span>
+            <div class="test-card-copy">
+              <h3>LinkPreviews</h3>
+              <p>ConversationView · ConversationView · iPhone 17</p>
+              <div class="card-tags">
+                <span>1 screenshot</span>
+
+                <span>Flaky: 1/2 failed in last 2 runs</span>
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">41s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">element (&quot;-ios predicate string:(type == &quot;XCUIElementTypeButton&quot; OR type == &quot;XCUIElementTypeStaticText&quot;) AND (label == &quot;Skip for now&quot; OR name == &quot;Skip for now&quot;)&quot;) still not displayed after 20000ms</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/LinkPreviews.js</code>
+            <a href="tests/linkpreviews/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail slow" data-test-card data-name="markasread" data-status="FAIL" data-lane="Conversation-List" data-slow="1" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill fail">FAIL</span>
+            <div class="test-card-copy">
+              <h3>markAsRead</h3>
+              <p>Conversation-List · Conversation-List · iPhone 17 Pro Max</p>
+              <div class="card-tags">
+                <span>1 screenshot</span>
+                <span>Slow</span>
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 33s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">WebDriverError: Request with GET/HEAD method cannot have body. when running &quot;element/70020000-0000-0000-5579-000000000000/screenshot&quot; with method &quot;GET&quot; and args &quot;{&quot;scroll&quot;:true}&quot;</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js</code>
+            <a href="tests/markasread/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="membersroom" data-status="FAIL" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill fail">FAIL</span>
+            <div class="test-card-copy">
+              <h3>membersRoom</h3>
+              <p>ConversationView · main-suite · iPhone 17 Pro</p>
+              <div class="card-tags">
+                <span>1 screenshot</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 14s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">element (&quot;-ios predicate string:(type == &quot;XCUIElementTypeButton&quot; OR type == &quot;XCUIElementTypeStaticText&quot;) AND (label == &quot;Skip for now&quot; OR name == &quot;Skip for now&quot;)&quot;) still not displayed after 20000ms</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/membersRoom.js</code>
+            <a href="tests/membersroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card fail" data-test-card data-name="pinnedmessageeditflow" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="1">
+          <summary class="test-card-summary">
+            <span class="status-pill fail">FAIL</span>
+            <div class="test-card-copy">
+              <h3>PinnedMessageEditFlow</h3>
+              <p>ConversationView · Conversation-List · iPhone 17 Pro Max</p>
+              <div class="card-tags">
+                <span>2 screenshots</span>
+
+                <span>Flaky: 1/2 failed in last 2 runs</span>
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">55s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p class="evidence-error">Pinned messages panel did not open</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/PinnedMessageEditFlow.js</code>
+            <a href="tests/pinnedmessageeditflow/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass slow" data-test-card data-name="attachments" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>attachments</h3>
+              <p>ConversationView · ConversationView · iPhone 17</p>
+              <div class="card-tags">
+                <span>17 screenshots</span>
+                <span>Slow</span>
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">2m 11s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js</code>
+            <a href="tests/attachments/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="conversationlist" data-status="PASS" data-lane="Conversation-List-settings" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>ConversationList</h3>
+              <p>Conversation-List · Conversation-List-settings · iPhone 17 Pro Max</p>
+              <div class="card-tags">
+                <span>15 screenshots</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 8s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js</code>
+            <a href="tests/conversationlist/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="conversationsearch" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>ConversationSearch</h3>
+              <p>ConversationView · main-suite · iPhone 17 Pro</p>
+              <div class="card-tags">
+                <span>8 screenshots</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 24s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/ConversationSearch.js</code>
+            <a href="tests/conversationsearch/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="editroom" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>editRoom</h3>
+              <p>ConversationView · ConversationView · iPhone 17</p>
+              <div class="card-tags">
+                <span>8 screenshots</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 2s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/editRoom.js</code>
+            <a href="tests/editroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass slow" data-test-card data-name="markdowns" data-status="PASS" data-lane="main-suite" data-slow="1" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>markdowns</h3>
+              <p>ConversationView · main-suite · iPhone 17 Pro</p>
+              <div class="card-tags">
+                <span>11 screenshots</span>
+                <span>Slow</span>
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 41s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/markdowns.js</code>
+            <a href="tests/markdowns/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="messageactions" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>MessageActions</h3>
+              <p>ConversationView · main-suite · iPhone 17 Pro</p>
+              <div class="card-tags">
+                <span>5 screenshots</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 17s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/MessageActions.js</code>
+            <a href="tests/messageactions/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="newmessage" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>newMessage</h3>
+              <p>main-suite · main-suite · iPhone 17 Pro</p>
+              <div class="card-tags">
+                <span>4 screenshots</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">46s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js</code>
+            <a href="tests/newmessage/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="reactions" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>Reactions</h3>
+              <p>ConversationView · Conversation-List · iPhone 17 Pro Max</p>
+              <div class="card-tags">
+                <span>13 screenshots</span>
+
+
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">1m 14s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/Reactions.js</code>
+            <a href="tests/reactions/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="removeroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="1">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>removeRoom</h3>
+              <p>Conversation-List · Conversation-List · iPhone 17 Pro Max</p>
+              <div class="card-tags">
+                <span>4 screenshots</span>
+
+                <span>Flaky: 1/2 failed in last 2 runs</span>
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">53s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js</code>
+            <a href="tests/removeroom/index.html">Open full evidence →</a>
+          </div>
+        </details>
+
+        <details class="test-card pass" data-test-card data-name="roomnotificationpreferences" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="1">
+          <summary class="test-card-summary">
+            <span class="status-pill pass">PASS</span>
+            <div class="test-card-copy">
+              <h3>RoomNotificationPreferences</h3>
+              <p>ConversationView · ConversationView · iPhone 17</p>
+              <div class="card-tags">
+                <span>5 screenshots</span>
+
+                <span>Flaky: 1/2 failed in last 2 runs</span>
+              </div>
+            </div>
+            <div class="test-card-result">
+              <span class="duration">59s</span>
+              <span class="open-details" aria-hidden="true">⌄</span>
+            </div>
+          </summary>
+          <div class="test-card-evidence">
+            <p>Passing evidence is collapsed by default.</p>
+            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/RoomNotificationPreferences.js</code>
+            <a href="tests/roomnotificationpreferences/index.html">Open full evidence →</a>
+          </div>
+        </details>
       </div>
     </section>
 
-    <section class="stats" aria-label="Run summary">
-      <div class="stat"><span>Passed</span><strong>12</strong></div>
-      <div class="stat"><span>Failed</span><strong>5</strong></div>
-      <div class="stat"><span>Skipped</span><strong>0</strong></div>
-      <div class="stat"><span>Blocked</span><strong>0</strong></div>
-      <div class="stat"><span>Inconclusive</span><strong>0</strong></div>
-      <div class="stat"><span>Total</span><strong>17</strong></div>
-    </section>
-
-    <section class="sticky-summary" aria-label="Sticky run summary">
-      <strong>FAIL</strong>
-      <span>8m 46s elapsed</span>
-      <span>15m 46s aggregate test time</span>
-      <button type="button" data-copy-link="">Copy report link</button>
-    </section>
-
-
-      <section class="panel failures">
-        <h2>Failures</h2>
-
-              <a href="tests/markasread/index.html">
-                <strong>markAsRead</strong>
-                <em>Unknown</em>
-                <span>None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)</span>
-              </a>
-
-              <a href="tests/removeroom/index.html">
-                <strong>removeRoom</strong>
-                <em>Unknown</em>
-                <span>None of [A-00-E-RemoveRoom-trffrnb4] became visible after 24 list scroll(s)</span>
-              </a>
-
-              <a href="tests/composertypeahead/index.html">
-                <strong>ComposerTypeahead</strong>
-                <em>Unknown</em>
-                <span>Visible control with source label &quot;:grinning_face:&quot; did not appear</span>
-              </a>
-
-              <a href="tests/roomnotificationpreferences/index.html">
-                <strong>RoomNotificationPreferences</strong>
-                <em>Permission</em>
-                <span>element (&quot;~notificationPreferencesButton&quot;) still not displayed after 20000ms</span>
-              </a>
-
-              <a href="tests/membersroom/index.html">
-                <strong>membersRoom</strong>
-                <em>Unknown</em>
-                <span>membersRoom: could not find Add Individuals TextField</span>
-              </a>
-      </section>
-
-    <section class="panel coverage-panel">
-        <div class="panel-heading">
-          <h2>Coverage</h2>
-          <p>17/17 eligible required tests completed</p>
-        </div>
-        <div class="coverage-scroll"><table>
+    <section class="evidence-stack" aria-label="Additional report details">
+      <details class="panel disclosure coverage-panel">
+        <summary class="section-summary">
+          <span><strong>Automation coverage</strong><small>Required and optional tests by feature</small></span>
+          <span class="summary-value">17/17 required</span>
+        </summary>
+        <div class="disclosure-body coverage-scroll"><table>
           <thead><tr><th>Feature</th><th>Class</th><th>Scheduled</th><th>Completed</th><th>Passed</th><th>Attention</th></tr></thead>
           <tbody>
             <tr>
@@ -1124,425 +951,346 @@
               <td>0</td>
             </tr></tbody>
         </table></div>
-      </section>
+      </details>
+      <details class="panel disclosure coverage-panel ccl-coverage-panel">
+        <summary class="section-summary">
+          <span><strong>CCL regression coverage</strong><small>Automated evidence mapped to release requirements</small></span>
+          <span class="summary-value">14 passed · 14 attention</span>
+        </summary>
+        <div class="disclosure-body">
+        <p class="coverage-note">14 passed · 14 partial · 14 attention · 2 not run. Automation supplements the manual CCL checklist.</p>
+        <div class="coverage-scroll"><table>
+          <thead><tr><th>ID</th><th>Requirement</th><th>Automated by</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row">I-017</th>
+              <td>Sign out returns to the login screen</td>
+              <td>Login_Signout</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr>
 
-    <section class="panel phase-panel"><div class="panel-heading"><h2>Phase timing</h2><p>Aggregate workload time</p></div><dl class="meta-grid compact"><div><dt>Session creation</dt><dd>26s</dd></div>
-<div><dt>Login/readiness</dt><dd>2m 11s</dd></div>
-<div><dt>Test body</dt><dd>13m 29s</dd></div>
-<div><dt>Screenshot capture</dt><dd>19s</dd></div>
-<div><dt>Recovery</dt><dd>1m 25s</dd></div>
+            <tr>
+              <th scope="row">I-019</th>
+              <td>Classic conversation layout</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-020</th>
+              <td>Cozy conversation layout</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-021</th>
+              <td>Self-Managed conversation sorting</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-023</th>
+              <td>Recent Activity conversation sorting</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-024</th>
+              <td>Alphabetical conversation sorting</td>
+              <td>ConversationList</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-046</th>
+              <td>Remove a bookmark without leaving the room</td>
+              <td>removeRoom</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-054</th>
+              <td>Mark a conversation as unread</td>
+              <td>markAsRead</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-055</th>
+              <td>Mark a conversation as read</td>
+              <td>markAsRead</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-056</th>
+              <td>Open the New Message flow</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-058</th>
+              <td>Select a recipient from typeahead</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-059</th>
+              <td>Search for a New Message recipient</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-061</th>
+              <td>Send a new direct message</td>
+              <td>newMessage</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-066</th>
+              <td>Open the Rooms action menu</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-067</th>
+              <td>Open Create a Room</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-069</th>
+              <td>Create a public or private room</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-070</th>
+              <td>Complete the Add Members room-creation step</td>
+              <td>CreateRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-083</th>
+              <td>Pin a message</td>
+              <td>PinnedMessageEditFlow, PinnedMessages</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-084</th>
+              <td>Open the pinned-message drawer</td>
+              <td>PinnedMessageEditFlow, PinnedMessages</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-093</th>
+              <td>Open Conversation Search</td>
+              <td>ConversationSearch</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-094</th>
+              <td>Search and sort conversation messages</td>
+              <td>ConversationSearch</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-095</th>
+              <td>Open room notification preferences</td>
+              <td>RoomNotificationPreferences</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-102</th>
+              <td>Render a bulleted Markdown list</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-103</th>
+              <td>Render Markdown headings</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-104</th>
+              <td>Render Markdown emphasis</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-105</th>
+              <td>Render a Markdown link</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-106</th>
+              <td>Render Markdown code styling</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-107</th>
+              <td>Render Markdown strikethrough</td>
+              <td>markdowns</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-113</th>
+              <td>Open the message long-press menu</td>
+              <td>Reactions</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-114</th>
+              <td>Add a message reaction</td>
+              <td>Reactions</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-115</th>
+              <td>Add and remove message reactions</td>
+              <td>Reactions</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-116</th>
+              <td>Use message Copy, Edit, and Delete actions</td>
+              <td>MessageActions</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-118</th>
+              <td>Copy an entire message</td>
+              <td>MessageActions</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-122</th>
+              <td>Edit a plaintext message</td>
+              <td>PinnedMessageEditFlow, EditMessage</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-128</th>
+              <td>Open and edit Room Info as an admin</td>
+              <td>editRoom</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-129</th>
+              <td>Open the room member list</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-130</th>
+              <td>Open member management as an admin</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-131</th>
+              <td>Open member actions</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-132</th>
+              <td>Edit room membership</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-134</th>
+              <td>Persist room notification preferences</td>
+              <td>RoomNotificationPreferences</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-141</th>
+              <td>Add or remove room members</td>
+              <td>membersRoom</td>
+              <td><span class="ccl-status fail">FAIL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-157</th>
+              <td>Attach an image or file</td>
+              <td>attachments</td>
+              <td><span class="ccl-status pass">PASS</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-159</th>
+              <td>Send a GIF</td>
+              <td>attachments</td>
+              <td><span class="ccl-status partial">PARTIAL</span></td>
+            </tr>
+
+            <tr>
+              <th scope="row">I-168</th>
+              <td>Persist an unsent message draft</td>
+              <td>DraftPersistence</td>
+              <td><span class="ccl-status not-run">NOT RUN</span></td>
+            </tr></tbody>
+        </table></div></div>
+      </details>
+
+      <details class="panel disclosure execution-details">
+        <summary class="section-summary">
+          <span><strong>Execution details</strong><small>Timing, simulator lanes, and slow tests</small></span>
+          <span class="summary-value">9m 43s elapsed</span>
+        </summary>
+        <div class="disclosure-body">
+          <section class="phase-panel"><div class="panel-heading"><h3>Phase timing</h3><p>19m 24s aggregate</p></div><dl class="meta-grid compact"><div><dt>Session creation</dt><dd>3m 57s</dd></div>
+<div><dt>Login/readiness</dt><dd>5m 1s</dd></div>
+<div><dt>Test body</dt><dd>14m 38s</dd></div>
+<div><dt>Screenshot capture</dt><dd>16s</dd></div>
+<div><dt>Recovery</dt><dd>4s</dd></div>
 <div><dt>Report generation</dt><dd>2s</dd></div>
-<div><dt>Room creation (test-owned)</dt><dd>39s</dd></div></dl></section>
+<div><dt>Room creation (test-owned)</dt><dd>16s</dd></div></dl></section>
 
-
-    <section class="toolbar" aria-label="Report filters">
-      <input id="search" type="search" placeholder="Search tests">
-      <select id="statusFilter">
-        <option value="">All statuses</option>
-        <option value="PASS">Pass</option>
-        <option value="FAIL">Fail</option>
-        <option value="SKIPPED">Skipped</option>
-        <option value="BLOCKED">Blocked</option>
-        <option value="INCONCLUSIVE">Inconclusive</option>
-        <option value="UNKNOWN">Unknown</option>
-      </select>
-      <select id="laneFilter">
-        <option value="">All lanes</option>
-        <option value="main-suite">main-suite</option>
-<option value="Conversation-List">Conversation-List</option>
-<option value="ConversationView">ConversationView</option>
-<option value="Conversation-List-settings">Conversation-List-settings</option>
-      </select>
-      <label class="check-filter"><input id="failedOnly" type="checkbox"> Failed only</label>
-      <label class="check-filter"><input id="slowOnly" type="checkbox"> Slow only</label>
-      <label class="check-filter"><input id="screenshotsOnly" type="checkbox"> Has screenshots</label>
-    </section>
-
-    <section class="test-grid" aria-label="Tests">
-
-        <details class="test-card fail" data-test-card data-name="composertypeahead" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill fail">FAIL</span>
-            <span class="duration">38s</span>
-          </div>
-          <h3>ComposerTypeahead</h3>
-          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>2 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p class="evidence-error">Visible control with source label &quot;:grinning_face:&quot; did not appear</p>
-            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ComposerTypeahead.js</code>
-            <a href="tests/composertypeahead/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card fail" data-test-card data-name="markasread" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill fail">FAIL</span>
-            <span class="duration">1m 5s</span>
-          </div>
-          <h3>markAsRead</h3>
-          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>1 screenshot</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p class="evidence-error">None of [A-00-M-MarkAsRead-gktxu7ze] became visible after 24 list scroll(s)</p>
-            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js</code>
-            <a href="tests/markasread/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card fail" data-test-card data-name="membersroom" data-status="FAIL" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0" open>
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill fail">FAIL</span>
-            <span class="duration">44s</span>
-          </div>
-          <h3>membersRoom</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>6 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p class="evidence-error">membersRoom: could not find Add Individuals TextField</p>
-            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/membersRoom.js</code>
-            <a href="tests/membersroom/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card fail" data-test-card data-name="removeroom" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill fail">FAIL</span>
-            <span class="duration">55s</span>
-          </div>
-          <h3>removeRoom</h3>
-          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>1 screenshot</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p class="evidence-error">None of [A-00-E-RemoveRoom-trffrnb4] became visible after 24 list scroll(s)</p>
-            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js</code>
-            <a href="tests/removeroom/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card fail" data-test-card data-name="roomnotificationpreferences" data-status="FAIL" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0" open>
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill fail">FAIL</span>
-            <span class="duration">1m 10s</span>
-          </div>
-          <h3>RoomNotificationPreferences</h3>
-          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>5 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p class="evidence-error">element (&quot;~notificationPreferencesButton&quot;) still not displayed after 20000ms</p>
-            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/RoomNotificationPreferences.js</code>
-            <a href="tests/roomnotificationpreferences/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass slow" data-test-card data-name="attachments" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 43s</span>
-          </div>
-          <h3>attachments</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>17 screenshots</span>
-            <span>Slow</span>
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js</code>
-            <a href="tests/attachments/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="conversationlist" data-status="PASS" data-lane="Conversation-List-settings" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">36s</span>
-          </div>
-          <h3>ConversationList</h3>
-          <p>Conversation-List / Conversation-List-settings / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>15 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js</code>
-            <a href="tests/conversationlist/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="conversationsearch" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 5s</span>
-          </div>
-          <h3>ConversationSearch</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>8 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/ConversationSearch.js</code>
-            <a href="tests/conversationsearch/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="createroom" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">44s</span>
-          </div>
-          <h3>CreateRoom</h3>
-          <p>main-suite / main-suite / iPhone 17 Pro</p>
-          <div class="card-tags">
-            <span>5 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js</code>
-            <a href="tests/createroom/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="editroom" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">48s</span>
-          </div>
-          <h3>editRoom</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>8 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/editRoom.js</code>
-            <a href="tests/editroom/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="favoriteroom" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">38s</span>
-          </div>
-          <h3>favoriteRoom</h3>
-          <p>Conversation-List / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js</code>
-            <a href="tests/favoriteroom/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="linkpreviews" data-status="PASS" data-lane="ConversationView" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">53s</span>
-          </div>
-          <h3>LinkPreviews</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>7 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/LinkPreviews.js</code>
-            <a href="tests/linkpreviews/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass slow" data-test-card data-name="markdowns" data-status="PASS" data-lane="ConversationView" data-slow="1" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 33s</span>
-          </div>
-          <h3>markdowns</h3>
-          <p>ConversationView / ConversationView / iPhone 17</p>
-          <div class="card-tags">
-            <span>11 screenshots</span>
-            <span>Slow</span>
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/markdowns.js</code>
-            <a href="tests/markdowns/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="messageactions" data-status="PASS" data-lane="Conversation-List" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">33s</span>
-          </div>
-          <h3>MessageActions</h3>
-          <p>ConversationView / Conversation-List / iPhone 17 Pro Max</p>
-          <div class="card-tags">
-            <span>5 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/MessageActions.js</code>
-            <a href="tests/messageactions/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="newmessage" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">35s</span>
-          </div>
-          <h3>newMessage</h3>
-          <p>main-suite / main-suite / iPhone 17 Pro</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js</code>
-            <a href="tests/newmessage/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="pinnedmessageeditflow" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 3s</span>
-          </div>
-          <h3>PinnedMessageEditFlow</h3>
-          <p>ConversationView / main-suite / iPhone 17 Pro</p>
-          <div class="card-tags">
-            <span>4 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/PinnedMessageEditFlow.js</code>
-            <a href="tests/pinnedmessageeditflow/index.html">Open full evidence →</a>
-          </div>
-        </details>
-
-        <details class="test-card pass" data-test-card data-name="reactions" data-status="PASS" data-lane="main-suite" data-slow="0" data-screenshots="1" data-flaky="0">
-          <summary class="test-card-summary">
-          <div class="test-card-top">
-            <span class="status-pill pass">PASS</span>
-            <span class="duration">1m 7s</span>
-          </div>
-          <h3>Reactions</h3>
-          <p>ConversationView / main-suite / iPhone 17 Pro</p>
-          <div class="card-tags">
-            <span>13 screenshots</span>
-
-
-            <span class="open-details">Evidence</span>
-          </div>
-          </summary>
-          <div class="test-card-evidence">
-            <p>Passing evidence is collapsed by default.</p>
-            <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/Reactions.js</code>
-            <a href="tests/reactions/index.html">Open full evidence →</a>
-          </div>
-        </details>
-    </section>
-
-    <section class="overview-grid">
-      <div class="panel lane-health">
-        <div class="panel-heading">
-          <h2>Lane Health</h2>
-          <p>4 simulator lanes</p>
-        </div>
-        <div class="lane-grid">
-        <article class="lane-card pass">
+          <section class="overview-grid">
+            <div class="lane-health">
+              <div class="panel-heading"><h3>Lane health</h3><p>4 lanes</p></div>
+              <div class="lane-grid">
+        <article class="lane-card fail">
           <div>
             <span class="eyebrow">main-suite</span>
             <h3>iPhone 17 Pro</h3>
@@ -1550,8 +1298,8 @@
           <dl>
             <div><dt>Port</dt><dd>4723</dd></div>
             <div><dt>Passed</dt><dd>4</dd></div>
-            <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Test time</dt><dd>3m 28s</dd></div>
+            <div><dt>Failed</dt><dd>2</dd></div>
+            <div><dt>Test time</dt><dd>6m 58s</dd></div>
           </dl>
         </article>
 
@@ -1563,8 +1311,8 @@
           <dl>
             <div><dt>Port</dt><dd>4725</dd></div>
             <div><dt>Passed</dt><dd>2</dd></div>
-            <div><dt>Failed</dt><dd>4</dd></div>
-            <div><dt>Test time</dt><dd>4m 57s</dd></div>
+            <div><dt>Failed</dt><dd>3</dd></div>
+            <div><dt>Test time</dt><dd>5m 17s</dd></div>
           </dl>
         </article>
 
@@ -1575,9 +1323,9 @@
           </div>
           <dl>
             <div><dt>Port</dt><dd>4727</dd></div>
-            <div><dt>Passed</dt><dd>5</dd></div>
-            <div><dt>Failed</dt><dd>1</dd></div>
-            <div><dt>Test time</dt><dd>6m 45s</dd></div>
+            <div><dt>Passed</dt><dd>3</dd></div>
+            <div><dt>Failed</dt><dd>2</dd></div>
+            <div><dt>Test time</dt><dd>6m 1s</dd></div>
           </dl>
         </article>
 
@@ -1590,77 +1338,85 @@
             <div><dt>Port</dt><dd>4725</dd></div>
             <div><dt>Passed</dt><dd>1</dd></div>
             <div><dt>Failed</dt><dd>0</dd></div>
-            <div><dt>Test time</dt><dd>36s</dd></div>
+            <div><dt>Test time</dt><dd>1m 8s</dd></div>
           </dl>
         </article></div>
-      </div>
-      <div class="panel slow-panel">
-        <div class="panel-heading">
-          <h2>Slow Tests</h2>
-          <p>Average: 56s</p>
-        </div>
-        <div class="slow-list">
+            </div>
+            <div class="slow-panel">
+              <div class="panel-heading"><h3>Slow tests</h3><p>Average 1m 8s</p></div>
+              <div class="slow-list">
             <a href="tests/attachments/index.html">
               <strong>attachments</strong>
-              <span>1m 43s · ConversationView</span>
+              <span>2m 11s · ConversationView</span>
             </a>
 
             <a href="tests/markdowns/index.html">
               <strong>markdowns</strong>
-              <span>1m 33s · ConversationView</span>
-            </a></div>
-      </div>
-    </section>
+              <span>1m 41s · main-suite</span>
+            </a>
 
-    <details class="report-insights panel">
-      <summary>Run context and analysis</summary>
-      <div class="insight-grid">
+            <a href="tests/markasread/index.html">
+              <strong>markAsRead</strong>
+              <span>1m 33s · Conversation-List</span>
+            </a></div>
+            </div>
+          </section>
+        </div>
+      </details>
+
+      <details class="report-insights panel disclosure">
+      <summary class="section-summary"><span><strong>Run context</strong><small>Comparison, failures, and environment metadata</small></span><span class="summary-value">Sep 30, 11:12 AM</span></summary>
+      <div class="disclosure-body insight-grid">
         <div class="comparison-panel">
           <div class="panel-heading">
-            <h2>Run Comparison</h2>
-            <p>Compared with Sep 1, 2:47 PM</p>
+            <h3>Run comparison</h3>
+            <p>Compared with Sep 28, 2:01 PM</p>
           </div>
 
       <div class="comparison-grid">
         <div><dt>New failures</dt><dd>0</dd></div>
         <div><dt>New fixes</dt><dd>0</dd></div>
-        <div><dt>Slower</dt><dd>0</dd></div>
+        <div><dt>Slower</dt><dd>1</dd></div>
         <div><dt>Faster</dt><dd>0</dd></div>
       </div>
       <div class="comparison-list">
-        <p class="muted">No major changes from the previous comparable run.</p>
+
+              <a class="slow" href="tests/reactions/index.html">
+                <strong>Reactions</strong>
+                <span>20s slower</span>
+              </a>
       </div>
         </div>
         <div class="category-panel">
           <div class="panel-heading">
-            <h2>Failure Categories</h2>
-            <p>5 failed tests</p>
+            <h3>Failure categories</h3>
+            <p>7 failed tests</p>
           </div>
           <div class="category-list">
             <div class="category-row">
-              <span>Unknown</span>
-              <div><i style="width: 80%"></i></div>
+              <span>Selector</span>
+              <div><i style="width: 57%"></i></div>
               <strong>4</strong>
             </div>
 
             <div class="category-row">
-              <span>Permission</span>
-              <div><i style="width: 20%"></i></div>
-              <strong>1</strong>
+              <span>Unknown</span>
+              <div><i style="width: 43%"></i></div>
+              <strong>3</strong>
             </div></div>
         </div>
         <div class="environment-panel">
           <div class="panel-heading">
-            <h2>Environment</h2>
+            <h3>Environment</h3>
             <p>Run context</p>
           </div>
           <dl class="meta-grid compact"><div><dt>App branch</dt><dd>main</dd></div>
-<div><dt>App commit</dt><dd>c53a191a3</dd></div>
+<div><dt>App commit</dt><dd>86ae86038</dd></div>
 <div><dt>Connect version</dt><dd>1.2</dd></div>
 <div><dt>Connect build</dt><dd>1</dd></div>
 <div><dt>Bundle ID</dt><dd>com.powerhrg.connect.v3.debug</dd></div>
 <div><dt>Automation branch</dt><dd>main</dd></div>
-<div><dt>Automation commit</dt><dd>af6bf0a</dd></div>
+<div><dt>Automation commit</dt><dd>51ac146</dd></div>
 <div><dt>Node</dt><dd>v24.14.0</dd></div>
 <div><dt>Devices</dt><dd>iPhone 17 Pro, iPhone 17 Pro Max, iPhone 17</dd></div>
 <div><dt>Appium ports</dt><dd>4723, 4725, 4727</dd></div>
@@ -1668,7 +1424,8 @@
 <div><dt>Source</dt><dd>summary.json</dd></div></dl>
         </div>
       </div>
-    </details>
+      </details>
+    </section>
 
   </main>
 
