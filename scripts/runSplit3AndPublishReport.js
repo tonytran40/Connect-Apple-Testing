@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { publishPagesBranch } = require('./publishPagesBranch');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 
@@ -41,25 +42,6 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function gitHasStagedChanges() {
-  const diff = run('git', ['diff', '--cached', '--quiet'], { allowFailure: true, capture: true });
-  return diff.status !== 0;
-}
-
-function dirtyPublicationTargets(runId = RUN_ID) {
-  const targets = [
-    'index.html',
-    'docs/index.html',
-    'docs/generated/scribe/index.html',
-    `docs/generated/scribe/${runId}`,
-  ];
-  const result = run('git', ['status', '--porcelain', '--untracked-files=all', '--', ...targets], {
-    allowFailure: true,
-    capture: true,
-  });
-  return result.stdout.trim();
-}
-
 function hasFreshCombinedSummary(startedAt, repoRoot = REPO_ROOT, runId = RUN_ID) {
   const runRoot = path.join(repoRoot, 'reports', 'runs', runId);
   return ['summary.json', 'summary.md'].some(file => {
@@ -69,24 +51,6 @@ function hasFreshCombinedSummary(startedAt, repoRoot = REPO_ROOT, runId = RUN_ID
 }
 
 function main() {
-  if (gitHasStagedChanges()) {
-    console.error(
-      '[publish-report] Refusing to start because Git already has staged changes. ' +
-        'Commit or unstage them first so the report commit cannot include unrelated work.'
-    );
-    process.exitCode = 1;
-    return;
-  }
-
-  const dirtyTargets = dirtyPublicationTargets();
-  if (dirtyTargets) {
-    console.error(
-      '[publish-report] Refusing to overwrite or commit pre-existing Pages changes:\n' + dirtyTargets
-    );
-    process.exitCode = 1;
-    return;
-  }
-
   console.log(`[publish-report] Running three-simulator split test for ${RUN_ID}`);
   const testStartedAt = Date.now();
   const test = run('node', ['Tests/runSplitParallel.js'], {
@@ -122,32 +86,11 @@ function main() {
   const total = meta.total ?? '?';
   const failed = meta.failed ?? '?';
 
-  console.log('[publish-report] Staging GitHub Pages report files');
-  run('git', [
-    'add',
-    '.nojekyll',
-    'index.html',
-    'docs/index.html',
-    'docs/generated/scribe/index.html',
-    `docs/generated/scribe/${RUN_ID}`,
-  ]);
-
-  if (!gitHasStagedChanges()) {
-    console.log('[publish-report] No report changes to commit');
-  } else {
-    const message =
-      process.env.PUBLISH_REPORT_COMMIT_MESSAGE ||
-      `Update test report: ${status}, evidence ${evidenceDecision} ` +
-        `(${passed}/${total} passed, ${failed} failed)`;
-    run('git', ['commit', '-m', message]);
-  }
-
-  if (process.env.PUBLISH_REPORT_SKIP_PUSH === '1') {
-    console.log('[publish-report] Skipping git push because PUBLISH_REPORT_SKIP_PUSH=1');
-  } else {
-    console.log('[publish-report] Pushing report update to GitHub Pages');
-    run('git', ['push']);
-  }
+  const message =
+    process.env.PUBLISH_REPORT_COMMIT_MESSAGE ||
+    `Update test report: ${status}, evidence ${evidenceDecision} ` +
+      `(${passed}/${total} passed, ${failed} failed)`;
+  publishPagesBranch({ runId: RUN_ID, message });
 
   console.log('[publish-report] Done');
   console.log(`[publish-report] Release evidence: ${evidenceDecision}`);
@@ -163,4 +106,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { dirtyPublicationTargets, hasFreshCombinedSummary, main, validateRunId };
+module.exports = { hasFreshCombinedSummary, main, validateRunId };

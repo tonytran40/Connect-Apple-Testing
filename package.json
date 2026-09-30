@@ -24,6 +24,7 @@
     "test:parallel:split3:qa": "CONNECT_SERVER_NAME=QA SPLIT_THIRD_ENABLED=1 node scripts/runAndGenerateReport.js --mode split",
     "test:parallel:split3:publish": "node scripts/runSplit3AndPublishReport.js",
     "test:parallel:split3:qa:publish": "CONNECT_SERVER_NAME=QA node scripts/runSplit3AndPublishReport.js",
+    "report:publish-pages": "node scripts/publishPagesBranch.js",
     "test:time": "node Tests/testTime.js",
     "test:notifications": "npm run test:one -- notifications",
     "test:members-room": "npm run test:one -- membersRoom",

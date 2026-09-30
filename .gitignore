@@ -11,10 +11,9 @@ reports/runs/
 # Exception: allow documentation images
 !docs/**/*.png
 
-# Local report history and individual-test reports can contain many duplicate
-# screenshots. Keep them on disk for the local report dropdown, but publish only
-# the stable combined release report and its generated landing page.
-docs/generated/scribe/*
-!docs/generated/scribe/index.html
-!docs/generated/scribe/split3-combined/
-!docs/generated/scribe/split3-combined/**
+# Generated report sites stay on disk for local viewing. Publishing writes a
+# separate static site to gh-pages, so generated HTML never belongs on main.
+/index.html
+/.nojekyll
+/docs/index.html
+/docs/generated/scribe/

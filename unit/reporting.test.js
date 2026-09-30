@@ -6,6 +6,12 @@ const path = require('node:path');
 
 const { hasFreshCombinedSummary, validateRunId } = require('../scripts/runSplit3AndPublishReport');
 const {
+  archiveExistingLatest,
+  reportIdentity,
+  safeToken,
+  worktreeAddArgs,
+} = require('../scripts/publishPagesBranch');
+const {
   buildEnvironmentSummary,
   buildEvidenceDecision,
   cclCoverageForSummary,
@@ -71,6 +77,88 @@ test('publisher accepts path-safe run IDs and rejects traversal', () => {
   assert.throws(() => validateRunId('../outside'), /Unsafe report run ID/);
   assert.throws(() => validateRunId('run/child'), /Unsafe report run ID/);
   assert.throws(() => validateRunId(''), /Unsafe report run ID/);
+});
+
+test('Pages publisher validates branch and run tokens', () => {
+  assert.equal(safeToken('gh-pages', 'branch'), 'gh-pages');
+  assert.equal(safeToken('split3-combined', 'run'), 'split3-combined');
+  assert.throws(() => safeToken('../main', 'branch'), /Unsafe branch/);
+  assert.throws(() => safeToken('', 'run'), /Unsafe run/);
+});
+
+test('Pages publisher chooses a non-destructive worktree strategy', () => {
+  assert.deepEqual(
+    worktreeAddArgs({
+      branch: 'gh-pages',
+      directory: '/tmp/pages',
+      localExists: true,
+      remoteExists: true,
+    }),
+    ['worktree', 'add', '/tmp/pages', 'gh-pages']
+  );
+  assert.deepEqual(
+    worktreeAddArgs({
+      branch: 'gh-pages',
+      directory: '/tmp/pages',
+      localExists: false,
+      remoteExists: true,
+    }),
+    ['worktree', 'add', '-b', 'gh-pages', '/tmp/pages', 'origin/gh-pages']
+  );
+  assert.deepEqual(
+    worktreeAddArgs({
+      branch: 'gh-pages',
+      directory: '/tmp/pages',
+      localExists: false,
+      remoteExists: false,
+    }),
+    ['worktree', 'add', '--orphan', '-b', 'gh-pages', '/tmp/pages']
+  );
+});
+
+test('Pages publisher archives the previous latest report only for a new run', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'connect-pages-archive-'));
+  const worktree = path.join(root, 'pages');
+  const runId = 'split3-combined';
+  const latestDir = path.join(worktree, runId);
+  const summaryDir = path.join(root, 'reports', 'runs', runId);
+  fs.mkdirSync(latestDir, { recursive: true });
+  fs.mkdirSync(summaryDir, { recursive: true });
+  fs.writeFileSync(path.join(latestDir, 'index.html'), 'previous report');
+  fs.writeFileSync(path.join(latestDir, '_report-meta.json'), JSON.stringify({
+    runId,
+    reportType: 'latest',
+    startedAt: '2026-09-29T12:00:00.000Z',
+  }));
+  fs.writeFileSync(path.join(summaryDir, 'summary.json'), JSON.stringify({
+    runId,
+    startedAt: '2026-09-30T12:00:00.000Z',
+  }));
+
+  const archived = archiveExistingLatest({ worktree, repoRoot: root, runId });
+  assert.equal(path.basename(archived), '2026-09-29T12-00-00Z-split3-combined');
+  assert.equal(fs.existsSync(latestDir), false);
+  assert.equal(fs.readFileSync(path.join(archived, 'index.html'), 'utf8'), 'previous report');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(archived, '_report-meta.json'))).reportType, 'archive');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('Pages publisher does not archive a repeat of the same run', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'connect-pages-repeat-'));
+  const worktree = path.join(root, 'pages');
+  const runId = 'split3-combined';
+  const startedAt = '2026-09-30T12:00:00.000Z';
+  const latestDir = path.join(worktree, runId);
+  const summaryDir = path.join(root, 'reports', 'runs', runId);
+  fs.mkdirSync(latestDir, { recursive: true });
+  fs.mkdirSync(summaryDir, { recursive: true });
+  fs.writeFileSync(path.join(latestDir, '_report-meta.json'), JSON.stringify({ startedAt }));
+  fs.writeFileSync(path.join(summaryDir, 'summary.json'), JSON.stringify({ startedAt }));
+
+  assert.equal(archiveExistingLatest({ worktree, repoRoot: root, runId }), null);
+  assert.equal(fs.existsSync(latestDir), true);
+  assert.equal(reportIdentity({ startedAt, updatedAt: 'later' }), startedAt);
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('failure analysis classifies common Appium failures', () => {

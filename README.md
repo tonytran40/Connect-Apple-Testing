@@ -411,7 +411,7 @@ Cleanup is advisory by default. Add `SPLIT_POST_RUN_CLEANUP_STRICT=1` only when 
 
 ### Scribe-style documentation
 
-Every report-aware test command generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Timestamped local history is enabled by default and kept under the bounded retention policy. Archived runs and local per-run report directories (including `*-latest`) are ignored by Git, so their duplicate screenshots remain available in the local report dropdown without inflating repository history. The stable `split3-combined` report remains tracked for GitHub Pages. Set `SCRIBE_ARCHIVE_ENABLED=0` only when you explicitly do not want to preserve a run.
+Every report-aware test command generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Timestamped local history is enabled by default and kept under the bounded retention policy. All generated report directories are ignored by Git on `main`, so their duplicate screenshots remain available in the local report dropdown without inflating repository history. Publishing generates an independent static site on the `gh-pages` branch. Set `SCRIBE_ARCHIVE_ENABLED=0` only when you explicitly do not want to preserve a local run.
 
 Use one command for any individual test:
 
@@ -442,7 +442,7 @@ For the normal three-simulator run, one command runs the tests and creates the r
 npm run test:parallel:split3
 ```
 
-The homepage opens the latest report automatically. Use the **Previous runs** dropdown in the report header to jump back into older archived runs. The stable latest report still lives at `docs/generated/scribe/split3-combined/index.html`.
+The local homepage opens the latest report automatically. Use the **Previous runs** dropdown in the report header to jump back into older archived runs. The local stable report lives at `docs/generated/scribe/split3-combined/index.html`; the published copy lives at `split3-combined/index.html` on the `gh-pages` branch.
 
 For local live preview without pushing to GitHub Pages, run this in a separate terminal:
 
@@ -488,37 +488,29 @@ To run the three-simulator split and publish the GitHub Pages report in one comm
 npm run test:parallel:split3:publish
 ```
 
-That command runs the tests, generates the latest report, stages only the current Pages report, commits it, and pushes to GitHub. It still publishes when tests fail so the shared page shows the failure details. It refuses to start when unrelated changes are staged or when a Pages target already has local edits, preventing user work from entering the automated report commit. Use `PUBLISH_REPORT_SKIP_PUSH=1 npm run test:parallel:split3:publish` to exercise the flow locally without pushing.
+That command runs the tests, generates the local report, creates or reuses an isolated `gh-pages` Git worktree, generates the published site there, commits it, and pushes only that branch. It still publishes when tests fail so the shared page shows the failure details. Changes staged or modified on `main` cannot enter the Pages commit because publication happens in the separate worktree. Use `PUBLISH_REPORT_SKIP_PUSH=1 npm run test:parallel:split3:publish` to exercise the branch generation locally without pushing.
 
 Use `npm run test:parallel:split3:qa:publish` for the same flow with the
 QA-only required tests included.
 
-If this repository was cloned before the local-report ignore policy was added,
-Git may still track individual reports that already existed. Run this once to
-remove only those `*-latest` directories from Git's index while leaving every
-local report file on disk:
+To publish an existing `split3-combined` summary without rerunning the suite:
 
 ```bash
-git rm -r --cached --ignore-unmatch docs/generated/scribe/*-latest
-git commit -m "Stop tracking local test reports"
+npm run report:publish-pages
 ```
 
-Do not remove `docs/generated/scribe/split3-combined`; that is the stable report
-published by the split-three publish command.
+The Pages branch keeps a bounded timestamped archive, so previous published runs remain available from the report dropdown.
 
 `markdowns` creates a unique `A-Markdown Room-*` by default so repeated and parallel runs do not share timeline data. Set `MARKDOWN_ROOM_NAME` only when you intentionally want to exercise an existing fixture room.
 
-To share the report with coworkers through GitHub Pages, use the split-three
-publish command above. It stages only the generated landing pages and
-`docs/generated/scribe/split3-combined`, then commits and pushes them. GitHub
-Pages can publish the `docs` folder directly from `main`.
+To share the report with coworkers through GitHub Pages, use the split-three publish command above. It commits only generated site files to `gh-pages`; `main` retains only automation and report-generator source.
 
 One-time GitHub setup:
 
 1. Open the repo on GitHub.
 2. Go to **Settings** > **Pages**.
 3. Set **Source** to **Deploy from a branch**.
-4. Set **Branch** to `main` and the folder to `/docs`.
+4. Set **Branch** to `gh-pages` and the folder to `/(root)`.
 5. Click **Save**.
 
 After GitHub Pages rebuilds, the report archive URL should be:
@@ -527,7 +519,7 @@ After GitHub Pages rebuilds, the report archive URL should be:
 https://tonytran40.github.io/Connect-Apple-Testing/
 ```
 
-If Pages is set to `main` / `/docs`, the direct report URL is `https://tonytran40.github.io/Connect-Apple-Testing/generated/scribe/split3-combined/`. If Pages is set to `main` / `/(root)`, the direct report URL is `https://tonytran40.github.io/Connect-Apple-Testing/docs/generated/scribe/split3-combined/`.
+The direct latest-report URL is `https://tonytran40.github.io/Connect-Apple-Testing/split3-combined/`.
 
 If the repo is private, coworkers may need access to the repo or your organization's Pages access policy before they can view it.
 
