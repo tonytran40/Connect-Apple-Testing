@@ -11,5 +11,10 @@ reports/runs/
 # Exception: allow documentation images
 !docs/**/*.png
 
-# Local report history can contain many duplicate screenshots. Publish only the stable latest report.
-docs/generated/scribe/archive/
+# Local report history and individual-test reports can contain many duplicate
+# screenshots. Keep them on disk for the local report dropdown, but publish only
+# the stable combined release report and its generated landing page.
+docs/generated/scribe/*
+!docs/generated/scribe/index.html
+!docs/generated/scribe/split3-combined/
+!docs/generated/scribe/split3-combined/**

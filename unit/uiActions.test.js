@@ -53,6 +53,9 @@ test('openRoomsPlusMenu aligns the iOS plus tap with the exact Rooms header', as
   const taps = [];
   const driver = {
     $: async selector => {
+      if (selector === SELECTORS.createRoomButton) {
+        return { isDisplayed: async () => false, waitForDisplayed: async () => {} };
+      }
       if (selector === SELECTORS.plusButton) return { isDisplayed: async () => false };
       if (selector === SELECTORS.roomsSectionHeader) {
         return {
@@ -60,7 +63,6 @@ test('openRoomsPlusMenu aligns the iOS plus tap with the exact Rooms header', as
           getRect: async () => ({ x: 12, y: 220, width: 250, height: 32 }),
         };
       }
-      if (selector === SELECTORS.createRoomButton) return { waitForDisplayed: async () => {} };
       throw new Error(`Unexpected selector: ${selector}`);
     },
     getWindowRect: async () => ({ x: 0, y: 0, width: 400, height: 800 }),
@@ -72,4 +74,49 @@ test('openRoomsPlusMenu aligns the iOS plus tap with the exact Rooms header', as
   assert.deepEqual(taps, [
     { command: 'mobile: tap', coordinates: { x: 378, y: 236 } },
   ]);
+});
+
+test('openRoomsPlusMenu ignores a plus button from a different section', async () => {
+  const taps = [];
+  const createRoom = { isDisplayed: async () => false, waitForDisplayed: async () => {} };
+  const driver = {
+    $: async selector => {
+      if (selector === SELECTORS.createRoomButton) return createRoom;
+      if (selector === SELECTORS.roomsSectionHeader) {
+        return {
+          isDisplayed: async () => true,
+          getRect: async () => ({ x: 10, y: 300, width: 260, height: 40 }),
+        };
+      }
+      if (selector === SELECTORS.plusButton) {
+        return {
+          isDisplayed: async () => true,
+          getRect: async () => ({ x: 360, y: 100, width: 30, height: 30 }),
+        };
+      }
+      throw new Error(`Unexpected selector: ${selector}`);
+    },
+    getWindowRect: async () => ({ width: 400, height: 800 }),
+    execute: async (command, coordinates) => taps.push({ command, coordinates }),
+  };
+
+  await openRoomsPlusMenu(driver);
+
+  assert.deepEqual(taps, [
+    { command: 'mobile: tap', coordinates: { x: 378, y: 320 } },
+  ]);
+});
+
+test('openRoomsPlusMenu leaves an already-open menu alone', async () => {
+  let selectorCount = 0;
+  const driver = {
+    $: async selector => {
+      selectorCount++;
+      assert.equal(selector, SELECTORS.createRoomButton);
+      return { isDisplayed: async () => true };
+    },
+  };
+
+  await openRoomsPlusMenu(driver);
+  assert.equal(selectorCount, 1);
 });

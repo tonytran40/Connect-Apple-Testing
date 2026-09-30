@@ -18,6 +18,7 @@ const {
   tapByText,
   typeComposerMessage,
 } = require('../utils/uiActions');
+const { waitForCondition } = require('../utils/uiTransitions');
 
 const DEFAULT_TIMEOUT = 20000;
 const TEST_NAME = 'CreateRoom';
@@ -119,10 +120,46 @@ async function ensureCreatedRoomOpen(driver, roomName, timeout = DEFAULT_TIMEOUT
   await openRoomFromRoomsList(driver, roomName, timeout);
 }
 
+async function completeRoomCreationTransition(driver, roomName, timeout = DEFAULT_TIMEOUT) {
+  const safe = escapePredicateString('Skip for now');
+  const skipForNow = await driver.$(
+    `-ios predicate string:type == "XCUIElementTypeButton" AND (label == "${safe}" OR name == "${safe}")`
+  );
+
+  const nextState = await waitForCondition(
+    driver,
+    async () => {
+      if (await isRoomConversationOpen(driver, roomName, 250)) return 'room-open';
+      if (await skipForNow.isDisplayed().catch(() => false)) return 'skip-members';
+      return false;
+    },
+    {
+      timeout,
+      interval: 150,
+      timeoutMsg: `Room creation for "${roomName}" did not show Add Members or open the room`,
+    }
+  );
+
+  if (nextState === 'skip-members') {
+    await skipForNow.click();
+  }
+  await ensureCreatedRoomOpen(driver, roomName, timeout);
+}
+
 async function openRoomsPlusMenu(driver, timeout = DEFAULT_TIMEOUT) {
-  await ensureRoomsSectionReady(driver);
-  await tapRoomsPlusMenu(driver, timeout);
-  console.log('Clicked Rooms plus');
+  let lastError;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    await ensureRoomsSectionReady(driver);
+    try {
+      await tapRoomsPlusMenu(driver, timeout);
+      console.log('Clicked Rooms plus');
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) console.log('Rooms plus did not open; restoring Rooms and retrying once');
+    }
+  }
+  throw lastError;
 }
 
 async function togglePrivateRoom(driver, timeout = DEFAULT_TIMEOUT) {
@@ -195,8 +232,7 @@ async function createPrivateRoom(driver, roomName, options = {}) {
     return { roomName, roomCreationMs: Math.round(performance.now() - creationStarted) };
   }
 
-  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
-  await ensureCreatedRoomOpen(driver, roomName);
+  await completeRoomCreationTransition(driver, roomName);
   const roomCreationMs = Math.round(performance.now() - creationStarted);
 
   if (sendStarterMessage) {
@@ -241,8 +277,7 @@ async function createPublicRoom(driver, roomName, options = {}) {
     return { roomName, roomCreationMs: Math.round(performance.now() - creationStarted) };
   }
   
-  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
-  await ensureCreatedRoomOpen(driver, roomName);
+  await completeRoomCreationTransition(driver, roomName);
   const roomCreationMs = Math.round(performance.now() - creationStarted);
 
   if (sendStarterMessage) {
@@ -284,8 +319,7 @@ async function runTest(driver, options = {}) {
   let roomCreationMs = 0;
   let creationStarted = performance.now();
   await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
-  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
-  await ensureCreatedRoomOpen(driver, publicRoomName);
+  await completeRoomCreationTransition(driver, publicRoomName);
   roomCreationMs += Math.round(performance.now() - creationStarted);
 
   await maybeSendStarterMessage(driver, 'public_room_sent.png');
@@ -319,8 +353,7 @@ async function runTest(driver, options = {}) {
 
   creationStarted = performance.now();
   await tapByText(driver, 'Create', DEFAULT_TIMEOUT);
-  await tapByText(driver, 'Skip for now', DEFAULT_TIMEOUT);
-  await ensureCreatedRoomOpen(driver, privateRoomName);
+  await completeRoomCreationTransition(driver, privateRoomName);
   roomCreationMs += Math.round(performance.now() - creationStarted);
 
   await maybeSendStarterMessage(driver, 'private_room_sent.png');
@@ -337,6 +370,12 @@ const test = defineTest({
 });
 const { run } = test;
 
-module.exports = { run, generateRoomName, createPrivateRoom, createPublicRoom };
+module.exports = {
+  run,
+  generateRoomName,
+  createPrivateRoom,
+  createPublicRoom,
+  completeRoomCreationTransition,
+};
 
 test.runIfMain(module);

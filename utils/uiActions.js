@@ -52,32 +52,42 @@ async function tapByText(driver, text, timeout = 20000) {
 }
 
 async function openRoomsPlusMenu(driver, timeout = 20000) {
-  const plusButton = await driver.$(SELECTORS.plusButton);
-  if (await plusButton.isDisplayed().catch(() => false)) {
-    const rect = await getElementRect(plusButton);
-    await driver.execute('mobile: tap', {
-      x: Math.round(rect.x + rect.width / 2),
-      y: Math.round(rect.y + rect.height / 2),
-    });
-    const createRoom = await driver.$(SELECTORS.createRoomButton);
-    if (await createRoom.waitForDisplayed({ timeout: Math.min(timeout, 1800) }).then(() => true).catch(() => false)) {
-      return;
-    }
-  }
+  const createRoom = await driver.$(SELECTORS.createRoomButton);
+  if (await createRoom.isDisplayed().catch(() => false)) return;
 
   let roomsHeader = await driver.$(SELECTORS.roomsSectionHeader);
   if (!(await roomsHeader.isDisplayed().catch(() => false))) {
     roomsHeader = await driver.$(PREDICATES.roomsHeaderButton);
     await roomsHeader.waitForDisplayed({ timeout });
   }
-  const rect = await getElementRect(roomsHeader);
+  const headerRect = await getElementRect(roomsHeader);
+
+  const plusButton = await driver.$(SELECTORS.plusButton);
+  if (await plusButton.isDisplayed().catch(() => false)) {
+    const rect = await getElementRect(plusButton);
+    const plusCenterY = rect.y + rect.height / 2;
+    const headerCenterY = headerRect.y + headerRect.height / 2;
+    const belongsToRoomsHeader = Math.abs(plusCenterY - headerCenterY) <= Math.max(24, headerRect.height);
+
+    if (belongsToRoomsHeader) {
+      await driver.execute('mobile: tap', {
+        x: Math.round(rect.x + rect.width / 2),
+        y: Math.round(plusCenterY),
+      });
+      if (
+        await createRoom.waitForDisplayed({ timeout: Math.min(timeout, 2500) })
+          .then(() => true)
+          .catch(() => false)
+      ) return;
+    }
+  }
+
   const windowRect = await driver.getWindowRect();
   await driver.execute('mobile: tap', {
     x: Math.round(windowRect.width * 0.945),
-    y: Math.round(rect.y + rect.height / 2),
+    y: Math.round(headerRect.y + headerRect.height / 2),
   });
 
-  const createRoom = await driver.$(SELECTORS.createRoomButton);
   await createRoom.waitForDisplayed({ timeout });
 }
 

@@ -411,7 +411,7 @@ Cleanup is advisory by default. Add `SPLIT_POST_RUN_CLEANUP_STRICT=1` only when 
 
 ### Scribe-style documentation
 
-Every report-aware test command generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Timestamped local history is enabled by default and kept under the bounded retention policy; archived output is ignored by Git so repeated runs do not inflate repository history. Set `SCRIBE_ARCHIVE_ENABLED=0` only when you explicitly do not want to preserve a run.
+Every report-aware test command generates its browser report and Markdown automatically when it finishes, even if a test fails. This includes `test:parallel`, `test:parallel:split`, `test:parallel:split3`, and the single-test shortcut below. Timestamped local history is enabled by default and kept under the bounded retention policy. Archived runs and local per-run report directories (including `*-latest`) are ignored by Git, so their duplicate screenshots remain available in the local report dropdown without inflating repository history. The stable `split3-combined` report remains tracked for GitHub Pages. Set `SCRIBE_ARCHIVE_ENABLED=0` only when you explicitly do not want to preserve a run.
 
 Use one command for any individual test:
 
@@ -493,9 +493,25 @@ That command runs the tests, generates the latest report, stages only the curren
 Use `npm run test:parallel:split3:qa:publish` for the same flow with the
 QA-only required tests included.
 
+If this repository was cloned before the local-report ignore policy was added,
+Git may still track individual reports that already existed. Run this once to
+remove only those `*-latest` directories from Git's index while leaving every
+local report file on disk:
+
+```bash
+git rm -r --cached --ignore-unmatch docs/generated/scribe/*-latest
+git commit -m "Stop tracking local test reports"
+```
+
+Do not remove `docs/generated/scribe/split3-combined`; that is the stable report
+published by the split-three publish command.
+
 `markdowns` creates a unique `A-Markdown Room-*` by default so repeated and parallel runs do not share timeline data. Set `MARKDOWN_ROOM_NAME` only when you intentionally want to exercise an existing fixture room.
 
-To share the report with coworkers through GitHub Pages, commit and push the generated `docs/` output. GitHub Pages can publish that folder directly from `main`.
+To share the report with coworkers through GitHub Pages, use the split-three
+publish command above. It stages only the generated landing pages and
+`docs/generated/scribe/split3-combined`, then commits and pushes them. GitHub
+Pages can publish the `docs` folder directly from `main`.
 
 One-time GitHub setup:
 
