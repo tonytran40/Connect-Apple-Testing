@@ -1,39 +1,39 @@
 # favoriteRoom
 
-- Status: FAIL
-- Duration: 43s
+- Status: PASS
+- Duration: 1m 4s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-09-30T15:04:30.857Z
-- Finished: 2026-09-30T15:05:13.422Z
-
-## Failure
-
-```text
-element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
-```
+- Started: 2026-10-06T15:47:01.795Z
+- Finished: 2026-10-06T15:48:05.502Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 5s |
-| Test body | 37s |
-| Screenshot capture | 295ms |
-| Recovery | 275ms |
+| Login/readiness | 6s |
+| Test body | 57s |
+| Screenshot capture | 757ms |
+| Recovery | 0ms |
 | Report generation | 0ms |
 
 ## Steps
 
-### Step 1: ERROR - Failed here
+### Step 1: Before Swipe
 
-![ERROR](assets/Conversation-List/favoriteRoom/ERROR.png)
+![Before Swipe](assets/Conversation-List/favoriteRoom/01_before_swipe.png)
 
-**Failure at this step:**
+### Step 2: After Swipe Right
 
-```text
-element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
-```
+![After Swipe Right](assets/Conversation-List/favoriteRoom/02_after_swipe_right.png)
+
+### Step 3: After Click Favorites
+
+![After Click Favorites](assets/Conversation-List/favoriteRoom/03_after_click_favorites.png)
+
+### Step 4: After Unfavorite
+
+![After Unfavorite](assets/Conversation-List/favoriteRoom/04_after_unfavorite.png)

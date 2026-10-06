@@ -1,21 +1,21 @@
 # editRoom
 
 - Status: PASS
-- Duration: 1m 2s
-- Lane: ConversationView
+- Duration: 1m 9s
+- Lane: Conversation-List
 - Logical category: ConversationView
-- Device: iPhone 17
-- Appium port: 4727
-- Started: 2026-09-30T15:07:23.279Z
-- Finished: 2026-09-30T15:08:25.719Z
+- Device: iPhone 17 Pro Max
+- Appium port: 4725
+- Started: 2026-10-06T15:51:43.331Z
+- Finished: 2026-10-06T15:52:52.296Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 20s |
-| Test body | 42s |
+| Login/readiness | 18s |
+| Test body | 50s |
 | Screenshot capture | 1s |
 | Recovery | 0ms |
 | Report generation | 0ms |
@@ -24,32 +24,32 @@
 
 ### Step 1: In Room
 
-![In Room](assets/ConversationView/editRoom/01_in_room.png)
+![In Room](assets/Conversation-List/editRoom/01_in_room.png)
 
 ### Step 2: Edit Modal Open
 
-![Edit Modal Open](assets/ConversationView/editRoom/02_edit_modal_open.png)
+![Edit Modal Open](assets/Conversation-List/editRoom/02_edit_modal_open.png)
 
 ### Step 3: After Toggle Private
 
-![After Toggle Private](assets/ConversationView/editRoom/03_after_toggle_private.png)
+![After Toggle Private](assets/Conversation-List/editRoom/03_after_toggle_private.png)
 
 ### Step 4: After Name Edited
 
-![After Name Edited](assets/ConversationView/editRoom/04_after_name_edited.png)
+![After Name Edited](assets/Conversation-List/editRoom/04_after_name_edited.png)
 
 ### Step 5: After Topic Filled
 
-![After Topic Filled](assets/ConversationView/editRoom/05_after_topic_filled.png)
+![After Topic Filled](assets/Conversation-List/editRoom/05_after_topic_filled.png)
 
 ### Step 6: After Save
 
-![After Save](assets/ConversationView/editRoom/06_after_save.png)
+![After Save](assets/Conversation-List/editRoom/06_after_save.png)
 
 ### Step 7: After Close
 
-![After Close](assets/ConversationView/editRoom/07_after_close.png)
+![After Close](assets/Conversation-List/editRoom/07_after_close.png)
 
 ### Step 8: Reopened Saved Settings
 
-![Reopened Saved Settings](assets/ConversationView/editRoom/08_reopened_saved_settings.png)
+![Reopened Saved Settings](assets/Conversation-List/editRoom/08_reopened_saved_settings.png)

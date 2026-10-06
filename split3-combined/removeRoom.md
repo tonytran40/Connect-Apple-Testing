@@ -6,17 +6,17 @@
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-09-30T15:06:46.688Z
-- Finished: 2026-09-30T15:07:40.141Z
+- Started: 2026-10-06T15:49:04.247Z
+- Finished: 2026-10-06T15:49:57.598Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 7s |
-| Test body | 46s |
-| Screenshot capture | 608ms |
+| Login/readiness | 9s |
+| Test body | 44s |
+| Screenshot capture | 858ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
 

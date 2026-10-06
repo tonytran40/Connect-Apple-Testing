@@ -1,39 +1,39 @@
 # markAsRead
 
-- Status: FAIL
-- Duration: 1m 33s
+- Status: PASS
+- Duration: 59s
 - Lane: Conversation-List
 - Logical category: Conversation-List
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-09-30T15:05:13.701Z
-- Finished: 2026-09-30T15:06:46.280Z
-
-## Failure
-
-```text
-WebDriverError: Request with GET/HEAD method cannot have body. when running "element/70020000-0000-0000-5579-000000000000/screenshot" with method "GET" and args "{"scroll":true}"
-```
+- Started: 2026-10-06T15:48:05.507Z
+- Finished: 2026-10-06T15:49:04.216Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 45s |
-| Test body | 47s |
-| Screenshot capture | 285ms |
-| Recovery | 397ms |
+| Login/readiness | 7s |
+| Test body | 51s |
+| Screenshot capture | 735ms |
+| Recovery | 0ms |
 | Report generation | 0ms |
 
 ## Steps
 
-### Step 1: ERROR - Failed here
+### Step 1: Before Swipe Right
 
-![ERROR](assets/Conversation-List/markAsRead/ERROR.png)
+![Before Swipe Right](assets/Conversation-List/markAsRead/01_before_swipe_right.png)
 
-**Failure at this step:**
+### Step 2: After Swipe Right
 
-```text
-WebDriverError: Request with GET/HEAD method cannot have body. when running "element/70020000-0000-0000-5579-000000000000/screenshot" with method "GET" and args "{"scroll":true}"
-```
+![After Swipe Right](assets/Conversation-List/markAsRead/02_after_swipe_right.png)
+
+### Step 3: After Mark Unread
+
+![After Mark Unread](assets/Conversation-List/markAsRead/03_after_mark_unread.png)
+
+### Step 4: After Mark Read
+
+![After Mark Read](assets/Conversation-List/markAsRead/04_after_mark_read.png)

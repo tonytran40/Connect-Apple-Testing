@@ -1,21 +1,21 @@
 # markdowns
 
 - Status: PASS
-- Duration: 1m 41s
+- Duration: 2m 14s
 - Lane: main-suite
 - Logical category: ConversationView
 - Device: iPhone 17 Pro
 - Appium port: 4723
-- Started: 2026-09-30T15:03:15.614Z
-- Finished: 2026-09-30T15:04:56.729Z
+- Started: 2026-10-06T15:49:33.956Z
+- Finished: 2026-10-06T15:51:48.262Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 5s |
-| Test body | 1m 34s |
+| Login/readiness | 16s |
+| Test body | 1m 56s |
 | Screenshot capture | 2s |
 | Recovery | 0ms |
 | Report generation | 0ms |

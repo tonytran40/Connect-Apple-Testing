@@ -1,13 +1,19 @@
 # attachments
 
-- Status: PASS
-- Duration: 2m 11s
+- Status: FAIL
+- Duration: 2m 9s
 - Lane: ConversationView
 - Logical category: ConversationView
 - Device: iPhone 17
 - Appium port: 4727
-- Started: 2026-09-30T15:05:12.069Z
-- Finished: 2026-09-30T15:07:23.270Z
+- Started: 2026-10-06T15:48:03.003Z
+- Finished: 2026-10-06T15:50:11.570Z
+
+## Failure
+
+```text
+attachments: Files picker item "Connect iOS" did not appear
+```
 
 ## Phase Timings
 
@@ -15,9 +21,9 @@
 | --- | --- |
 | Session creation | 0ms |
 | Login/readiness | 23s |
-| Test body | 1m 46s |
-| Screenshot capture | 3s |
-| Recovery | 0ms |
+| Test body | 1m 44s |
+| Screenshot capture | 2s |
+| Recovery | 266ms |
 | Report generation | 0ms |
 
 ## Steps
@@ -58,34 +64,12 @@
 
 ![Files Browse](assets/ConversationView/attachments/09_files_browse.png)
 
-### Step 10: Files On My Iphone
+### Step 10: ERROR - Failed here
 
-![Files On My Iphone](assets/ConversationView/attachments/10_files_on_my_iphone.png)
+![ERROR](assets/ConversationView/attachments/ERROR.png)
 
-### Step 11: Files Connect Ios
+**Failure at this step:**
 
-![Files Connect Ios](assets/ConversationView/attachments/11_files_connect_ios.png)
-
-### Step 12: File Selected
-
-![File Selected](assets/ConversationView/attachments/12_file_selected.png)
-
-### Step 13: File Attachment In Composer
-
-![File Attachment In Composer](assets/ConversationView/attachments/13_file_attachment_in_composer.png)
-
-### Step 14: After Send File Attachment
-
-![After Send File Attachment](assets/ConversationView/attachments/14_after_send_file_attachment.png)
-
-### Step 15: Share Options Dialog For Gif
-
-![Share Options Dialog For Gif](assets/ConversationView/attachments/15_share_options_dialog_for_gif.png)
-
-### Step 16: Gif Picker Open
-
-![Gif Picker Open](assets/ConversationView/attachments/16_gif_picker_open.png)
-
-### Step 17: After Send Gif
-
-![After Send Gif](assets/ConversationView/attachments/17_after_send_gif.png)
+```text
+attachments: Files picker item "Connect iOS" did not appear
+```

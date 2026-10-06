@@ -1,21 +1,21 @@
 # Reactions
 
 - Status: PASS
-- Duration: 1m 14s
+- Duration: 1m 46s
 - Lane: Conversation-List
 - Logical category: ConversationView
 - Device: iPhone 17 Pro Max
 - Appium port: 4725
-- Started: 2026-09-30T15:08:35.200Z
-- Finished: 2026-09-30T15:09:49.394Z
+- Started: 2026-10-06T15:49:57.604Z
+- Finished: 2026-10-06T15:51:43.319Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 17s |
-| Test body | 56s |
+| Login/readiness | 8s |
+| Test body | 1m 36s |
 | Screenshot capture | 2s |
 | Recovery | 0ms |
 | Report generation | 0ms |

@@ -1,18 +1,18 @@
 # membersRoom
 
 - Status: FAIL
-- Duration: 1m 14s
-- Lane: main-suite
+- Duration: 2m 4s
+- Lane: ConversationView
 - Logical category: ConversationView
-- Device: iPhone 17 Pro
-- Appium port: 4723
-- Started: 2026-09-30T15:04:56.738Z
-- Finished: 2026-09-30T15:06:10.740Z
+- Device: iPhone 17
+- Appium port: 4727
+- Started: 2026-10-06T15:50:11.856Z
+- Finished: 2026-10-06T15:52:15.412Z
 
 ## Failure
 
 ```text
-element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
+membersRoom: Add Individuals field did not appear
 ```
 
 ## Phase Timings
@@ -20,20 +20,32 @@ element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCU
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 18s |
-| Test body | 54s |
-| Screenshot capture | 1s |
-| Recovery | 290ms |
+| Login/readiness | 53s |
+| Test body | 1m 9s |
+| Screenshot capture | 693ms |
+| Recovery | 440ms |
 | Report generation | 0ms |
 
 ## Steps
 
-### Step 1: ERROR - Failed here
+### Step 1: In Room
 
-![ERROR](assets/main-suite/membersRoom/ERROR.png)
+![In Room](assets/ConversationView/membersRoom/01_in_room.png)
+
+### Step 2: Edit Modal Open
+
+![Edit Modal Open](assets/ConversationView/membersRoom/02_edit_modal_open.png)
+
+### Step 3: Members Screen
+
+![Members Screen](assets/ConversationView/membersRoom/03_members_screen.png)
+
+### Step 4: ERROR - Failed here
+
+![ERROR](assets/ConversationView/membersRoom/ERROR.png)
 
 **Failure at this step:**
 
 ```text
-element ("-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (label == "Skip for now" OR name == "Skip for now")") still not displayed after 20000ms
+membersRoom: Add Individuals field did not appear
 ```

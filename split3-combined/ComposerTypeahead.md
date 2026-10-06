@@ -1,43 +1,36 @@
 # ComposerTypeahead
 
-- Status: FAIL
-- Duration: 1m 8s
-- Lane: ConversationView
+- Status: PASS
+- Duration: 1m 4s
+- Lane: main-suite
 - Logical category: ConversationView
-- Device: iPhone 17
-- Appium port: 4727
-- Started: 2026-09-30T15:08:25.725Z
-- Finished: 2026-09-30T15:09:33.761Z
-
-## Failure
-
-```text
-Visible control with source label ":grinning_face:" did not appear
-```
+- Device: iPhone 17 Pro
+- Appium port: 4723
+- Started: 2026-10-06T15:51:48.265Z
+- Finished: 2026-10-06T15:52:51.936Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 27s |
-| Test body | 41s |
-| Screenshot capture | 242ms |
-| Recovery | 148ms |
+| Login/readiness | 19s |
+| Test body | 44s |
+| Screenshot capture | 464ms |
+| Recovery | 0ms |
 | Report generation | 0ms |
+| Room creation (test-owned) | 16s |
 
 ## Steps
 
 ### Step 1: Room Opened
 
-![Room Opened](assets/ConversationView/ComposerTypeahead/01_room_opened.png)
+![Room Opened](assets/main-suite/ComposerTypeahead/01_room_opened.png)
 
-### Step 2: ERROR - Failed here
+### Step 2: Emoji Typeahead
 
-![ERROR](assets/ConversationView/ComposerTypeahead/ERROR.png)
+![Emoji Typeahead](assets/main-suite/ComposerTypeahead/02_emoji_typeahead.png)
 
-**Failure at this step:**
+### Step 3: Typeahead Message Sent
 
-```text
-Visible control with source label ":grinning_face:" did not appear
-```
+![Typeahead Message Sent](assets/main-suite/ComposerTypeahead/03_typeahead_message_sent.png)

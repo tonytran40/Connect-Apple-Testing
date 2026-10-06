@@ -1,25 +1,25 @@
 # MessageActions
 
 - Status: PASS
-- Duration: 1m 17s
+- Duration: 57s
 - Lane: main-suite
 - Logical category: ConversationView
 - Device: iPhone 17 Pro
 - Appium port: 4723
-- Started: 2026-09-30T15:06:11.038Z
-- Finished: 2026-09-30T15:07:28.039Z
+- Started: 2026-10-06T15:52:51.946Z
+- Finished: 2026-10-06T15:53:49.435Z
 
 ## Phase Timings
 
 | Phase | Duration |
 | --- | --- |
 | Session creation | 0ms |
-| Login/readiness | 31s |
-| Test body | 45s |
-| Screenshot capture | 780ms |
+| Login/readiness | 15s |
+| Test body | 41s |
+| Screenshot capture | 914ms |
 | Recovery | 0ms |
 | Report generation | 0ms |
-| Room creation (test-owned) | 6s |
+| Room creation (test-owned) | 5s |
 
 ## Steps
 
