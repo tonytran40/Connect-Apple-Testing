@@ -95,8 +95,36 @@ const REPORT_OVERVIEW_STYLES = `    :root {
     .test-card-evidence { display: grid; gap: .7rem; border-top: 1px solid var(--line); padding: .9rem 1rem 1rem 4.65rem; background: #fafbfd; }
     .test-card-evidence p { margin: 0; white-space: pre-wrap; }
     .test-card-evidence code { overflow-x: auto; border-radius: .55rem; padding: .6rem .7rem; color: #e5eefc; background: #152034; font-size: .78rem; white-space: nowrap; }
-    .test-card-evidence a { justify-self: start; color: var(--blue); font-weight: 850; text-decoration: none; }
     .test-card-evidence .evidence-error { color: #922f2a; font-weight: 750; }
+    .full-evidence { min-width: 0; border: 1px solid var(--line); border-radius: .75rem; background: white; overflow: hidden; }
+    .full-evidence > summary { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .7rem .8rem; color: var(--blue); font-weight: 850; cursor: pointer; list-style: none; }
+    .full-evidence > summary::-webkit-details-marker { display: none; }
+    .full-evidence > summary:hover { background: var(--blue-soft); }
+    .full-evidence > summary > span:last-child { margin-left: auto; transition: transform 150ms ease; }
+    .full-evidence[open] > summary > span:last-child { transform: rotate(180deg); }
+    .full-evidence .hide-evidence, .full-evidence[open] .show-evidence { display: none; }
+    .full-evidence[open] .hide-evidence { display: inline; }
+    .full-evidence-body { display: grid; gap: 1.1rem; border-top: 1px solid var(--line); padding: 1rem; }
+    .inline-evidence-section { min-width: 0; }
+    .inline-evidence-section h4 { margin: 0 0 .55rem; font-size: .95rem; }
+    .inline-evidence-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    .inline-evidence-heading > span { color: var(--muted); font-size: .78rem; font-weight: 750; }
+    .inline-evidence-meta { display: grid; grid-template-columns: repeat(auto-fit,minmax(9rem,1fr)); gap: .5rem; margin: 0; }
+    .inline-evidence-meta > div { min-width: 0; border: 1px solid var(--line); border-radius: .65rem; padding: .6rem; background: #fafbfd; }
+    .inline-evidence-meta dd { font-size: .88rem; }
+    .inline-history { display: grid; grid-template-columns: repeat(auto-fit,minmax(11rem,1fr)); gap: .5rem; }
+    .inline-history a { display: grid; gap: .3rem; border: 1px solid var(--line); border-radius: .65rem; padding: .6rem; color: inherit; text-decoration: none; }
+    .inline-history a:hover { border-color: var(--blue); }
+    .inline-history small { color: var(--muted); }
+    .inline-steps { display: grid; grid-template-columns: repeat(auto-fit,minmax(15rem,1fr)); gap: .75rem; }
+    .inline-step, .failure-compare-inline figure { min-width: 0; margin: 0; border: 1px solid var(--line); border-radius: .7rem; background: white; overflow: hidden; }
+    .inline-step img, .failure-compare-inline img { display: block; width: 100%; max-height: 38rem; object-fit: contain; background: #101a2d; }
+    .inline-step figcaption { display: grid; gap: .2rem; padding: .65rem; color: var(--muted); font-size: .78rem; }
+    .inline-step figcaption strong { color: var(--ink); font-size: .7rem; letter-spacing: .07em; text-transform: uppercase; }
+    .failure-compare-inline { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; }
+    .failure-compare-inline figcaption { padding: .6rem; color: var(--muted); font-size: .78rem; }
+    .inline-step.failed-step, .failure-compare-inline .failed-step { border: 3px solid var(--fail); box-shadow: 0 0 0 4px rgba(194,65,58,.1); }
+    .empty-evidence { border: 1px dashed var(--line); border-radius: .7rem; padding: .8rem; background: white; }
 
     .evidence-stack { display: grid; gap: .65rem; margin-top: 2rem; }
     .disclosure { box-shadow: none; overflow: clip; }
@@ -180,6 +208,7 @@ const REPORT_OVERVIEW_STYLES = `    :root {
       .test-card-summary { grid-template-columns: auto minmax(0,1fr); }
       .test-card-result { grid-column: 2; justify-content: space-between; }
       .test-card-evidence { padding-left: 1rem; }
+      .failure-compare-inline { grid-template-columns: 1fr; }
       .summary-value { display: none; }
       .lane-card dl { grid-template-columns: repeat(2,1fr); }
     }`;

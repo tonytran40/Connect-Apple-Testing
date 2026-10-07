@@ -99,3 +99,39 @@ test('overview opens only the first failed test to keep the result list compact'
     fs.rmSync(outDir, { recursive: true, force: true });
   }
 });
+
+test('overview expands full test evidence in place instead of linking to a detail page', () => {
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'overview-inline-evidence-'));
+  try {
+    const file = writeHtmlReport({
+      outDir,
+      runId: 'inline-evidence',
+      summary: {
+        source: 'unit test',
+        status: 'FAIL',
+        startedAt: '2026-10-07T12:00:00.000Z',
+        updatedAt: '2026-10-07T12:01:00.000Z',
+        results: [{
+          name: 'Inline Test',
+          status: 'FAIL',
+          error: 'expected evidence',
+          laneRunId: 'lane-a',
+          durationMs: 1000,
+          timings: { unit: 'ms', testBodyMs: 800, sessionSetupMs: 200 },
+        }],
+      },
+      testDocs: {},
+    });
+    const html = fs.readFileSync(file, 'utf8');
+
+    assert.match(html, /<details class="full-evidence">/);
+    assert.match(html, /Open full evidence/);
+    assert.match(html, /Close full evidence/);
+    assert.match(html, /Test details/);
+    assert.match(html, /Phase timing/);
+    assert.match(html, /Test steps/);
+    assert.doesNotMatch(html, />Open full evidence →<\/a>/);
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});

@@ -1,16 +1,24 @@
+const path = require('path');
+
 const {
   failureCategory,
   failureSnippet,
+  formatDate,
   formatDurationMs,
   laneForResult,
   normalizeStatus,
   rerunCommandForResult,
   resultDurationMs,
 } = require('./reportAnalysis');
-const { listScreenshots, testDetailFile } = require('./reportAssets');
+const {
+  copyScreenshotAsset,
+  failedStepIndex,
+  listScreenshots,
+  testDetailFile,
+} = require('./reportAssets');
 const { flakeSummary, isFlakyHistory, phaseTimingEntries } = require('./reportModel');
 const { reportSwitcherMarkup, statusClass } = require('./reportNavigation');
-const { escapeHtml, relativeLink } = require('./reportUtils');
+const { escapeHtml, relativeLink, titleFromFileName } = require('./reportUtils');
 
 function buildOverviewComponents({ file, outDir, runId, summary, reportNav, model }) {
   const {
@@ -54,7 +62,12 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
       const resultStatus = normalizeStatus(result.status);
       const laneRunId = laneForResult(result, runId);
       const screenshots = listScreenshots(laneRunId, result.name, result);
-      const detailHref = relativeLink(file, testDetailFile(outDir, result));
+      const screenshotAssets = screenshots.map(screenshot =>
+        copyScreenshotAsset({ outDir, laneRunId, testName: result.name, screenshot })
+      );
+      const failedIndex = failedStepIndex(screenshotAssets, result);
+      const failedAsset = failedIndex >= 0 ? screenshotAssets[failedIndex] : null;
+      const beforeFailureAsset = failedIndex > 0 ? screenshotAssets[failedIndex - 1] : null;
       const durationMs = resultDurationMs(result);
       const isSlow = slowResults.includes(result);
       const history = testHistory.get(result.name) || [];
@@ -62,6 +75,42 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
       const isFlaky = isFlakyHistory(history);
       const failure = resultStatus === 'FAIL' ? failureSnippet(result) : '';
       const rerunCommand = rerunCommandForResult(result);
+      const timingMarkup = result.timings
+        ? `<section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            ${phaseTimingEntries(result.timings)
+              .map(
+                phase => `<div><dt>${escapeHtml(phase.label)}</dt><dd>${escapeHtml(formatDurationMs(phase.durationMs))}</dd></div>`
+              )
+              .join('\n')}
+          </dl></section>`
+        : '';
+      const historyMarkup = history.length
+        ? history
+            .slice(0, 6)
+            .map(item => {
+              const href = item.dir ? relativeLink(file, path.join(item.dir, 'index.html')) : item.href || '#';
+              return `<a href="${escapeHtml(href)}"><span class="status-pill ${statusClass(item.status)}">${escapeHtml(item.status)}</span><strong>${escapeHtml(formatDate(item.startedAt) || item.runId || 'Run')}</strong><small>${escapeHtml(item.duration || '')}</small></a>`;
+            })
+            .join('\n')
+        : '<p class="muted">No previous report history for this test yet.</p>';
+      const screenshotGrid = screenshotAssets.length
+        ? screenshotAssets
+            .map((screenshot, screenshotIndex) => {
+              const title = titleFromFileName(screenshot);
+              const failedHere = screenshotIndex === failedIndex;
+              return `<figure class="inline-step${failedHere ? ' failed-step' : ''}">
+                <img src="${escapeHtml(relativeLink(file, screenshot))}" alt="${escapeHtml(title)}" loading="lazy">
+                <figcaption><strong>${failedHere ? 'Failed here' : `Step ${screenshotIndex + 1}`}</strong><span>${escapeHtml(title)}</span></figcaption>
+              </figure>`;
+            })
+            .join('\n')
+        : '<p class="empty-evidence">No screenshots were captured for this test run.</p>';
+      const failureFocus = failedAsset
+        ? `<section class="inline-evidence-section failure-focus-inline"><h4>Failure focus</h4><div class="failure-compare-inline">
+            ${beforeFailureAsset ? `<figure><img src="${escapeHtml(relativeLink(file, beforeFailureAsset))}" alt="Last screenshot before failure" loading="lazy"><figcaption>Before failure</figcaption></figure>` : ''}
+            <figure class="failed-step"><img src="${escapeHtml(relativeLink(file, failedAsset))}" alt="Failed step" loading="lazy"><figcaption>Failed step</figcaption></figure>
+          </div></section>`
+        : '';
       return `
         <details class="test-card ${statusClass(resultStatus)}${isSlow ? ' slow' : ''}" data-test-card data-name="${escapeHtml(result.name.toLowerCase())}" data-status="${escapeHtml(resultStatus)}" data-lane="${escapeHtml(laneRunId)}" data-slow="${isSlow ? '1' : '0'}" data-screenshots="${screenshots.length ? '1' : '0'}" data-flaky="${isFlaky ? '1' : '0'}"${resultStatus === 'FAIL' && index === 0 ? ' open' : ''}>
           <summary class="test-card-summary">
@@ -83,7 +132,23 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
           <div class="test-card-evidence">
             ${failure ? `<p class="evidence-error">${escapeHtml(failure)}</p>` : `<p>${escapeHtml(resultStatus === 'PASS' ? 'Passing evidence is collapsed by default.' : result.error || result.reason || `Result: ${resultStatus}`)}</p>`}
             <code>${escapeHtml(rerunCommand)}</code>
-            <a href="${escapeHtml(detailHref)}">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>${escapeHtml(resultStatus)}</dd></div>
+                  <div><dt>Lane</dt><dd>${escapeHtml(laneRunId)}</dd></div>
+                  <div><dt>Category</dt><dd>${escapeHtml(result.logicalCategory || 'Not reported')}</dd></div>
+                  <div><dt>Device</dt><dd>${escapeHtml(result.deviceName || 'Not reported')}</dd></div>
+                  <div><dt>Appium port</dt><dd>${escapeHtml(result.appiumPort || 'Not reported')}</dd></div>
+                  <div><dt>Finished</dt><dd>${escapeHtml(formatDate(result.finishedAt) || result.finishedAt || 'Not reported')}</dd></div>
+                </dl></section>
+                ${timingMarkup}
+                ${failureFocus}
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history">${historyMarkup}</div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>${screenshotAssets.length} screenshot${screenshotAssets.length === 1 ? '' : 's'}</span></div><div class="inline-steps">${screenshotGrid}</div></section>
+              </div>
+            </details>
           </div>
         </details>`;
     })
