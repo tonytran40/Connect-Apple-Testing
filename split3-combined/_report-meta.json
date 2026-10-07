@@ -759,7 +759,7 @@
   },
   "freshness": {
     "fresh": true,
-    "ageMs": 8684,
+    "ageMs": 81627396,
     "thresholdMs": 86400000,
     "timestamp": "2026-10-06T15:56:46.162Z"
   },
@@ -771,7 +771,7 @@
       "testBodyMs": 1096228,
       "screenshotCaptureMs": 20259,
       "recoveryMs": 706,
-      "reportGenerationMs": 712,
+      "reportGenerationMs": 1617,
       "roomCreationMs": 69277
     }
   },

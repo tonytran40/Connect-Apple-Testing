@@ -102,8 +102,36 @@
     .test-card-evidence { display: grid; gap: .7rem; border-top: 1px solid var(--line); padding: .9rem 1rem 1rem 4.65rem; background: #fafbfd; }
     .test-card-evidence p { margin: 0; white-space: pre-wrap; }
     .test-card-evidence code { overflow-x: auto; border-radius: .55rem; padding: .6rem .7rem; color: #e5eefc; background: #152034; font-size: .78rem; white-space: nowrap; }
-    .test-card-evidence a { justify-self: start; color: var(--blue); font-weight: 850; text-decoration: none; }
     .test-card-evidence .evidence-error { color: #922f2a; font-weight: 750; }
+    .full-evidence { min-width: 0; border: 1px solid var(--line); border-radius: .75rem; background: white; overflow: hidden; }
+    .full-evidence > summary { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .7rem .8rem; color: var(--blue); font-weight: 850; cursor: pointer; list-style: none; }
+    .full-evidence > summary::-webkit-details-marker { display: none; }
+    .full-evidence > summary:hover { background: var(--blue-soft); }
+    .full-evidence > summary > span:last-child { margin-left: auto; transition: transform 150ms ease; }
+    .full-evidence[open] > summary > span:last-child { transform: rotate(180deg); }
+    .full-evidence .hide-evidence, .full-evidence[open] .show-evidence { display: none; }
+    .full-evidence[open] .hide-evidence { display: inline; }
+    .full-evidence-body { display: grid; gap: 1.1rem; border-top: 1px solid var(--line); padding: 1rem; }
+    .inline-evidence-section { min-width: 0; }
+    .inline-evidence-section h4 { margin: 0 0 .55rem; font-size: .95rem; }
+    .inline-evidence-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    .inline-evidence-heading > span { color: var(--muted); font-size: .78rem; font-weight: 750; }
+    .inline-evidence-meta { display: grid; grid-template-columns: repeat(auto-fit,minmax(9rem,1fr)); gap: .5rem; margin: 0; }
+    .inline-evidence-meta > div { min-width: 0; border: 1px solid var(--line); border-radius: .65rem; padding: .6rem; background: #fafbfd; }
+    .inline-evidence-meta dd { font-size: .88rem; }
+    .inline-history { display: grid; grid-template-columns: repeat(auto-fit,minmax(11rem,1fr)); gap: .5rem; }
+    .inline-history a { display: grid; gap: .3rem; border: 1px solid var(--line); border-radius: .65rem; padding: .6rem; color: inherit; text-decoration: none; }
+    .inline-history a:hover { border-color: var(--blue); }
+    .inline-history small { color: var(--muted); }
+    .inline-steps { display: grid; grid-template-columns: repeat(auto-fit,minmax(15rem,1fr)); gap: .75rem; }
+    .inline-step, .failure-compare-inline figure { min-width: 0; margin: 0; border: 1px solid var(--line); border-radius: .7rem; background: white; overflow: hidden; }
+    .inline-step img, .failure-compare-inline img { display: block; width: 100%; max-height: 38rem; object-fit: contain; background: #101a2d; }
+    .inline-step figcaption { display: grid; gap: .2rem; padding: .65rem; color: var(--muted); font-size: .78rem; }
+    .inline-step figcaption strong { color: var(--ink); font-size: .7rem; letter-spacing: .07em; text-transform: uppercase; }
+    .failure-compare-inline { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; }
+    .failure-compare-inline figcaption { padding: .6rem; color: var(--muted); font-size: .78rem; }
+    .inline-step.failed-step, .failure-compare-inline .failed-step { border: 3px solid var(--fail); box-shadow: 0 0 0 4px rgba(194,65,58,.1); }
+    .empty-evidence { border: 1px dashed var(--line); border-radius: .7rem; padding: .8rem; background: white; }
 
     .evidence-stack { display: grid; gap: .65rem; margin-top: 2rem; }
     .disclosure { box-shadow: none; overflow: clip; }
@@ -187,6 +215,7 @@
       .test-card-summary { grid-template-columns: auto minmax(0,1fr); }
       .test-card-result { grid-column: 2; justify-content: space-between; }
       .test-card-evidence { padding-left: 1rem; }
+      .failure-compare-inline { grid-template-columns: 1fr; }
       .summary-value { display: none; }
       .lane-card dl { grid-template-columns: repeat(2,1fr); }
     }
@@ -204,7 +233,7 @@
           <span>Build 1</span>
 
           <span>Oct 6, 11:46 AM</span>
-          <span class="">0m ago</span>
+          <span class="">23h ago</span>
         </div>
       </div>
 
@@ -343,7 +372,73 @@
           <div class="test-card-evidence">
             <p class="evidence-error">attachments: Files picker item &quot;Connect iOS&quot; did not appear</p>
             <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/attachments.js</code>
-            <a href="tests/attachments/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>FAIL</dd></div>
+                  <div><dt>Lane</dt><dd>ConversationView</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17</dd></div>
+                  <div><dt>Appium port</dt><dd>4727</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:50 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>23s</dd></div>
+<div><dt>Test body</dt><dd>1m 44s</dd></div>
+<div><dt>Screenshot capture</dt><dd>2s</dd></div>
+<div><dt>Recovery</dt><dd>266ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+                <section class="inline-evidence-section failure-focus-inline"><h4>Failure focus</h4><div class="failure-compare-inline">
+            <figure><img src="assets/ConversationView/attachments/09_files_browse.png" alt="Last screenshot before failure" loading="lazy"><figcaption>Before failure</figcaption></figure>
+            <figure class="failed-step"><img src="assets/ConversationView/attachments/ERROR.png" alt="Failed step" loading="lazy"><figcaption>Failed step</figcaption></figure>
+          </div></section>
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill fail">FAIL</span><strong>Oct 6, 11:46 AM</strong><small>2m 9s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>2m 11s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>10 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/ConversationView/attachments/01_in_room.png" alt="In Room" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>In Room</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/02_share_options_dialog.png" alt="Share Options Dialog" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Share Options Dialog</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/03_photo_picker_open.png" alt="Photo Picker Open" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Photo Picker Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/04_after_tap_all_photos.png" alt="After Tap All Photos" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>After Tap All Photos</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/05_attachment_in_composer.png" alt="Attachment In Composer" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Attachment In Composer</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/06_after_send_attachment.png" alt="After Send Attachment" loading="lazy">
+                <figcaption><strong>Step 6</strong><span>After Send Attachment</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/07_share_options_dialog_for_file.png" alt="Share Options Dialog For File" loading="lazy">
+                <figcaption><strong>Step 7</strong><span>Share Options Dialog For File</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/08_file_picker_open.png" alt="File Picker Open" loading="lazy">
+                <figcaption><strong>Step 8</strong><span>File Picker Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/attachments/09_files_browse.png" alt="Files Browse" loading="lazy">
+                <figcaption><strong>Step 9</strong><span>Files Browse</span></figcaption>
+              </figure>
+<figure class="inline-step failed-step">
+                <img src="assets/ConversationView/attachments/ERROR.png" alt="ERROR" loading="lazy">
+                <figcaption><strong>Failed here</strong><span>ERROR</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -367,7 +462,49 @@
           <div class="test-card-evidence">
             <p class="evidence-error">membersRoom: Add Individuals field did not appear</p>
             <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/membersRoom.js</code>
-            <a href="tests/membersroom/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>FAIL</dd></div>
+                  <div><dt>Lane</dt><dd>ConversationView</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17</dd></div>
+                  <div><dt>Appium port</dt><dd>4727</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:52 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>53s</dd></div>
+<div><dt>Test body</dt><dd>1m 9s</dd></div>
+<div><dt>Screenshot capture</dt><dd>693ms</dd></div>
+<div><dt>Recovery</dt><dd>440ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+                <section class="inline-evidence-section failure-focus-inline"><h4>Failure focus</h4><div class="failure-compare-inline">
+            <figure><img src="assets/ConversationView/membersRoom/03_members_screen.png" alt="Last screenshot before failure" loading="lazy"><figcaption>Before failure</figcaption></figure>
+            <figure class="failed-step"><img src="assets/ConversationView/membersRoom/ERROR.png" alt="Failed step" loading="lazy"><figcaption>Failed step</figcaption></figure>
+          </div></section>
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill fail">FAIL</span><strong>Oct 6, 11:46 AM</strong><small>2m 4s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill fail">FAIL</span><strong>Sep 30, 11:02 AM</strong><small>1m 14s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>4 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/ConversationView/membersRoom/01_in_room.png" alt="In Room" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>In Room</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/membersRoom/02_edit_modal_open.png" alt="Edit Modal Open" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Edit Modal Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/membersRoom/03_members_screen.png" alt="Members Screen" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Members Screen</span></figcaption>
+              </figure>
+<figure class="inline-step failed-step">
+                <img src="assets/ConversationView/membersRoom/ERROR.png" alt="ERROR" loading="lazy">
+                <figcaption><strong>Failed here</strong><span>ERROR</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -391,7 +528,43 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/ComposerTypeahead.js</code>
-            <a href="tests/composertypeahead/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>main-suite</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+                  <div><dt>Appium port</dt><dd>4723</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:52 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>19s</dd></div>
+<div><dt>Test body</dt><dd>44s</dd></div>
+<div><dt>Screenshot capture</dt><dd>464ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>16s</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 4s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill fail">FAIL</span><strong>Sep 30, 11:02 AM</strong><small>1m 8s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>3 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/main-suite/ComposerTypeahead/01_room_opened.png" alt="Room Opened" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Room Opened</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/ComposerTypeahead/02_emoji_typeahead.png" alt="Emoji Typeahead" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Emoji Typeahead</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/ComposerTypeahead/03_typeahead_message_sent.png" alt="Typeahead Message Sent" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Typeahead Message Sent</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -415,7 +588,90 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/ConversationList.js</code>
-            <a href="tests/conversationlist/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>Conversation-List-settings</dd></div>
+                  <div><dt>Category</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+                  <div><dt>Appium port</dt><dd>4725</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:56 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>13s</dd></div>
+<div><dt>Test body</dt><dd>1m 22s</dd></div>
+<div><dt>Screenshot capture</dt><dd>2s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 38s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>1m 8s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>15 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/layout_classic_after_switch_in_menu.png" alt="Layout Classic After Switch In Menu" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Layout Classic After Switch In Menu</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/layout_classic_conversation_list.png" alt="Layout Classic Conversation List" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Layout Classic Conversation List</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/layout_classic_menu_open.png" alt="Layout Classic Menu Open" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Layout Classic Menu Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/layout_cozy_after_switch_in_menu.png" alt="Layout Cozy After Switch In Menu" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Layout Cozy After Switch In Menu</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/layout_cozy_conversation_list.png" alt="Layout Cozy Conversation List" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Layout Cozy Conversation List</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/layout_cozy_menu_open.png" alt="Layout Cozy Menu Open" loading="lazy">
+                <figcaption><strong>Step 6</strong><span>Layout Cozy Menu Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_alphabetically_after_switch_in_menu.png" alt="Sort Alphabetically After Switch In Menu" loading="lazy">
+                <figcaption><strong>Step 7</strong><span>Sort Alphabetically After Switch In Menu</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_alphabetically_conversation_list.png" alt="Sort Alphabetically Conversation List" loading="lazy">
+                <figcaption><strong>Step 8</strong><span>Sort Alphabetically Conversation List</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_alphabetically_menu_open.png" alt="Sort Alphabetically Menu Open" loading="lazy">
+                <figcaption><strong>Step 9</strong><span>Sort Alphabetically Menu Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_recent_activity_after_switch_in_menu.png" alt="Sort Recent Activity After Switch In Menu" loading="lazy">
+                <figcaption><strong>Step 10</strong><span>Sort Recent Activity After Switch In Menu</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_recent_activity_conversation_list.png" alt="Sort Recent Activity Conversation List" loading="lazy">
+                <figcaption><strong>Step 11</strong><span>Sort Recent Activity Conversation List</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_recent_activity_menu_open.png" alt="Sort Recent Activity Menu Open" loading="lazy">
+                <figcaption><strong>Step 12</strong><span>Sort Recent Activity Menu Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_self_managed_after_switch_in_menu.png" alt="Sort Self Managed After Switch In Menu" loading="lazy">
+                <figcaption><strong>Step 13</strong><span>Sort Self Managed After Switch In Menu</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_self_managed_conversation_list.png" alt="Sort Self Managed Conversation List" loading="lazy">
+                <figcaption><strong>Step 14</strong><span>Sort Self Managed Conversation List</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List-settings/ConversationList/sort_self_managed_menu_open.png" alt="Sort Self Managed Menu Open" loading="lazy">
+                <figcaption><strong>Step 15</strong><span>Sort Self Managed Menu Open</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -439,7 +695,63 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/ConversationSearch.js</code>
-            <a href="tests/conversationsearch/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>ConversationView</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17</dd></div>
+                  <div><dt>Appium port</dt><dd>4727</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:54 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>1m 3s</dd></div>
+<div><dt>Test body</dt><dd>1m 14s</dd></div>
+<div><dt>Screenshot capture</dt><dd>1s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>8s</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>2m 18s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>1m 24s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>8 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/01_room_created.png" alt="Room Created" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Room Created</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/02_search_messages_seeded_with_reactions.png" alt="Search Messages Seeded With Reactions" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Search Messages Seeded With Reactions</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/03_search_opened.png" alt="Search Opened" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Search Opened</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/04_matching_results_newest_first.png" alt="Matching Results Newest First" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Matching Results Newest First</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/05_matching_results_oldest_first.png" alt="Matching Results Oldest First" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Matching Results Oldest First</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/06_selected_result_context.png" alt="Selected Result Context" loading="lazy">
+                <figcaption><strong>Step 6</strong><span>Selected Result Context</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/07_no_results.png" alt="No Results" loading="lazy">
+                <figcaption><strong>Step 7</strong><span>No Results</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/ConversationSearch/08_returned_to_conversation.png" alt="Returned To Conversation" loading="lazy">
+                <figcaption><strong>Step 8</strong><span>Returned To Conversation</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -463,7 +775,51 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/CreateRoom.js</code>
-            <a href="tests/createroom/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>main-suite</dd></div>
+                  <div><dt>Category</dt><dd>main-suite</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+                  <div><dt>Appium port</dt><dd>4723</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:48 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>6s</dd></div>
+<div><dt>Test body</dt><dd>1m 9s</dd></div>
+<div><dt>Screenshot capture</dt><dd>2s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>19s</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 17s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill fail">FAIL</span><strong>Sep 30, 11:02 AM</strong><small>36s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>5 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/main-suite/CreateRoom/private_create_room.png" alt="Private Create Room" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Private Create Room</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/CreateRoom/private_room_toggle.png" alt="Private Room Toggle" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Private Room Toggle</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/CreateRoom/public_create_room.png" alt="Public Create Room" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Public Create Room</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/CreateRoom/public_room_name.png" alt="Public Room Name" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Public Room Name</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/CreateRoom/rooms_list_after_public.png" alt="Rooms List After Public" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Rooms List After Public</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -487,7 +843,62 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/editRoom.js</code>
-            <a href="tests/editroom/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+                  <div><dt>Appium port</dt><dd>4725</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:52 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>18s</dd></div>
+<div><dt>Test body</dt><dd>50s</dd></div>
+<div><dt>Screenshot capture</dt><dd>1s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 9s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>1m 2s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>8 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/01_in_room.png" alt="In Room" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>In Room</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/02_edit_modal_open.png" alt="Edit Modal Open" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Edit Modal Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/03_after_toggle_private.png" alt="After Toggle Private" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>After Toggle Private</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/04_after_name_edited.png" alt="After Name Edited" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>After Name Edited</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/05_after_topic_filled.png" alt="After Topic Filled" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>After Topic Filled</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/06_after_save.png" alt="After Save" loading="lazy">
+                <figcaption><strong>Step 6</strong><span>After Save</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/07_after_close.png" alt="After Close" loading="lazy">
+                <figcaption><strong>Step 7</strong><span>After Close</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/editRoom/08_reopened_saved_settings.png" alt="Reopened Saved Settings" loading="lazy">
+                <figcaption><strong>Step 8</strong><span>Reopened Saved Settings</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -511,7 +922,46 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/favoriteRoom.js</code>
-            <a href="tests/favoriteroom/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Category</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+                  <div><dt>Appium port</dt><dd>4725</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:48 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>6s</dd></div>
+<div><dt>Test body</dt><dd>57s</dd></div>
+<div><dt>Screenshot capture</dt><dd>757ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 4s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill fail">FAIL</span><strong>Sep 30, 11:02 AM</strong><small>43s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>4 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/Conversation-List/favoriteRoom/01_before_swipe.png" alt="Before Swipe" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Before Swipe</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/favoriteRoom/02_after_swipe_right.png" alt="After Swipe Right" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>After Swipe Right</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/favoriteRoom/03_after_click_favorites.png" alt="After Click Favorites" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>After Click Favorites</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/favoriteRoom/04_after_unfavorite.png" alt="After Unfavorite" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>After Unfavorite</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -535,7 +985,59 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4727 SIMULATOR_UDID=0244243B-055B-4FAE-8AF8-61FC1486248C DEVICE_NAME=&#39;iPhone 17&#39; node Tests/LinkPreviews.js</code>
-            <a href="tests/linkpreviews/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>ConversationView</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17</dd></div>
+                  <div><dt>Appium port</dt><dd>4727</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:48 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>6s</dd></div>
+<div><dt>Test body</dt><dd>48s</dd></div>
+<div><dt>Screenshot capture</dt><dd>1s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>12s</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>56s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill fail">FAIL</span><strong>Sep 30, 11:02 AM</strong><small>41s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>7 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/ConversationView/LinkPreviews/01_room_opened.png" alt="Room Opened" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Room Opened</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/LinkPreviews/02_youtube_link_sent.png" alt="Youtube Link Sent" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Youtube Link Sent</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/LinkPreviews/03_youtube_preview_loaded.png" alt="Youtube Preview Loaded" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Youtube Preview Loaded</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/LinkPreviews/04_apple_link_sent.png" alt="Apple Link Sent" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Apple Link Sent</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/LinkPreviews/05_apple_preview_loaded.png" alt="Apple Preview Loaded" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Apple Preview Loaded</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/LinkPreviews/06_google_maps_link_sent.png" alt="Google Maps Link Sent" loading="lazy">
+                <figcaption><strong>Step 6</strong><span>Google Maps Link Sent</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/ConversationView/LinkPreviews/07_google_maps_preview_loaded.png" alt="Google Maps Preview Loaded" loading="lazy">
+                <figcaption><strong>Step 7</strong><span>Google Maps Preview Loaded</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -559,7 +1061,46 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/markAsRead.js</code>
-            <a href="tests/markasread/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Category</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+                  <div><dt>Appium port</dt><dd>4725</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:49 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>7s</dd></div>
+<div><dt>Test body</dt><dd>51s</dd></div>
+<div><dt>Screenshot capture</dt><dd>735ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>59s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill fail">FAIL</span><strong>Sep 30, 11:02 AM</strong><small>1m 33s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>4 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/Conversation-List/markAsRead/01_before_swipe_right.png" alt="Before Swipe Right" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Before Swipe Right</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/markAsRead/02_after_swipe_right.png" alt="After Swipe Right" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>After Swipe Right</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/markAsRead/03_after_mark_unread.png" alt="After Mark Unread" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>After Mark Unread</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/markAsRead/04_after_mark_read.png" alt="After Mark Read" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>After Mark Read</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -583,7 +1124,74 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/markdowns.js</code>
-            <a href="tests/markdowns/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>main-suite</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+                  <div><dt>Appium port</dt><dd>4723</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:51 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>16s</dd></div>
+<div><dt>Test body</dt><dd>1m 56s</dd></div>
+<div><dt>Screenshot capture</dt><dd>2s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>2m 14s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>1m 41s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>11 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/main-suite/markdowns/01_headings.png" alt="Headings" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Headings</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/01_room_opened.png" alt="Room Opened" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Room Opened</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/02_emphasis.png" alt="Emphasis" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Emphasis</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/03_links.png" alt="Links" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Links</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/04_inline_code.png" alt="Inline Code" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Inline Code</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/05_code_block.png" alt="Code Block" loading="lazy">
+                <figcaption><strong>Step 6</strong><span>Code Block</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/06_lists.png" alt="Lists" loading="lazy">
+                <figcaption><strong>Step 7</strong><span>Lists</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/07_blockquote.png" alt="Blockquote" loading="lazy">
+                <figcaption><strong>Step 8</strong><span>Blockquote</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/08_mixed.png" alt="Mixed" loading="lazy">
+                <figcaption><strong>Step 9</strong><span>Mixed</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/09_emojis.png" alt="Emojis" loading="lazy">
+                <figcaption><strong>Step 10</strong><span>Emojis</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/markdowns/10_appointments.png" alt="Appointments" loading="lazy">
+                <figcaption><strong>Step 11</strong><span>Appointments</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -607,7 +1215,51 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/MessageActions.js</code>
-            <a href="tests/messageactions/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>main-suite</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+                  <div><dt>Appium port</dt><dd>4723</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:53 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>15s</dd></div>
+<div><dt>Test body</dt><dd>41s</dd></div>
+<div><dt>Screenshot capture</dt><dd>914ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>5s</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>57s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>1m 17s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>5 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/main-suite/MessageActions/01_message_sent.png" alt="Message Sent" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Message Sent</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/MessageActions/02_copy_action_open.png" alt="Copy Action Open" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Copy Action Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/MessageActions/03_delete_action_open.png" alt="Delete Action Open" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Delete Action Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/MessageActions/04_delete_confirmation.png" alt="Delete Confirmation" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Delete Confirmation</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/MessageActions/05_message_deleted.png" alt="Message Deleted" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Message Deleted</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -631,7 +1283,46 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/newMessage.js</code>
-            <a href="tests/newmessage/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>main-suite</dd></div>
+                  <div><dt>Category</dt><dd>main-suite</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+                  <div><dt>Appium port</dt><dd>4723</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:54 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>16s</dd></div>
+<div><dt>Test body</dt><dd>22s</dd></div>
+<div><dt>Screenshot capture</dt><dd>503ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>38s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>46s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>4 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/main-suite/newMessage/02_start_conversation.png" alt="Start Conversation" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Start Conversation</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/newMessage/03_typed_recipient.png" alt="Typed Recipient" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Typed Recipient</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/newMessage/04_selected_recipient.png" alt="Selected Recipient" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Selected Recipient</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/newMessage/05_message_typed.png" alt="Message Typed" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Message Typed</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -655,7 +1346,46 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4723 SIMULATOR_UDID=A848480F-1933-47A5-B063-DB070BB3AC66 DEVICE_NAME=&#39;iPhone 17 Pro&#39; node Tests/PinnedMessageEditFlow.js</code>
-            <a href="tests/pinnedmessageeditflow/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>main-suite</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro</dd></div>
+                  <div><dt>Appium port</dt><dd>4723</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:49 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>13s</dd></div>
+<div><dt>Test body</dt><dd>1m 8s</dd></div>
+<div><dt>Screenshot capture</dt><dd>630ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 21s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill fail">FAIL</span><strong>Sep 30, 11:02 AM</strong><small>55s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>4 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/main-suite/PinnedMessageEditFlow/01_room_opened.png" alt="Room Opened" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Room Opened</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/PinnedMessageEditFlow/03_pin_shows_original.png" alt="Pin Shows Original" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Pin Shows Original</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/PinnedMessageEditFlow/06_pin_shows_edited.png" alt="Pin Shows Edited" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Pin Shows Edited</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/main-suite/PinnedMessageEditFlow/08_unpinned_drawer_closed.png" alt="Unpinned Drawer Closed" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Unpinned Drawer Closed</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -679,7 +1409,82 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/Reactions.js</code>
-            <a href="tests/reactions/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+                  <div><dt>Appium port</dt><dd>4725</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:51 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>8s</dd></div>
+<div><dt>Test body</dt><dd>1m 36s</dd></div>
+<div><dt>Screenshot capture</dt><dd>2s</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 46s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>1m 14s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>13 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/01_room_opened.png" alt="Room Opened" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Room Opened</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/02_message_sent.png" alt="Message Sent" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Message Sent</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/03_reaction_picker_open.png" alt="Reaction Picker Open" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Reaction Picker Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/04_thumbs_up_added.png" alt="Thumbs Up Added" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Thumbs Up Added</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/05_thumbs_down_added.png" alt="Thumbs Down Added" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Thumbs Down Added</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/06_smile_added.png" alt="Smile Added" loading="lazy">
+                <figcaption><strong>Step 6</strong><span>Smile Added</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/07_heart_added.png" alt="Heart Added" loading="lazy">
+                <figcaption><strong>Step 7</strong><span>Heart Added</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/08_laugh_added.png" alt="Laugh Added" loading="lazy">
+                <figcaption><strong>Step 8</strong><span>Laugh Added</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/09_thumbs_up_removed.png" alt="Thumbs Up Removed" loading="lazy">
+                <figcaption><strong>Step 9</strong><span>Thumbs Up Removed</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/010_thumbs_down_removed.png" alt="Thumbs Down Removed" loading="lazy">
+                <figcaption><strong>Step 10</strong><span>Thumbs Down Removed</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/011_smile_removed.png" alt="Smile Removed" loading="lazy">
+                <figcaption><strong>Step 11</strong><span>Smile Removed</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/012_heart_removed.png" alt="Heart Removed" loading="lazy">
+                <figcaption><strong>Step 12</strong><span>Heart Removed</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/Reactions/013_laugh_removed.png" alt="Laugh Removed" loading="lazy">
+                <figcaption><strong>Step 13</strong><span>Laugh Removed</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -703,7 +1508,46 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/removeRoom.js</code>
-            <a href="tests/removeroom/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Category</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+                  <div><dt>Appium port</dt><dd>4725</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:49 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>9s</dd></div>
+<div><dt>Test body</dt><dd>44s</dd></div>
+<div><dt>Screenshot capture</dt><dd>858ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>53s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>53s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>4 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/Conversation-List/removeRoom/01_before_swipe_left.png" alt="Before Swipe Left" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Before Swipe Left</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/removeRoom/02_after_swipe_left.png" alt="After Swipe Left" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>After Swipe Left</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/removeRoom/03_after_tap_remove.png" alt="After Tap Remove" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>After Tap Remove</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/removeRoom/04_after_room_removed.png" alt="After Room Removed" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>After Room Removed</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
 
@@ -727,7 +1571,51 @@
           <div class="test-card-evidence">
             <p>Passing evidence is collapsed by default.</p>
             <code>APPIUM_PORT=4725 SIMULATOR_UDID=B5A3CFF9-F618-411B-91FC-92C8FDD0D069 DEVICE_NAME=&#39;iPhone 17 Pro Max&#39; node Tests/RoomNotificationPreferences.js</code>
-            <a href="tests/roomnotificationpreferences/index.html">Open full evidence →</a>
+            <details class="full-evidence">
+              <summary><span class="show-evidence">Open full evidence</span><span class="hide-evidence">Close full evidence</span><span aria-hidden="true">⌄</span></summary>
+              <div class="full-evidence-body">
+                <section class="inline-evidence-section"><h4>Test details</h4><dl class="inline-evidence-meta">
+                  <div><dt>Status</dt><dd>PASS</dd></div>
+                  <div><dt>Lane</dt><dd>Conversation-List</dd></div>
+                  <div><dt>Category</dt><dd>ConversationView</dd></div>
+                  <div><dt>Device</dt><dd>iPhone 17 Pro Max</dd></div>
+                  <div><dt>Appium port</dt><dd>4725</dd></div>
+                  <div><dt>Finished</dt><dd>Oct 6, 11:54 AM</dd></div>
+                </dl></section>
+                <section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
+            <div><dt>Session creation</dt><dd>0ms</dd></div>
+<div><dt>Login/readiness</dt><dd>22s</dd></div>
+<div><dt>Test body</dt><dd>1m 1s</dd></div>
+<div><dt>Screenshot capture</dt><dd>691ms</dd></div>
+<div><dt>Recovery</dt><dd>0ms</dd></div>
+<div><dt>Report generation</dt><dd>0ms</dd></div>
+<div><dt>Room creation (test-owned)</dt><dd>9s</dd></div>
+          </dl></section>
+
+                <section class="inline-evidence-section"><h4>Recent history</h4><div class="inline-history"><a href="index.html"><span class="status-pill pass">PASS</span><strong>Oct 6, 11:46 AM</strong><small>1m 23s</small></a>
+<a href="../archive/2026-09-30T15-02-24Z-split3-combined/index.html"><span class="status-pill pass">PASS</span><strong>Sep 30, 11:02 AM</strong><small>59s</small></a></div></section>
+                <section class="inline-evidence-section"><div class="inline-evidence-heading"><h4>Test steps</h4><span>5 screenshots</span></div><div class="inline-steps"><figure class="inline-step">
+                <img src="assets/Conversation-List/RoomNotificationPreferences/01_room_opened.png" alt="Room Opened" loading="lazy">
+                <figcaption><strong>Step 1</strong><span>Room Opened</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/RoomNotificationPreferences/02_preferences_open.png" alt="Preferences Open" loading="lazy">
+                <figcaption><strong>Step 2</strong><span>Preferences Open</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/RoomNotificationPreferences/03_preference_selected.png" alt="Preference Selected" loading="lazy">
+                <figcaption><strong>Step 3</strong><span>Preference Selected</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/RoomNotificationPreferences/04_preference_persisted.png" alt="Preference Persisted" loading="lazy">
+                <figcaption><strong>Step 4</strong><span>Preference Persisted</span></figcaption>
+              </figure>
+<figure class="inline-step">
+                <img src="assets/Conversation-List/RoomNotificationPreferences/05_restore_persisted.png" alt="Restore Persisted" loading="lazy">
+                <figcaption><strong>Step 5</strong><span>Restore Persisted</span></figcaption>
+              </figure></div></section>
+              </div>
+            </details>
           </div>
         </details>
       </div>
@@ -1227,7 +2115,7 @@
 <div><dt>Test body</dt><dd>18m 16s</dd></div>
 <div><dt>Screenshot capture</dt><dd>20s</dd></div>
 <div><dt>Recovery</dt><dd>706ms</dd></div>
-<div><dt>Report generation</dt><dd>712ms</dd></div>
+<div><dt>Report generation</dt><dd>2s</dd></div>
 <div><dt>Room creation (test-owned)</dt><dd>1m 9s</dd></div></dl></section>
 
           <section class="overview-grid">
