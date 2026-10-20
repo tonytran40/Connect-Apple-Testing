@@ -319,7 +319,7 @@ Default three-lane split:
 |-------|-----------|--------|-----|-------|
 | `main-suite` | iPhone 17 Pro | `4723` | `8100` | `CreateRoom`, `PinnedMessageEditFlow`, `Reactions`, `newMessage` |
 | `Conversation-List` | iPhone 17 Pro Max | `4725` | `8200` | List tests plus `ComposerTypeahead`, `MessageActions`, `RoomNotificationPreferences` |
-| `ConversationView` | iPhone 17 | `4727` | `8300` | `markdowns`, `LinkPreviews`, `attachments`, `editRoom`, `membersRoom`, `ConversationSearch` |
+| `ConversationView` | iPhone 17 | `4727` | `8300` | `markdowns`, `LinkPreviews`, attachment photo/file/GIF scenarios, `editRoom`, `membersRoom`, `ConversationSearch` |
 | Exclusive settings phase | iPhone 17 Pro Max | `4725` | `8200` | `ConversationList` after all concurrent feature lanes finish |
 
 Run all three groups with:
@@ -399,7 +399,7 @@ xcrun simctl get_app_container <simulator-udid> com.powerhrg.connect.v3.debug ap
 
 Each split lane normally holds one reusable driver session for its whole test list. True simultaneous execution still needs separate simulator/Appium lanes; one simulator should only be driven by one lane at a time. The layout/sort test runs afterward as an exclusive phase because those account-wide settings can reorder another simulator's list while it is trying to locate test data.
 
-The table shows physical execution lanes. Moved tests retain their logical `ConversationView` category in reports. Set `SPLIT_BALANCE_CONVERSATION_VIEW=0` to disable balancing, or customize the main/list destinations with `SPLIT_BALANCED_CONVERSATION_VIEW_TESTS` and `SPLIT_LIST_BALANCED_CONVERSATION_VIEW_TESTS`. `attachments` always remains on the configured photo-ready lane.
+The table shows physical execution lanes. Moved tests retain their logical `ConversationView` category in reports. Set `SPLIT_BALANCE_CONVERSATION_VIEW=0` to disable balancing, or customize the main/list destinations with `SPLIT_BALANCED_CONVERSATION_VIEW_TESTS` and `SPLIT_LIST_BALANCED_CONVERSATION_VIEW_TESTS`. The three attachment scenarios remain on the configured photo-ready lane.
 
 Reports include aggregate phase timing for session creation, login/readiness, test bodies, screenshots, recovery, report generation, and test-owned room creation. Optional generated-room cleanup runs only after product tests:
 
@@ -578,6 +578,9 @@ npm run test:suite:fast
 npm run test:notifications
 npm run test:members-room
 npm run test:attachments
+npm run test:attachment-photo
+npm run test:attachment-file
+npm run test:attachment-gif
 npm run test:composer-typeahead
 npm run test:message-actions
 npm run test:audience-filters
@@ -686,7 +689,9 @@ Set `REMOVE_ROOM_CANDIDATES` only for a deliberate cleanup check against pre-exi
 
 ### `attachments.js`
 
-- Creates a public attachment room, opens the share options sheet, enters **Attach Photos**, selects the first visible row’s first 3 photos, confirms they appear in the composer, and sends them.
+- Provides the shared photo, file, and GIF workflows. The default regression suite reports them independently as `attachmentPhoto`, `attachmentFile`, and `attachmentGif`, so a Files picker failure does not hide GIF coverage.
+- `npm run test:attachments` retains the original combined workflow for backward-compatible troubleshooting; use the three focused `test:attachment-*` commands when isolating one path.
+- Files picker navigation is state-aware: it continues immediately when the target file is already visible and only opens **On My iPhone** or **Connect iOS** when the picker is outside those locations.
 - Includes photo-picker probing logic so you can validate the picker is reachable and tap visible photos on the simulator.
 - Tuned by the `ATTACHMENT_*` env vars documented in `.env.example`; screenshots under `screenshots/attachments/`.
 
@@ -806,7 +811,10 @@ If Appium cannot see a control in the page source, automation cannot tap it.
 | `npm run test:time` | Timing helper test |
 | `npm run test:notifications` | Push simulator notification, verify app re-entry, and generate a report |
 | `npm run test:members-room` | Create room, exercise Members edit flow, and generate a report |
-| `npm run test:attachments` | Create room, validate attachment entry points, and generate a report |
+| `npm run test:attachments` | Run the legacy combined attachment workflow and generate a report |
+| `npm run test:attachment-photo` | Validate photo attachment independently and generate a report |
+| `npm run test:attachment-file` | Validate Files document attachment independently and generate a report |
+| `npm run test:attachment-gif` | Validate GIF sending independently and generate a report |
 | `npm run test:composer-typeahead` | Verify emoji composer suggestions |
 | `npm run test:message-actions` | Verify message Copy and Delete actions |
 | `npm run test:link-previews` | Verify YouTube, Open Graph, and Google Maps preview cards |

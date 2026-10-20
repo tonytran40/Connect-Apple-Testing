@@ -2,6 +2,7 @@ const path = require('path');
 
 const {
   failureCategory,
+  failureClassification,
   failureSnippet,
   formatDate,
   formatDurationMs,
@@ -32,7 +33,7 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
     testHistory,
     runComparison,
     durationDeltaByTest,
-    categoryCounts,
+    classificationCounts,
   } = model;
   const { passed, failed, skipped, blocked, inconclusive, total } = evidence.counts;
   const reportSwitcher = reportSwitcherMarkup(reportNav);
@@ -74,6 +75,7 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
       const flake = flakeSummary(history);
       const isFlaky = isFlakyHistory(history);
       const failure = resultStatus === 'FAIL' ? failureSnippet(result) : '';
+      const classification = resultStatus === 'FAIL' ? failureClassification(result) : '';
       const rerunCommand = rerunCommandForResult(result);
       const timingMarkup = result.timings
         ? `<section class="inline-evidence-section"><h4>Phase timing</h4><dl class="inline-evidence-meta">
@@ -120,6 +122,7 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
               <p>${escapeHtml(result.logicalCategory || 'Uncategorized')} · ${escapeHtml(laneRunId)}${result.deviceName ? ` · ${escapeHtml(result.deviceName)}` : ''}</p>
               <div class="card-tags">
                 <span>${screenshots.length} screenshot${screenshots.length === 1 ? '' : 's'}</span>
+                ${classification ? `<span>${escapeHtml(classification)}</span>` : ''}
                 ${isSlow ? '<span>Slow</span>' : ''}
                 ${isFlaky ? `<span>Flaky: ${escapeHtml(flake)}</span>` : ''}
               </div>
@@ -139,6 +142,7 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
                   <div><dt>Status</dt><dd>${escapeHtml(resultStatus)}</dd></div>
                   <div><dt>Lane</dt><dd>${escapeHtml(laneRunId)}</dd></div>
                   <div><dt>Category</dt><dd>${escapeHtml(result.logicalCategory || 'Not reported')}</dd></div>
+                  ${classification ? `<div><dt>Failure class</dt><dd>${escapeHtml(classification)}</dd></div>` : ''}
                   <div><dt>Device</dt><dd>${escapeHtml(result.deviceName || 'Not reported')}</dd></div>
                   <div><dt>Appium port</dt><dd>${escapeHtml(result.appiumPort || 'Not reported')}</dd></div>
                   <div><dt>Finished</dt><dd>${escapeHtml(formatDate(result.finishedAt) || result.finishedAt || 'Not reported')}</dd></div>
@@ -163,7 +167,7 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
             failure => `
               <a href="${escapeHtml(relativeLink(file, testDetailFile(outDir, failure)))}">
                 <strong>${escapeHtml(failure.name)}</strong>
-                <em>${escapeHtml(failureCategory(failure))}</em>
+                <em>${escapeHtml(failureClassification(failure))} · ${escapeHtml(failureCategory(failure))}</em>
                 <span>${escapeHtml(failureSnippet(failure) || 'Failed without error text')}</span>
               </a>`
           )
@@ -247,8 +251,8 @@ function buildOverviewComponents({ file, outDir, runId, summary, reportNav, mode
           .join('\n') || '<p class="muted">No major changes from the previous comparable run.</p>'}
       </div>`
     : '<p class="muted">No previous result-level report yet. This will populate after the next archived run.</p>';
-  const categoryBars = Object.keys(categoryCounts).length
-    ? Object.entries(categoryCounts)
+  const categoryBars = Object.keys(classificationCounts).length
+    ? Object.entries(classificationCounts)
         .sort((a, b) => b[1] - a[1])
         .map(
           ([category, count]) => `

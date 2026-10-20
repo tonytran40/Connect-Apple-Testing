@@ -4,6 +4,7 @@ const { getElementRect } = require('./uiActions');
 const { waitForElementHidden } = require('./uiTransitions');
 const { continueWebAuthenticationIfNeeded } = require('./systemPrompts');
 const { waitForConnectivity } = require('./sessionConnectivity');
+const { allowNativePhotoLibraryAlertIfNeeded } = require('./permissions');
 const { getConversationListRoomsHeader, scrollConversationListToTop } = require('./conversationListNavigation');
 
 async function isDisplayed(driver, selector, timeout = 1000) {
@@ -107,6 +108,27 @@ async function dismissGifPickerIfVisible(driver) {
   return true;
 }
 
+async function dismissCloseOrCancelControl(driver) {
+  const selectors = [
+    '-ios predicate string:type == "XCUIElementTypeButton" AND ' +
+      '(name == "Close" OR label == "Close" OR name == "Cancel" OR label == "Cancel")',
+    SELECTORS.closeButton,
+  ];
+
+  for (const selector of selectors) {
+    const control = await driver.$(selector);
+    if (!(await control.isDisplayed().catch(() => false))) continue;
+    await control.click();
+    await waitForElementHidden(driver, control, {
+      timeout: 3000,
+      interval: 100,
+      timeoutMsg: 'Close or Cancel control remained visible after it was tapped',
+    }).catch(() => {});
+    return true;
+  }
+  return false;
+}
+
 async function resetToHome(driver, maxSteps = 8) {
   for (let i = 0; i < maxSteps; i++) {
     if (await isDisplayed(driver, SELECTORS.loginView, 300)) return;
@@ -117,6 +139,16 @@ async function resetToHome(driver, maxSteps = 8) {
     ) return true;
 
     if (await dismissGifPickerIfVisible(driver)) continue;
+
+    // A previous photo flow can leave the iOS privacy sheet above Connect.
+    // Handle it before attempting app navigation because the sheet blocks all
+    // underlying back and close controls.
+    if (await allowNativePhotoLibraryAlertIfNeeded(driver)) continue;
+
+    // Native sheets such as the Files document picker can restore deep inside
+    // their previous folder. Close the sheet instead of backing through every
+    // folder, which is both slow and can leave the following test outside the app.
+    if (await dismissCloseOrCancelControl(driver)) continue;
 
     const skipForNow = await driver.$('-ios predicate string:type == "XCUIElementTypeButton" AND label == "Skip for now"');
     if (await skipForNow.isDisplayed().catch(() => false)) {
@@ -133,16 +165,6 @@ async function resetToHome(driver, maxSteps = 8) {
       continue;
     }
 
-    if (await isDisplayed(driver, SELECTORS.closeButton, 500)) {
-      const closeButton = await driver.$(SELECTORS.closeButton);
-      await closeButton.click();
-      await waitForElementHidden(driver, closeButton, {
-        timeout: 3000, interval: 100,
-        timeoutMsg: 'Close control remained visible after it was tapped',
-      });
-      continue;
-    }
-
     if (await isDisplayed(driver, SELECTORS.sendMessageButton, 300)) {
       try {
         await driver.execute('mobile: pressButton', { name: 'return' });
@@ -154,6 +176,12 @@ async function resetToHome(driver, maxSteps = 8) {
     await driver.pause(800);
   }
   throw new Error('Could not return Connect to the conversation list');
+}
+
+async function recoverAfterFailure(driver) {
+  await driver.activateApp(process.env.CONNECT_BUNDLE_ID || 'com.powerhrg.connect.v3.debug');
+  await dismissCloseOrCancelControl(driver).catch(() => false);
+  await ensureRoomsSectionReady(driver);
 }
 
 async function ensureRoomsSectionReady(driver, maxScrolls = 8) {
@@ -173,4 +201,10 @@ async function ensureRoomsSectionReady(driver, maxScrolls = 8) {
   throw new Error('Rooms section header was not visible from the conversation list');
 }
 
-module.exports = { ensureRoomsSectionReady, goBack, resetToHome, runWithOptionalDriver };
+module.exports = {
+  ensureRoomsSectionReady,
+  goBack,
+  recoverAfterFailure,
+  resetToHome,
+  runWithOptionalDriver,
+};

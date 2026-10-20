@@ -86,3 +86,14 @@ test('probeReusableSession does not issue commands without a session id', async 
   });
   assert.equal(commandCalled, false);
 });
+
+test('post-failure normalization does not repeat a full offline timeout', () => {
+  assert.equal(
+    parallelSession.shouldNormalizeAfterFailure({ error: 'Connect remained offline for 120000ms' }),
+    false
+  );
+  assert.equal(
+    parallelSession.shouldNormalizeAfterFailure({ error: 'Files picker item did not appear' }),
+    true
+  );
+});

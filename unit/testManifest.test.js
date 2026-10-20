@@ -66,6 +66,16 @@ test('manifest normalizes common server labels and keeps opt-in tests out of def
   assert.equal(testsFor('parallelAll', { environment: 'QA' }).some(item => item.name === 'DraftPersistence'), false);
 });
 
+test('attachment paths are independently scheduled while the combined workflow stays opt-in', () => {
+  const scheduled = testsFor('split3', { environment: 'LOCAL' }).map(item => item.name);
+
+  assert.equal(scheduled.includes('attachments'), false);
+  assert.deepEqual(
+    scheduled.filter(name => name.startsWith('attachment')),
+    ['attachmentPhoto', 'attachmentFile', 'attachmentGif']
+  );
+});
+
 test('coverage records eligibility and scheduling separately', () => {
   const coverage = coverageFor(['CreateRoom'], { environment: 'LOCAL' });
   const createRoom = coverage.find(item => item.name === 'CreateRoom');

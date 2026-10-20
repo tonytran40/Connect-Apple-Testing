@@ -10,6 +10,7 @@ const {
   formatDurationMs,
   mergePhaseTimings,
   normalizePhaseTimings,
+  reconcileLaneTimings,
 } = require('../utils/reportWriter');
 const {
   buildArtifactLinks,
@@ -174,16 +175,18 @@ function loadLaneResults(lane, code) {
   });
 }
 
-function laneWithReportedTimings(lane) {
+function laneWithReportedTimings(lane, results = []) {
   const repoRoot = path.resolve(__dirname, '..');
   const summary = readJsonIfExists(path.join(repoRoot, 'reports', 'runs', lane.runId, 'summary.json'));
-  const timings = mergePhaseTimings(...(summary?.lanes || []).map(item => item.timings));
+  const reported = mergePhaseTimings(...(summary?.lanes || []).map(item => item.timings));
+  const laneResults = results.filter(result => result.laneRunId === lane.runId);
+  const timings = reconcileLaneTimings(reported, laneResults);
   return { ...lane, timings };
 }
 
 function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, startedAt, cleanup }) {
   const results = lanes.flatMap((lane, index) => loadLaneResults(lane, laneCodes[index]));
-  const reportedLanes = lanes.map(laneWithReportedTimings);
+  const reportedLanes = lanes.map(lane => laneWithReportedTimings(lane, results));
   const {
     passed,
     failed,
@@ -286,7 +289,9 @@ function writeCombinedReport({ reportPath, runId, lanes, laneCodes, durationMs, 
     });
   }
 
-  const timings = buildTimingSummary({ lanes: reportedLanes, results });
+  // reportedLanes already reconciles its child result phases, so adding results
+  // again here would double-count test body and screenshot time.
+  const timings = buildTimingSummary({ lanes: reportedLanes });
   lines.push('');
   appendPhaseTimingSection(lines, timings);
 

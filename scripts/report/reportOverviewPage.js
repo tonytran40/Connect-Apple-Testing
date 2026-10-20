@@ -170,7 +170,7 @@ function writeHtmlReport({ outDir, runId, summary, testDocs, reportNav = [], all
         </div>
         <div class="category-panel">
           <div class="panel-heading">
-            <h3>Failure categories</h3>
+            <h3>Failure ownership</h3>
             <p>${escapeHtml(failures.length)} failed test${failures.length === 1 ? '' : 's'}</p>
           </div>
           <div class="category-list">${categoryBars}</div>

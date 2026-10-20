@@ -25,6 +25,7 @@ const { readScreenshotMetrics, resetScreenshotMetrics } = require('../utils/scre
 const { createDriver } = require('../Login_Flow/Open_App');
 const { ensureLoggedIn } = require('../Login_Flow/Login_User');
 const { ensureRoomsSectionReady } = require('../utils/testSession');
+const { recoverAfterFailure } = require('../utils/sessionNavigation');
 const { resolveLaneUdids } = require('../utils/simulatorConfig');
 const {
   logicalCategoriesFromEnv,
@@ -32,7 +33,11 @@ const {
   makeRunId,
   resolveTests: resolveConfiguredTests,
 } = require('../utils/parallelConfig');
-const { classifySessionHealth, probeReusableSession } = require('../utils/parallelSession');
+const {
+  classifySessionHealth,
+  probeReusableSession,
+  shouldNormalizeAfterFailure,
+} = require('../utils/parallelSession');
 const { writeAggregateReport } = require('./parallelReport');
 const { manifestEntry, testsFor } = require('./testManifest');
 
@@ -235,6 +240,9 @@ async function runInstrumentedChild(testName) {
     timings: mergePhaseTimings(timings, { screenshotCaptureMs: screenshot.captureMs }),
     screenshotMetrics: screenshot,
     ...(ownedResult?.notes ? { notes: ownedResult.notes } : {}),
+    ...(error?.failureClassification || error?.failureType
+      ? { failureClassification: error.failureClassification || error.failureType }
+      : {}),
     ...(error ? { error: error?.message || String(error) } : {}),
   };
   writeResultFile(resultDir, result);
@@ -294,6 +302,9 @@ async function runOneTestWithDriver({ testName, lane, driver, resultDir, logDir,
     timings: mergedTimings,
     screenshotMetrics: screenshot,
     ...(ownedResult?.notes ? { notes: ownedResult.notes } : {}),
+    ...(error?.failureClassification || error?.failureType
+      ? { failureClassification: error.failureClassification || error.failureType }
+      : {}),
     ...(error ? { error: error?.message || String(error) } : {}),
   };
   writeResultFile(resultDir, result);
@@ -438,12 +449,21 @@ async function run() {
               probeReusableSession(driver)
             );
 
-            if (health.healthy) {
-              console.log(
-                `runParallel: worker #${lane.index} session healthy after ${testName} failure; ` +
-                  'skipping recovery'
-              );
-            } else {
+            if (health.healthy && shouldNormalizeAfterFailure(result)) {
+              try {
+                await measurePhase(recoveryTimings, 'recoveryMs', () =>
+                  recoverAfterFailure(driver)
+                );
+                console.log(
+                  `runParallel: worker #${lane.index} normalized app state after ${testName} failure`
+                );
+              } catch (recoveryError) {
+                console.warn(
+                  `runParallel: worker #${lane.index} app-state recovery failed after ` +
+                    `${testName}: ${recoveryError?.message || recoveryError}`
+                );
+              }
+            } else if (!health.healthy) {
               console.warn(
                 `runParallel: worker #${lane.index} session unhealthy after ${testName} failure: ` +
                   health.reason

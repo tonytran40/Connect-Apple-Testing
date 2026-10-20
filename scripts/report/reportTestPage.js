@@ -1,6 +1,7 @@
 const path = require("path");
 const {
   failureCategory,
+  failureClassification,
   failureSnippet,
   formatDate,
   formatDurationMs,
@@ -40,6 +41,7 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
     const history = (testHistory.get(result.name) || []).slice(0, 6);
     const failure = failureSnippet(result);
     const category = failureCategory(result);
+    const classification = failureClassification(result);
     const rerunCommand = rerunCommandForResult(result);
     const isSlow = resultDurationMs(result) > slowThresholdMs && resultDurationMs(result) > 0;
     const backToReport = relativeLink(file, path.join(outDir, 'index.html'));
@@ -62,7 +64,7 @@ function writeTestHtmlPages({ outDir, runId, summary, testDocs, allReports = [] 
     const failurePanel = failure
       ? `
         <section class="failure">
-          <span>Failure${category ? ` · ${escapeHtml(category)}` : ''}</span>
+          <span>Failure${classification ? ` · ${escapeHtml(classification)}` : ''}${category ? ` · ${escapeHtml(category)}` : ''}</span>
           <pre>${escapeHtml(failure)}</pre>
         </section>`
       : '';

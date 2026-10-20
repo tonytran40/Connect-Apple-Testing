@@ -89,3 +89,60 @@ test('resetToHome observes the GIF picker disappearing after its gesture', async
   assert.equal(await testSession.resetToHome(driver, 2), true);
   assert.equal(pauses, 0);
 });
+
+test('resetToHome closes a restored native picker before trying to navigate back', async () => {
+  let pickerVisible = true;
+  let homeVisible = false;
+  let backLookups = 0;
+  const hidden = hiddenElement();
+  const close = {
+    isDisplayed: async () => pickerVisible,
+    click: async () => {
+      pickerVisible = false;
+      homeVisible = true;
+    },
+  };
+  const driver = {
+    $: async selector => {
+      if (selector === SELECTORS.peoplePlusButton) {
+        return { waitForDisplayed: async () => { if (!homeVisible) throw new Error('not displayed'); } };
+      }
+      if (selector.includes('name == "Close"')) return close;
+      if (selector === SELECTORS.backButton) backLookups++;
+      if (selector === PREDICATES.roomsHeaderButton || selector === SELECTORS.roomsSectionHeader) return hidden;
+      return hidden;
+    },
+  };
+
+  assert.equal(await sessionNavigation.resetToHome(driver, 2), true);
+  assert.equal(backLookups, 0);
+});
+
+test('resetToHome accepts a photo permission sheet left above Connect', async () => {
+  let permissionVisible = true;
+  const hidden = hiddenElement();
+  const driver = {
+    $: async selector => {
+      if (selector === SELECTORS.peoplePlusButton) {
+        return {
+          waitForDisplayed: async () => {
+            if (permissionVisible) throw new Error('blocked by permission sheet');
+          },
+        };
+      }
+      if (selector === PREDICATES.roomsHeaderButton || selector === SELECTORS.roomsSectionHeader) {
+        return hidden;
+      }
+      return hidden;
+    },
+    updateSettings: async () => {},
+    execute: async (command, options) => {
+      assert.equal(command, 'mobile: alert');
+      if (options.action === 'getButtons') return ['Allow Full Access', 'Don’t Allow'];
+      if (options.action === 'accept') permissionVisible = false;
+    },
+  };
+
+  assert.equal(await sessionNavigation.resetToHome(driver, 2), true);
+  assert.equal(permissionVisible, false);
+});

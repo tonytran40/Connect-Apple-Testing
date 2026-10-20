@@ -1,4 +1,5 @@
 const { waitForCondition } = require('./uiTransitions');
+const { exposeSystemAlertsToXctest } = require('./systemPrompts');
 
 const DEFAULT_TIMEOUT = Number.parseInt(process.env.IOS_PERMISSION_PROMPT_TIMEOUT_MS, 10) || 1500;
 const PHOTO_PROMPT_TIMEOUT =
@@ -9,7 +10,7 @@ const PHOTO_PERMISSION_CHECKS = PHOTO_PERMISSION_SETTING !== '0';
 const DOCUMENT_PERMISSION_CHECKS = process.env.IOS_DOCUMENT_PERMISSION_CHECKS !== '0';
 
 let skipNotificationPermissionChecks = false;
-let skipPhotoPermissionChecks = false;
+const PHOTO_ACCESS_GRANTED = new WeakSet();
 
 function esc(s) {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -142,6 +143,30 @@ async function tapAllowFullPhotoAccessByCoordinates(driver) {
   return true;
 }
 
+async function allowNativePhotoLibraryAlertIfNeeded(driver) {
+  if (typeof driver?.execute !== 'function') return false;
+  if (PHOTO_ACCESS_GRANTED.has(driver)) return false;
+  await exposeSystemAlertsToXctest(driver).catch(() => false);
+
+  const buttons = await driver.execute('mobile: alert', { action: 'getButtons' })
+    .catch(() => []);
+  const preferred = [
+    'Allow Full Access',
+    'Allow Access to All Photos',
+    'Allow Access to Photos',
+    'Select Photos',
+  ].find(label => buttons.includes(label));
+  if (!preferred) return false;
+
+  await driver.execute('mobile: alert', {
+    action: 'accept',
+    buttonLabel: preferred,
+  });
+  PHOTO_ACCESS_GRANTED.add(driver);
+  console.log(`permissions: accepted native photo library alert "${preferred}"`);
+  return true;
+}
+
 async function allowNotificationPromptIfNeeded(driver) {
   if (!NOTIFICATION_PERMISSION_CHECKS || skipNotificationPermissionChecks) {
     return false;
@@ -149,6 +174,7 @@ async function allowNotificationPromptIfNeeded(driver) {
 
   const tapped = await tapFirstVisibleButton(driver, ['Allow']);
   if (tapped) {
+    PHOTO_ACCESS_GRANTED.add(driver);
     console.log(`permissions: tapped notification prompt "${tapped}"`);
     await waitForPromptDismissal(driver, activeDriver => isButtonVisible(activeDriver, tapped), 500);
     return true;
@@ -159,10 +185,12 @@ async function allowNotificationPromptIfNeeded(driver) {
   return false;
 }
 
-async function allowPhotoLibraryPromptIfNeeded(driver) {
-  if (!PHOTO_PERMISSION_CHECKS || skipPhotoPermissionChecks) {
+async function allowPhotoLibraryPromptIfNeeded(driver, options = {}) {
+  if (!PHOTO_PERMISSION_CHECKS) {
     return false;
   }
+
+  const timeout = options.timeout ?? PHOTO_PROMPT_TIMEOUT;
 
   const tapped = await tapFirstVisiblePromptOption(
     driver,
@@ -173,7 +201,7 @@ async function allowPhotoLibraryPromptIfNeeded(driver) {
       'Select Photos',
       'OK',
     ],
-    { loose: true, timeout: PHOTO_PROMPT_TIMEOUT }
+    { loose: true, timeout }
   );
 
   if (tapped) {
@@ -182,12 +210,16 @@ async function allowPhotoLibraryPromptIfNeeded(driver) {
     return true;
   }
 
-  if (await tapAllowFullPhotoAccessByCoordinates(driver)) {
+  if (await allowNativePhotoLibraryAlertIfNeeded(driver)) {
+    await waitForPromptDismissal(driver, isPhotoLibraryPromptVisible, 600);
     return true;
   }
 
-  skipPhotoPermissionChecks = true;
-  console.log('permissions: no photo library prompt found; skipping future photo checks');
+  if (await tapAllowFullPhotoAccessByCoordinates(driver)) {
+    PHOTO_ACCESS_GRANTED.add(driver);
+    return true;
+  }
+
   return false;
 }
 
@@ -223,6 +255,7 @@ async function allowDocumentAccessPromptIfNeeded(driver, options = {}) {
 
 module.exports = {
   allowDocumentAccessPromptIfNeeded,
+  allowNativePhotoLibraryAlertIfNeeded,
   allowNotificationPromptIfNeeded,
   allowPhotoLibraryPromptIfNeeded,
 };

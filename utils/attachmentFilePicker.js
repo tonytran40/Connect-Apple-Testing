@@ -44,6 +44,24 @@ async function waitForNamedItem(driver, label, timeout = DEFAULT_TIMEOUT) {
   });
 }
 
+async function waitForAnyNamedItem(driver, labels, timeout = DEFAULT_TIMEOUT) {
+  return waitForCondition(
+    driver,
+    async () => {
+      for (const label of labels) {
+        const element = await visibleNamedItem(driver, label);
+        if (element) return { label, element };
+      }
+      return false;
+    },
+    {
+      timeout,
+      interval: 200,
+      timeoutMsg: `attachments: none of the Files picker items appeared: ${labels.join(', ')}`,
+    }
+  );
+}
+
 async function tapNamedItem(driver, label, timeout = DEFAULT_TIMEOUT) {
   await waitForNamedItem(driver, label, timeout);
   await tapByText(driver, label, timeout);
@@ -86,16 +104,36 @@ async function selectConnectDocument(driver, options = {}) {
   const timeout = options.timeout || DEFAULT_TIMEOUT;
   const onStep = options.onStep || (async () => {});
 
-  await tapNamedItem(driver, browseLabel, timeout);
-  await waitForNamedItem(driver, locationName, timeout);
-  await onStep('browse');
+  let file = await visibleNamedItem(driver, fileName);
 
-  await tapNamedItem(driver, locationName, timeout);
-  await waitForNamedItem(driver, appFolderName, timeout);
-  await onStep('local-storage');
+  if (!file) {
+    let next = await waitForAnyNamedItem(
+      driver,
+      [appFolderName, locationName, browseLabel],
+      timeout
+    );
 
-  await tapNamedItem(driver, appFolderName, timeout);
-  const file = await waitForNamedItem(driver, fileName, timeout);
+    if (next.label === browseLabel) {
+      await tapNamedItem(driver, browseLabel, timeout);
+      next = await waitForAnyNamedItem(driver, [fileName, appFolderName, locationName], timeout);
+      await onStep('browse');
+    }
+
+    if (next.label === locationName) {
+      await tapNamedItem(driver, locationName, timeout);
+      next = await waitForAnyNamedItem(driver, [fileName, appFolderName], timeout);
+      await onStep('local-storage');
+    }
+
+    if (next.label === appFolderName) {
+      await tapNamedItem(driver, appFolderName, timeout);
+      file = await waitForNamedItem(driver, fileName, timeout);
+    } else if (next.label === fileName) {
+      file = next.element;
+    }
+  }
+
+  if (!file) file = await waitForNamedItem(driver, fileName, timeout);
   await onStep('app-folder');
 
   await tapFileElement(driver, file);

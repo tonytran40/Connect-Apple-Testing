@@ -210,25 +210,15 @@ async function selectLoadedGif(driver) {
   await waitForGifPickerDismissed(driver);
 }
 
-async function runTest(driver, options = {}) {
-  const { skipLogin = false } = options;
-
-  if (!skipLogin) {
-    await ensureLoggedIn(driver);
-  }
-
-  await resetToHome(driver);
-  await enterAttachmentRoom(driver);
-  await saveScreenshot(driver, TEST_NAME, '01_in_room.png');
-
+async function runPhotoFlow(driver, testName = TEST_NAME, screenshots = {}) {
   await tapShareOptionsButton(driver);
   const visibleOption = await waitForShareOptionsDialog(driver);
   console.log(`attachments: share options dialog visible (${visibleOption})`);
-  await saveScreenshot(driver, TEST_NAME, '02_share_options_dialog.png');
+  await saveScreenshot(driver, testName, screenshots.share || '02_share_options_dialog.png');
 
   await tapShareOption(driver, 'Attach Photos');
   await waitForPhotoPicker(driver);
-  await saveScreenshot(driver, TEST_NAME, '03_photo_picker_open.png');
+  await saveScreenshot(driver, testName, screenshots.picker || '03_photo_picker_open.png');
 
   if (DEBUG_PICKER) {
     await logPickerDiagnostics(driver, 'before_tap_all');
@@ -236,58 +226,113 @@ async function runTest(driver, options = {}) {
 
   await tapAllPhotosInPicker(driver);
   await pauseIfNeeded(driver, 400);
-  await saveScreenshot(driver, TEST_NAME, '04_after_tap_all_photos.png');
+  await saveScreenshot(driver, testName, screenshots.selected || '04_after_tap_all_photos.png');
 
   await tapDoneInPhotoPicker(driver);
   await waitForAttachmentDraftInComposer(driver);
-  await saveScreenshot(driver, TEST_NAME, '05_attachment_in_composer.png');
+  await saveScreenshot(driver, testName, screenshots.composer || '05_attachment_in_composer.png');
 
   await sendComposerDraft(driver);
   await pauseIfNeeded(driver, 500);
-  await saveScreenshot(driver, TEST_NAME, '06_after_send_attachment.png');
+  await saveScreenshot(driver, testName, screenshots.sent || '06_after_send_attachment.png');
+}
 
+async function runFileFlow(driver, testName = TEST_NAME, screenshots = {}) {
   await tapShareOptionsButton(driver);
   await waitForShareOptionsDialog(driver);
-  await saveScreenshot(driver, TEST_NAME, '07_share_options_dialog_for_file.png');
+  await saveScreenshot(driver, testName, screenshots.share || '02_share_options_dialog_for_file.png');
 
   await tapShareOption(driver, 'Attach Files');
   await waitForDocumentPicker(driver);
-  await saveScreenshot(driver, TEST_NAME, '08_file_picker_open.png');
+  await saveScreenshot(driver, testName, screenshots.picker || '03_file_picker_open.png');
 
   await selectConnectDocument(driver, {
     onStep: async step => {
-      const screenshots = {
-        browse: '09_files_browse.png',
-        'local-storage': '10_files_on_my_iphone.png',
-        'app-folder': '11_files_connect_ios.png',
-        'file-selected': '12_file_selected.png',
+      const defaults = {
+        browse: '04_files_browse.png',
+        'local-storage': '05_files_on_my_iphone.png',
+        'app-folder': '06_files_connect_ios.png',
+        'file-selected': '07_file_selected.png',
       };
-      await saveScreenshot(driver, TEST_NAME, screenshots[step]);
+      await saveScreenshot(driver, testName, screenshots[step] || defaults[step]);
     },
   });
   await waitForAttachmentDraftInComposer(driver);
-  await saveScreenshot(driver, TEST_NAME, '13_file_attachment_in_composer.png');
+  await saveScreenshot(driver, testName, screenshots.composer || '08_file_attachment_in_composer.png');
 
   await sendComposerDraft(driver);
   await waitForSentFile(driver, DEFAULT_FILE_NAME);
-  await saveScreenshot(driver, TEST_NAME, '14_after_send_file_attachment.png');
+  await saveScreenshot(driver, testName, screenshots.sent || '09_after_send_file_attachment.png');
+}
 
+async function runGifFlow(driver, testName = TEST_NAME, screenshots = {}) {
   await tapShareOptionsButton(driver);
   await waitForShareOptionsDialog(driver);
-  await saveScreenshot(driver, TEST_NAME, '15_share_options_dialog_for_gif.png');
+  await saveScreenshot(driver, testName, screenshots.share || '02_share_options_dialog_for_gif.png');
 
   await tapShareOption(driver, 'Send GIF');
   await pauseIfNeeded(driver, GIF_PICKER_SETTLE_MS);
-  await saveScreenshot(driver, TEST_NAME, '16_gif_picker_open.png');
+  await saveScreenshot(driver, testName, screenshots.picker || '03_gif_picker_open.png');
 
   await selectLoadedGif(driver);
   await pauseIfNeeded(driver, GIF_SEND_SETTLE_MS);
-  await saveScreenshot(driver, TEST_NAME, '17_after_send_gif.png');
+  await saveScreenshot(driver, testName, screenshots.sent || '04_after_send_gif.png');
+}
+
+async function prepareScenario(driver, options, testName) {
+  if (!options.skipLogin) await ensureLoggedIn(driver);
+  await resetToHome(driver);
+  await enterAttachmentRoom(driver);
+  await saveScreenshot(driver, testName, '01_in_room.png');
+}
+
+async function runScenario(driver, options, testName, flow) {
+  await prepareScenario(driver, options, testName);
+  await flow(driver, testName);
+}
+
+async function runPhotoTest(driver, options = {}) {
+  return runScenario(driver, options, 'attachmentPhoto', runPhotoFlow);
+}
+
+async function runFileTest(driver, options = {}) {
+  return runScenario(driver, options, 'attachmentFile', runFileFlow);
+}
+
+async function runGifTest(driver, options = {}) {
+  return runScenario(driver, options, 'attachmentGif', runGifFlow);
+}
+
+async function runTest(driver, options = {}) {
+  await prepareScenario(driver, options, TEST_NAME);
+  await runPhotoFlow(driver, TEST_NAME);
+  await runFileFlow(driver, TEST_NAME, {
+    share: '07_share_options_dialog_for_file.png',
+    picker: '08_file_picker_open.png',
+    browse: '09_files_browse.png',
+    'local-storage': '10_files_on_my_iphone.png',
+    'app-folder': '11_files_connect_ios.png',
+    'file-selected': '12_file_selected.png',
+    composer: '13_file_attachment_in_composer.png',
+    sent: '14_after_send_file_attachment.png',
+  });
+  await runGifFlow(driver, TEST_NAME, {
+    share: '15_share_options_dialog_for_gif.png',
+    picker: '16_gif_picker_open.png',
+    sent: '17_after_send_gif.png',
+  });
 }
 
 const test = defineTest({ name: TEST_NAME, execute: runTest });
 const { run } = test;
 
-module.exports = { run, generateAttachmentRoomName, resolveAttachmentRoomName };
+module.exports = {
+  run,
+  generateAttachmentRoomName,
+  resolveAttachmentRoomName,
+  runFileTest,
+  runGifTest,
+  runPhotoTest,
+};
 
 test.runIfMain(module);

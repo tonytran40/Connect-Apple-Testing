@@ -47,6 +47,7 @@ test('overview model prepares duration, lane, and failure data without rendering
   assert.deepEqual(model.slowResults.map(result => result.name), ['Slow failure']);
   assert.equal(model.failures.length, 1);
   assert.equal(model.categoryCounts.Timeout, 1);
+  assert.equal(model.classificationCounts.PRODUCT, 1);
 });
 
 test('overview page keeps extracted styles and client behavior inline', () => {
@@ -128,6 +129,8 @@ test('overview expands full test evidence in place instead of linking to a detai
     assert.match(html, /Open full evidence/);
     assert.match(html, /Close full evidence/);
     assert.match(html, /Test details/);
+    assert.match(html, /Failure class/);
+    assert.match(html, /PRODUCT/);
     assert.match(html, /Phase timing/);
     assert.match(html, /Test steps/);
     assert.doesNotMatch(html, />Open full evidence →<\/a>/);

@@ -101,6 +101,34 @@ function failureCategory(result) {
   return 'Unknown';
 }
 
+const FAILURE_CLASSIFICATIONS = ['PRODUCT', 'AUTOMATION', 'INFRASTRUCTURE', 'FIXTURE'];
+
+function failureClassification(result) {
+  if (result?.status !== 'FAIL') return '';
+  const explicit = String(result.failureClassification || result.classification || '').toUpperCase();
+  if (FAILURE_CLASSIFICATIONS.includes(explicit)) return explicit;
+
+  const text = `${result?.name || ''}\n${failureSnippet(result)}`.toLowerCase();
+  if (
+    /webdriveragent|\bwda\b|appium|lane setup failed|session (?:creation|deleted|not created)|invalid session|econnrefused|socket hang up|core ?simulator|simulator.*(?:boot|unavailable)|springboard|xcodebuild|unable to launch.*simulator|connect remained offline|connectivity.*timed out/i.test(text)
+  ) {
+    return 'INFRASTRUCTURE';
+  }
+  if (
+    /fixture|test data|seed(?:ed|ing)?|precondition|prerequisite|configured (?:room|user|account)|account.*(?:missing|unavailable)|room.*(?:missing|does not exist)|no eligible test/i.test(text)
+  ) {
+    return 'FIXTURE';
+  }
+  if (
+    /no such element|stale element|selector|accessibility (?:id|identifier|selector)|could not (?:find|locate)|did not appear|not displayed|picker item|after \d+ (?:list )?scroll|automation/i.test(text)
+  ) {
+    return 'AUTOMATION';
+  }
+  // Assertions, HTTP/API errors, and app-originated failures affect the
+  // requirement being exercised unless stronger automation/infra evidence is present.
+  return 'PRODUCT';
+}
+
 function uniqueReportRuns(reports = []) {
   const seen = new Set();
   return reports
@@ -717,6 +745,7 @@ module.exports = {
   cclCoverageForSummary,
   coverageForSummary,
   failureCategory,
+  failureClassification,
   failureSnippet,
   findPreviousComparableReport,
   formatDate,

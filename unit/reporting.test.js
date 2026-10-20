@@ -17,6 +17,7 @@ const {
   cclCoverageForSummary,
   coverageForSummary,
   failureCategory,
+  failureClassification,
   rerunCommandForResult,
   statusForSummary,
   uniqueReportRuns,
@@ -177,6 +178,31 @@ test('failure analysis classifies common Appium failures', () => {
   assert.equal(failureCategory({ status: 'FAIL', error: 'Expected true but received false' }), 'Assertion');
   assert.equal(failureCategory({ status: 'FAIL', error: 'Unclassified problem' }), 'Unknown');
   assert.equal(failureCategory({ status: 'PASS', error: 'timeout text is irrelevant' }), '');
+});
+
+test('failure ownership separates product, automation, infrastructure, and fixture failures', () => {
+  assert.equal(failureClassification({ status: 'FAIL', error: 'HTTP Error error 404' }), 'PRODUCT');
+  assert.equal(
+    failureClassification({ status: 'FAIL', error: 'Files picker item "Connect iOS" did not appear' }),
+    'AUTOMATION'
+  );
+  assert.equal(
+    failureClassification({ status: 'FAIL', error: 'Lane setup failed: WebDriverAgent session creation timed out' }),
+    'INFRASTRUCTURE'
+  );
+  assert.equal(
+    failureClassification({ status: 'FAIL', error: 'Connect remained offline for 120000ms' }),
+    'INFRASTRUCTURE'
+  );
+  assert.equal(
+    failureClassification({ status: 'FAIL', error: 'Required seeded test data is missing' }),
+    'FIXTURE'
+  );
+  assert.equal(failureClassification({ status: 'PASS', error: 'HTTP 500' }), '');
+  assert.equal(
+    failureClassification({ status: 'FAIL', error: 'ambiguous', failureClassification: 'fixture' }),
+    'FIXTURE'
+  );
 });
 
 test('rerun command preserves lane targeting', () => {

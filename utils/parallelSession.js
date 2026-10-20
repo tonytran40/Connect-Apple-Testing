@@ -32,4 +32,9 @@ async function probeReusableSession(
   }
 }
 
-module.exports = { classifySessionHealth, probeReusableSession };
+function shouldNormalizeAfterFailure(result) {
+  const error = String(result?.error || '');
+  return !/Connect remained offline|connectivity (?:toast|check|recovery).*timed out/i.test(error);
+}
+
+module.exports = { classifySessionHealth, probeReusableSession, shouldNormalizeAfterFailure };

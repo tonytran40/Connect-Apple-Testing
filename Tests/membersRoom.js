@@ -7,6 +7,7 @@ const { resetToHome } = require('../utils/testSession');
 const { SELECTORS } = require('../utils/selectors');
 const { generateRoomName, createPublicRoom } = require('./CreateRoom');
 const { waitForAnyElementDisplayed, waitForCondition } = require('../utils/uiTransitions');
+const { waitForMembersEditorField } = require('../utils/membersRoomErrors');
 const {
   escapePredicateString: esc,
   pauseIfNeeded: pause,
@@ -90,7 +91,7 @@ async function waitForNavBarButton(driver, label, timeout = DEFAULT_TIMEOUT) {
 }
 
 async function waitForAddIndividualsField(driver, timeout = DEFAULT_TIMEOUT) {
-  return waitForAnyElementDisplayed(driver, [
+  return waitForMembersEditorField(driver, [
     `//XCUIElementTypeStaticText[@name="Add Individuals" or @label="Add Individuals"]/following::XCUIElementTypeTextField[1]`,
     `//XCUIElementTypeStaticText[contains(@name,"ADD INDIVIDUALS") or contains(@label,"ADD INDIVIDUALS")]/following::XCUIElementTypeTextField[1]`,
   ], {

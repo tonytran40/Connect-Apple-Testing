@@ -51,6 +51,16 @@ function mergePhaseTimings(...timings) {
   }, normalizePhaseTimings());
 }
 
+// Parallel lane timings contain worker setup/replacement work, while result
+// timings contain each test's readiness, body, screenshots, and recovery. They
+// are separate measurements and must be combined exactly once.
+function reconcileLaneTimings(laneTimings, results = []) {
+  return mergePhaseTimings(
+    laneTimings,
+    ...results.map(result => result?.timings)
+  );
+}
+
 function buildTimingSummary({ lanes = [], results = [], reportGenerationMs } = {}) {
   const phases = mergePhaseTimings(
     ...lanes.map(lane => lane.timings),
@@ -143,4 +153,5 @@ module.exports = {
   formatDurationMs,
   mergePhaseTimings,
   normalizePhaseTimings,
+  reconcileLaneTimings,
 };

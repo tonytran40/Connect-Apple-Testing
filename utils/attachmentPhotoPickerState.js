@@ -8,16 +8,21 @@ const PHOTO_SELECT_WAIT_MS = Number.parseInt(process.env.ATTACHMENT_PHOTO_SELECT
 
 async function waitForPhotoPicker(driver, timeout = PHOTO_PICKER_TIMEOUT) {
   const signals = [
-    '-ios predicate string:(type == "XCUIElementTypeStaticText") AND (name CONTAINS "Select up to" OR label CONTAINS "Select up to")',
-    '-ios predicate string:(type == "XCUIElementTypeButton" OR type == "XCUIElementTypeStaticText") AND (name == "Photos" OR label == "Photos")',
-    '-ios predicate string:(type == "XCUIElementTypeStaticText") AND (name CONTAINS "Select Items" OR label CONTAINS "Select Items")',
+    '-ios predicate string:name CONTAINS[c] "Select up to" OR label CONTAINS[c] "Select up to"',
+    '-ios predicate string:name == "Photos" OR label == "Photos"',
+    '-ios predicate string:name CONTAINS[c] "Select Items" OR label CONTAINS[c] "Select Items"',
+    '-ios predicate string:name == "Collections" OR label == "Collections"',
   ];
   await waitForCondition(driver, async () => {
-    await allowPhotoLibraryPromptIfNeeded(driver);
     for (const selector of signals) {
       const el = await driver.$(selector);
       if (await el.isExisting().catch(() => false)) return true;
     }
+
+    // The iOS permission sheet may animate in after the attachment action.
+    // Keep probing until the picker timeout instead of permanently disabling
+    // checks when the first short probe happens before the sheet is visible.
+    await allowPhotoLibraryPromptIfNeeded(driver);
     return false;
   }, { timeout, interval: 250, timeoutMsg: 'attachments: photo picker did not appear' });
 }

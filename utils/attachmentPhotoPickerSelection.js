@@ -1,4 +1,3 @@
-const { allowPhotoLibraryPromptIfNeeded } = require('./permissions');
 const {
   debugLog,
   findSimulatorPhotoItems,
@@ -128,7 +127,6 @@ async function tapVisiblePhotoGrid(driver, tappedKeys, limit = PHOTO_TARGET_COUN
 }
 
 async function tapAllPhotosInPicker(driver) {
-  await allowPhotoLibraryPromptIfNeeded(driver);
   const maxItems = Math.min(
     Number.parseInt(process.env.ATTACHMENT_PHOTO_MAX_ITEMS, 10) || PHOTO_TARGET_COUNT,
     PHOTO_TARGET_COUNT

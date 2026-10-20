@@ -5,6 +5,7 @@ const {
   buildTimingSummary,
   mergePhaseTimings,
   normalizePhaseTimings,
+  reconcileLaneTimings,
 } = require('../utils/reportWriter');
 
 test('phase timings use a stable machine-readable schema', () => {
@@ -17,6 +18,27 @@ test('phase timings use a stable machine-readable schema', () => {
     reportGenerationMs: 0,
     roomCreationMs: 0,
   });
+});
+
+test('lane timing combines worker setup with all result phases exactly once', () => {
+  assert.deepEqual(
+    reconcileLaneTimings(
+      { sessionCreationMs: 100, testBodyMs: 500 },
+      [
+        { timings: { testBodyMs: 300, screenshotCaptureMs: 20 } },
+        { timings: { testBodyMs: 400, screenshotCaptureMs: 30 } },
+      ]
+    ),
+    {
+      sessionCreationMs: 100,
+      loginReadinessMs: 0,
+      testBodyMs: 1200,
+      screenshotCaptureMs: 50,
+      recoveryMs: 0,
+      reportGenerationMs: 0,
+      roomCreationMs: 0,
+    }
+  );
 });
 
 test('phase timing aggregation combines lane and test work without changing result fields', () => {

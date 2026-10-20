@@ -4,6 +4,7 @@ const {
   buildLaneStats,
   buildRunComparison,
   failureCategory,
+  failureClassification,
   findPreviousComparableReport,
   formatDate,
   laneForResult,
@@ -45,6 +46,11 @@ function buildOverviewModel({ runId, summary, allReports = [] }) {
     countsByCategory[category] = (countsByCategory[category] || 0) + 1;
     return countsByCategory;
   }, {});
+  const classificationCounts = failures.reduce((counts, result) => {
+    const classification = failureClassification(result);
+    counts[classification] = (counts[classification] || 0) + 1;
+    return counts;
+  }, {});
 
   return {
     results,
@@ -66,6 +72,7 @@ function buildOverviewModel({ runId, summary, allReports = [] }) {
     reportAge: formatReportAge(summary.updatedAt || summary.startedAt),
     staleReport: !evidence.freshness.fresh,
     categoryCounts,
+    classificationCounts,
   };
 }
 
